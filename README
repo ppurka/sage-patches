@@ -1,0 +1,6 @@
+This repository contains my patches to Sage that are still pending. Need
+this for tracking the patches across multiple Sage installations, across
+multiple machines.
+
+The master branch will always contain the pending patches. Other branches
+may contain extra or old patches.

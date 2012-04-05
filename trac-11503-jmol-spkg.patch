@@ -1,0 +1,39 @@
+# HG changeset patch
+# User Jason Grout <jason.grout@drake.edu>
+# Date 1326780964 21600
+# Node ID 044b51b9ed7b76ec0c08ff1d005d3eae427b2a7d
+# Parent  0f8202bf191d60ad64d978a957933bfedd1b1a23
+Add dependencies for the new jmol spkg
+
+diff --git a/spkg/install b/spkg/install
+--- a/spkg/install
++++ b/spkg/install
+@@ -167,6 +167,7 @@
+ IML=`newest_version iml`
+ IPYTHON=`newest_version ipython`
+ JINJA2=`newest_version jinja2`
++JMOL=`newest_version jmol`
+ LAPACK=`newest_version lapack`
+ LCALC=`newest_version lcalc`
+ LIBGCRYPT=`newest_version libgcrypt`
+diff --git a/spkg/standard/deps b/spkg/standard/deps
+--- a/spkg/standard/deps
++++ b/spkg/standard/deps
+@@ -61,6 +61,7 @@
+      $(INST)/$(IML) \
+      $(INST)/$(IPYTHON) \
+      $(INST)/$(JINJA2) \
++     $(INST)/$(JMOL) \
+      $(INST)/$(LAPACK) \
+      $(INST)/$(LCALC) \
+      $(INST)/$(LIBGCRYPT) \
+@@ -338,6 +339,9 @@
+ $(INST)/$(ZLIB): $(BASE) $(INST)/$(PATCH)
+ 	+$(PIPE) "$(SAGE_SPKG) $(ZLIB) 2>&1" "tee -a $(SAGE_LOGS)/$(ZLIB).log"
+ 
++$(INST)/$(JMOL): $(BASE) $(INST)/$(SAGENB) $(INST)/$(PATCH)
++	+$(PIPE) "$(SAGE_SPKG) $(JMOL) 2>&1" "tee -a $(SAGE_LOGS)/$(JMOL).log"
++
+ ##  << NON-GUI matplotlib >>
+ $(INST)/$(FREETYPE): $(BASE) $(INST)/$(PATCH)
+ 	+$(PIPE) "$(SAGE_SPKG) $(FREETYPE) 2>&1" "tee -a $(SAGE_LOGS)/$(FREETYPE).log"

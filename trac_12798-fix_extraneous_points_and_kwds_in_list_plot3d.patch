@@ -1,0 +1,68 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1333432924 -28800
+# Node ID 43064889f76666ee3aede5465c1cb6199a85834e
+# Parent  da6980b42ea0a6f5c56f621599569b05f20a223f
+fix extraneous points at z=0 in list_plot3d and allow color and rgbcolor as keywords
+
+diff --git a/sage/plot/plot3d/list_plot3d.py b/sage/plot/plot3d/list_plot3d.py
+--- a/sage/plot/plot3d/list_plot3d.py
++++ b/sage/plot/plot3d/list_plot3d.py
+@@ -23,9 +23,21 @@
+       - a list of lists (all of the same length) - this is treated the same as
+         a matrix.
+     
+-    - ``texture`` - (default: "automatic", a solid light blue)
++    - ``texture`` - (default: "automatic", a solid light blue) this can be
++
++      - a named color, ex. 'blue', 'black', 'red'
++
++      - an RGB 3-tuple of numbers between 0 and 1, e.g. (0.5, 0.5, 0)
++
++      - a string representing a html color, e.g. '#ffffff', '#00f'
+     
+     OPTIONAL KEYWORDS:
++
++    - ``color`` - This is the same as ``texture``. Use only one of
++      ``texture`` or ``color`` or ``rgbcolor``.
++
++    - ``rgbcolor`` - This is the same as ``texture``. Use only one of
++      ``texture`` or ``color`` or ``rgbcolor``.
+     
+     - ``interpolation_type`` - 'linear', 'nn' (nearest neighbor), 'spline'
+     
+@@ -161,8 +173,17 @@
+         ValueError: We need at least 3 points to perform the interpolation
+     """
+     import numpy
++
+     if texture == "automatic":
+-        texture = "lightblue"
++        if 'color' in kwds:
++            texture = kwds.pop('color')
++        elif 'rgbcolor' in kwds:
++            texture = kwds.pop('rgbcolor')
++        else:
++            texture = "lightblue"
++    from sage.plot.colors import rgbcolor
++    texture = rgbcolor(texture)
++
+     if is_Matrix(v):
+         if interpolation_type=='default' or interpolation_type=='linear' and not kwds.has_key('num_points'):
+             return list_plot3d_matrix(v, texture=texture,  **kwds)
+@@ -411,7 +432,6 @@
+ 
+         T= delaunay.Triangulation(x,y)
+         f=T.linear_interpolator(z)
+-        f.default_value=0.0
+         j=numpy.complex(0,1)
+         vals=f[ymin:ymax:j*num_points,xmin:xmax:j*num_points]
+         from parametric_surface import ParametricSurface
+@@ -432,7 +452,6 @@
+ 
+         T=delaunay.Triangulation(x,y)
+         f=T.nn_interpolator(z)
+-        f.default_value=0.0
+         j=numpy.complex(0,1)
+         vals=f[ymin:ymax:j*num_points,xmin:xmax:j*num_points]
+         from parametric_surface import ParametricSurface

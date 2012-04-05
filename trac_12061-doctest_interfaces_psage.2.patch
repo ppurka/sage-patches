@@ -1,0 +1,233 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1321779622 -28800
+# Node ID 23d544e043ee3ac0f16950610d038915d8402ad6
+# Parent  06a7ce03d63c2a8e33b45016249e31e16b881be3
+add doctests to psage and fix one case of infinite recursion
+
+diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
+--- a/sage/interfaces/psage.py
++++ b/sage/interfaces/psage.py
+@@ -11,44 +11,42 @@
+ 
+ \note{BUG -- currently non-idle PSage subprocesses do not stop when
+ \sage exits.  I would very much like to fix this but don't know how.}
+-
+-EXAMPLES:
+-
+-We illustrate how to factor 3 integers in parallel.
+-First start up 3 parallel Sage interfaces::
+-
+-    sage: v = [PSage() for _ in range(3)]
+-
+-Next, request factorization of one random integer in each copy. ::
+-
+-    sage: w = [x('factor(2^%s-1)'% randint(250,310)) for x in v]  # long time (5s on sage.math, 2011)
+-
+-Print the status::
+-
+-    sage: w       # long time, random output (depends on timing)
+-    [3 * 11 * 31^2 * 311 * 11161 * 11471 * 73471 * 715827883 * 2147483647 * 4649919401 * 18158209813151 * 5947603221397891 * 29126056043168521,
+-     <<currently executing code>>,
+-     9623 * 68492481833 * 23579543011798993222850893929565870383844167873851502677311057483194673]
+-
+-Note that at the point when we printed two of the factorizations had
+-finished but a third one hadn't.   A few seconds later all three have
+-finished::
+-
+-    sage: w       # long time, random output
+-    [3 * 11 * 31^2 * 311 * 11161 * 11471 * 73471 * 715827883 * 2147483647 * 4649919401 * 18158209813151 * 5947603221397891 * 29126056043168521,
+-     23^2 * 47 * 89 * 178481 * 4103188409 * 199957736328435366769577 * 44667711762797798403039426178361,
+-     9623 * 68492481833 * 23579543011798993222850893929565870383844167873851502677311057483194673]
+ """
+ 
+ import os, time
+-
+ from sage0 import Sage, SageElement
+ 
+-
+ number = 0
+ 
++class PSage(Sage):
++    r"""
++    Parallel Interface to the Sage interpreter
+ 
+-class PSage(Sage):
++    This is an expect interface to multiple copies of the Sage interpreter,
++    which can all run simultaneous calculations.
++
++    We illustrate how to factor 3 integers in parallel by starting up three
++    parallel Sage interfaces.
++
++    EXAMPLES::
++
++        sage: import time
++        sage: v = [PSage() for _ in range(3)]; v
++        [A running non-blocking (parallel) instance of Sage (number 0),
++         A running non-blocking (parallel) instance of Sage (number 1),
++         A running non-blocking (parallel) instance of Sage (number 2)]
++        sage: w = [x('factor(2^%s-1)'%(4*(i+1))) for i,x in enumerate(v)]; w
++        [, , ]
++        sage: time.sleep(10); w # Sleep for 10s before doing next command
++        [3 * 5, 3 * 5 * 17, 3^2 * 5 * 7 * 13]
++        sage: for x in v: x.__del__()
++        deleting
++        kill -9 ...
++        deleting
++        kill -9 ...
++        deleting
++        kill -9 ...
++    """
+     def __init__(self,  **kwds):
+         if kwds.has_key('server'):
+             raise NotImplementedError, "PSage doesn't work on remote server yet."
+@@ -64,16 +62,40 @@
+         self._number = number
+         number += 1
+ 
++        # This string is repeated several times in this file
++        self._curr_string="<<currently executing code>>"
++
+     def __repr__(self):
+         return 'A running non-blocking (parallel) instance of Sage (number %s)'%(self._number)
+ 
++    def _openfile(self, filename, mode='r'):
++        """
++        Open a file with a given mode. Raise a RuntimeError exception if
++        the file is not present.
++
++        Input:
++
++            - `filename`: The file that is to be opened
++            - `mode`: The mode in which to open the file (default: 'r')
++ 
++        Output: a handle to the opened file.
++        """
++        # Raising an IOError or allowing open() to generate the IOError
++        # results in an infinite recursion of RuntimeError. See #12061
++        # Hence, we use this function to check for the existence of the
++        # file ourself and raise a RuntimeError by ourself.
++        if mode == 'r' and not os.path.isfile(filename):
++            raise RuntimeError("The file '%s' does not exist"%(filename))
++
++        return open(filename, mode)
++
+     def _unlock(self):
+         self._locked = False
+-        open(self.__tmp, 'w').write('__unlocked__')
++        self._openfile(self.__tmp, 'w').write('__unlocked__')
+ 
+     def _lock(self):
+         self._locked = True
+-        open(self.__tmp, 'w').write('__locked__')
++        self._openfile(self.__tmp, 'w').write('__locked__')
+ 
+     def _start(self):
+         Sage._start(self)
+@@ -81,15 +103,38 @@
+         self.expect().delaybeforesend = 0.01
+ 
+     def is_locked(self):
+-        if open(self.__tmp).read() == '__locked__':
++        r"""
++        Test if a computation is running.
++        """
++        # This is doctested below along with __del__()
++        if self._openfile(self.__tmp).read() == '__locked__':
+             try:
+                 self.expect().expect(self._prompt)
+                 self.expect().expect(self._prompt)
+             except:
+                 pass
+-        return open(self.__tmp).read() == '__locked__'
++        return self._openfile(self.__tmp).read() == '__locked__'
+ 
+     def __del__(self):
++        r"""
++        Delete the currently running Sage process, and kill it if
++        necessary.
++
++        EXAMPLES::
++
++            sage: v = PSage()
++            sage: v('factor(2^500-1)')
++            <<currently executing code>>
++            sage: v.is_locked()
++            True
++            sage: v.__del__()
++            deleting
++            kill -9 ...
++            sage: v('print 1') # This should give error now
++            Traceback (most recent call last):
++            ...
++            TypeError: The file ...  does not exist
++        """
+         print "deleting"
+         for x in os.listdir(self.__tmp_dir):
+             os.remove('%s/%s'%(self.__tmp_dir, x))
+@@ -102,11 +147,15 @@
+         
+     def eval(self, x, strip=True, **kwds):
+         """
+-            x -- code
+-            strip --ignored
++        Evaluate the string x.
++
++        Input:
++            - `x` -- code
++            - `strip` -- This parameter is ignored at present
+         """
++        # This is indirectly doctested by the other functions
+         if self.is_locked():
+-            return "<<currently executing code>>"
++            return self._curr_string
+         if self._locked:
+             self._locked = False
+             #self._expect.expect('__unlocked__')
+@@ -116,22 +165,35 @@
+         try:
+             return Sage.eval(self, x, **kwds)
+         except:
+-            return "<<currently executing code>>"
++            return self._curr_string
+             
+ 
+     def get(self, var):
+         """
+         Get the value of the variable var.
++
++        EXAMPLES::
++
++            sage: import time
++            sage: a = var('a'); v = PSage()
++            sage: v.set(a, 1)
++            sage: while v.get(a) == '': time.sleep(0.5)
++            sage: v.get(a)
++            '1'
++            sage: v.__del__()
++            deleting
++            kill -9 ...
+         """
+         try:
+             return self.eval('print %s'%var)
+         except:
+-            return "<<currently executing code>>"
++            return self._curr_string
+ 
+     def set(self, var, value):
+         """
+         Set the variable var to the given value.
+         """
++        # This is doctested along with the get() function.
+         cmd = '%s=%s'%(var,value)        
+         self._send_nowait(cmd)
+         time.sleep(0.02)
+@@ -143,7 +205,7 @@
+         # The first is x and the second is c.  The effect of c
+         # will be to unlock the lock.
+         if self.is_locked():
+-            return "<<currently executing code>>"
++            return self._curr_string
+         E = self.expect()
+         self._lock()
+         E.write(self.preparse(x) + '\n')

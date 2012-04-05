@@ -1,0 +1,66 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1331021841 -28800
+# Node ID 9f1f09a4e369fb42092a5dfb5e3969e6cd4b5400
+# Parent  aaa5b1d74d52ab4bbd011856bf25ed6e39e22625
+Make detach take as input lists of files and files with relative paths
+
+diff --git a/sage/misc/preparser.py b/sage/misc/preparser.py
+--- a/sage/misc/preparser.py
++++ b/sage/misc/preparser.py
+@@ -1882,7 +1882,7 @@
+ 
+     INPUT:
+ 
+-    - ``filename`` - a string
++    - ``filename`` - a string, or a list of strings, or a tuple of strings
+ 
+     EXAMPLES::
+ 
+@@ -1915,22 +1915,33 @@
+         []
+         sage: attach('test.py')
+         111
+-        sage: detach(fullpath)
++        sage: fullpath = os.path.join(t_dir, 'test2.py')
++        sage: open(fullpath, 'w').write("print 3")
++        sage: attach('test2.py')
++        3
++        sage: detach(attached_files())
+         sage: attached_files()
+         []
+         sage: sage.misc.reset.reset_attached(); reset_load_attach_path() # clean up
+         
+     """
+-    fpath = os.path.expanduser(filename)
+-    if not os.path.isabs(fpath):
+-        for path in load_attach_path():
+-            epath = os.path.expanduser(path)
+-            fpath = os.path.join(epath, filename)
+-            if fpath in attached:
+-                break
+-    
+-    if fpath in attached:
+-        attached.pop(fpath)
++    if type(filename) in [list, tuple]:
++        filelist = filename
+     else:
+-        raise ValueError("File '%r' seems not to be attached. To see a list \
+-            of attached files, call attached_files()" % filename)
++        filelist = [filename]
++
++    for filename in filelist:
++        fpath = os.path.expanduser(filename)
++        if not os.path.isabs(fpath):
++            for path in load_attach_path():
++                epath = os.path.expanduser(path)
++                fpath = os.path.join(epath, filename)
++                fpath = os.path.abspath(fpath)
++                if fpath in attached:
++                    break
++ 
++        if fpath in attached:
++            attached.pop(fpath)
++        else:
++            raise ValueError("File '%r' seems not to be attached. To see a list \
++                of attached files, call attached_files()" % filename)

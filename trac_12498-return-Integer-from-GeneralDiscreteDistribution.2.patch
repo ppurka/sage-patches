@@ -1,0 +1,28 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1332754279 -28800
+# Node ID d594c4f0c0d688965a9e52ede28772d86d9c0377
+# Parent  66e568c3d082ee389659bd257efa500e5a8e5955
+return Integer instead of int from GeneralDiscreteDistribution().get_random_element() and don't import sage.rings.real_double
+
+diff --git a/sage/gsl/probability_distribution.pyx b/sage/gsl/probability_distribution.pyx
+--- a/sage/gsl/probability_distribution.pyx
++++ b/sage/gsl/probability_distribution.pyx
+@@ -42,7 +42,7 @@
+ include '../ext/stdsage.pxi'
+ include 'gsl.pxi'
+ #cimport sage.rings.real_double
+-import sage.rings.real_double
++#import sage.rings.real_double
+ import random, sys
+ import integration
+ from sage.modules.free_module_element import vector
+@@ -1042,7 +1042,7 @@
+             [1, 0, 1, 1, 2, 0, 0, 2, 2, 0]
+         """
+ 
+-        return gsl_ran_discrete(self.r, self.dist)
++        return sage.rings.integer.Integer(gsl_ran_discrete(self.r, self.dist))
+ 
+     def reset_distribution(self):
+         """

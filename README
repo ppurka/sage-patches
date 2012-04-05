@@ -2,5 +2,8 @@ This repository contains my patches to Sage that are still pending. Need
 this for tracking the patches across multiple Sage installations, across
 multiple machines.
 
+This may also contain patches from other Sage tickets that I have currently
+applied and which are not yet merged in Sage.
+
 The master branch will always contain the pending patches. Other branches
 may contain extra or old patches.

@@ -1,0 +1,51 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1321087218 -28800
+# Node ID d2e7c9b395185fdef00ae23858fdce555ba9b852
+# Parent  416706698c36d9143c39cdb8bd7875a3535c874f
+make __iter__() and list() faster and fix inconsistent output between iter(code) and code.list()
+
+diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
+--- a/sage/coding/linear_code.py
++++ b/sage/coding/linear_code.py
+@@ -755,16 +755,22 @@
+             sage: [list(c) for c in C if hamming_weight(c) < 4]
+              [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1], [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0], [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
+         """
+-        n = self.length()
+-        k = self.dimension()
+         F = self.base_ring()
+-        Cs,p = self.standard_form()
+-        Gs = Cs.gen_mat()
+-        V = VectorSpace(F,k)
+-        MS = MatrixSpace(F,n,n)
+-        perm_mat = MS(p.matrix().rows())**(-1)
+-        for v in V:
+-            yield (v*Gs)*perm_mat
++        G = self.gen_mat()
++        def _iterate(G, F):
++            # if G is a matrix and v is a vector, then we do v*G and make
++            # sure that the multiplication v[i]*G[i] happens only once for
++            # a fixed value of v[i]
++            g = G[0]
++            if G.nrows() == 1:
++                for b in F:
++                    yield b*g
++            else:
++                for rest in _iterate(G[1:], F):
++                    for b in F:
++                        yield rest + b*g
++
++        return _iterate(G, F)
+             
+     def ambient_space(self):
+         return VectorSpace(self.base_ring(),self.__length)
+@@ -1696,7 +1702,7 @@
+             (1, 0, 1, 0, 1, 0, 1)
+             True
+         """
+-        return self.gen_mat().row_space().list()
++        return list(self.__iter__())
+ 
+     def _magma_init_(self, magma):
+         r"""

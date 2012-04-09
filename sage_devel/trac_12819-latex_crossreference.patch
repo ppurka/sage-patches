@@ -1,0 +1,44 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1333964148 -28800
+# Node ID 346c9acef2dd6a2a2b8a146cc498a724f5d8341a
+# Parent  a4773f9d8a261000b0cd77be95d8ab13833ec620
+call latex twice to fix crossreferences. Thanks to jason.
+
+diff --git a/sage/misc/latex.py b/sage/misc/latex.py
+--- a/sage/misc/latex.py
++++ b/sage/misc/latex.py
+@@ -749,7 +749,7 @@
+             print lt
+             if png:
+                 print convert
+-        e = subpcall(lt)
++        e = subpcall(lt) and subpcall(lt)
+         if png:
+             e = e and subpcall(convert)
+     else:  # latex
+@@ -758,7 +758,7 @@
+                 if debug:
+                     print lt
+                     print dvipng
+-                e = subpcall(lt) and subpcall(dvipng)
++                e = subpcall(lt) and subpcall(lt) and subpcall(dvipng)
+                 dvipng_error = not os.path.exists(os.path.join(base, filename + '.png'))
+                 # If there is no png file, then either the latex
+                 # process failed or dvipng failed.  Assume that dvipng
+@@ -789,13 +789,13 @@
+                             if debug:
+                                 print "error running dvips and ps2pdf; trying pdflatex instead..."
+                                 print pdflt
+-                            e = subpcall(pdflt)
++                            e = subpcall(pdflt) and subpcall(pdflt)
+             else:  # don't have dvipng, so must have convert.  run latex, dvips, convert.
+                 if debug:
+                     print lt
+                     print dvips
+                     print convert
+-                e = subpcall(lt) and subpcall(dvips) and subpcall(convert)
++                e = subpcall(lt) and subpcall(lt) and subpcall(dvips) and subpcall(convert)
+     if not e:
+         print "An error occurred."
+         try:

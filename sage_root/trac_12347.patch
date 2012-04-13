@@ -1,29 +1,39 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1327778642 -28800
-# Node ID 78943de9904b347b8e22c13366666817add591c2
-# Parent 0f8202bf191d60ad64d978a957933bfedd1b1a23
+# Node ID eac9de171f94c15a0fbd1bc549f7c821eeb8b272
+# Parent  773d375cee62e3344586a426bce85adc570f9408
 Instead of hard coding SAGE_ROOT, do a symbolic link
 
 diff --git a/Makefile b/Makefile
 --- a/Makefile
 +++ b/Makefile
-@@ -142,13 +142,12 @@
- 		echo "Set DESTDIR"; \
+@@ -139,16 +139,20 @@
+ install:
+ 	echo "Experimental use only!"
+ 	if [ "$(DESTDIR)" = "" ]; then \
+-		echo "Set DESTDIR"; \
++		echo >&2 "Set the environment variable DESTDIR to the install path."; \
  		exit 1; \
  	fi
 -	mkdir -p $(DESTDIR)
- 	mkdir -p $(DESTDIR)/sage
+-	mkdir -p $(DESTDIR)/sage
 -	mkdir -p $(DESTDIR)/bin/
 -	cp -rpv * $(DESTDIR)/sage/
 -	python local/bin/sage-hardcode_sage_root $(DESTDIR)/sage/sage "$(DESTDIR)"/sage
 -	cp $(DESTDIR)/sage/sage $(DESTDIR)/bin/
 -	cd $(DESTDIR)/bin/; ./sage -c
-+	mkdir -p $(DESTDIR)/bin
-+	cp -Rp * $(DESTDIR)/sage
-+	rm -f $(DESTDIR)/bin/sage
-+	ln -s ../sage/sage $(DESTDIR)/bin/sage
-+	$(DESTDIR)/bin/sage -c # Run sage-location
++	# Make sure we remove only an existing directory. If $(DESTDIR)/sage is
++	# a file instead of a directory then the mkdir statement later will fail
++	if [ -d "$(DESTDIR)"/sage ]; then \
++		rm -rf "$(DESTDIR)"/sage; \
++	fi
++	mkdir -p "$(DESTDIR)"/sage
++	mkdir -p "$(DESTDIR)"/bin
++	cp -Rp * "$(DESTDIR)"/sage
++	rm -f "$(DESTDIR)"/bin/sage
++	ln -s ../sage/sage "$(DESTDIR)"/bin/sage
++	"$(DESTDIR)"/bin/sage -c # Run sage-location
  
  
  .PHONY: all build build-serial start install \

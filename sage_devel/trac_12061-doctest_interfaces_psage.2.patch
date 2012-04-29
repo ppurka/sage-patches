@@ -1,14 +1,14 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1321779622 -28800
-# Node ID 23d544e043ee3ac0f16950610d038915d8402ad6
-# Parent  06a7ce03d63c2a8e33b45016249e31e16b881be3
+# Node ID 733a43ae3c59950d8d923038da8386f66a5f4c72
+# Parent  0fb53c2bebfcc4c802571273f8dd8aa62f6e2de2
 add doctests to psage and fix one case of infinite recursion
 
 diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
 --- a/sage/interfaces/psage.py
 +++ b/sage/interfaces/psage.py
-@@ -11,44 +11,42 @@
+@@ -11,47 +11,64 @@
  
  \note{BUG -- currently non-idle PSage subprocesses do not stop when
  \sage exits.  I would very much like to fix this but don't know how.}
@@ -66,11 +66,11 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
 +        [A running non-blocking (parallel) instance of Sage (number 0),
 +         A running non-blocking (parallel) instance of Sage (number 1),
 +         A running non-blocking (parallel) instance of Sage (number 2)]
-+        sage: w = [x('factor(2^%s-1)'%(4*(i+1))) for i,x in enumerate(v)]; w
++        sage: w = [x('factor(2**%s-1)'%(4*(i+1))) for i,x in enumerate(v)]; w
 +        [, , ]
-+        sage: time.sleep(10); w # Sleep for 10s before doing next command
++        sage: time.sleep(10); w # long time. Sleep for 10s.
 +        [3 * 5, 3 * 5 * 17, 3^2 * 5 * 7 * 13]
-+        sage: for x in v: x.__del__()
++        sage: for x in v: x.__del__() # Cleanup
 +        deleting
 +        kill -9 ...
 +        deleting
@@ -79,9 +79,32 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
 +        kill -9 ...
 +    """
      def __init__(self,  **kwds):
++        r"""
++        Note that we need to work around a bug by using str(w).
++        See :trac:`1991`.
++
++        EXAMPLES::
++
++            sage: v = PSage(); w = v(2+2); s = str(w); w
++            4
++            sage: v.__del__() # Cleanup
++            deleting
++            kill -9 ...
++
++        TESTS::
++
++            sage: v = PSage(server='localhost');
++            Traceback (most recent call last):
++            ...
++            NotImplementedError: PSage doesn't work on remote server yet.
++        """
          if kwds.has_key('server'):
-             raise NotImplementedError, "PSage doesn't work on remote server yet."
-@@ -64,16 +62,40 @@
+-            raise NotImplementedError, "PSage doesn't work on remote server yet."
++            raise NotImplementedError("PSage doesn't work on remote server yet.")
+         Sage.__init__(self, **kwds)
+         import sage.misc.misc
+         T = sage.misc.misc.tmp_dir('sage_smp')
+@@ -64,16 +81,85 @@
          self._number = number
          number += 1
  
@@ -89,6 +112,14 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
 +        self._curr_string="<<currently executing code>>"
 +
      def __repr__(self):
++        r"""
++        EXAMPLES::
++
++            sage: v = PSage(); v
++            A running non-blocking (parallel) instance of Sage (number ...)
++            sage: v.__del__() # Cleanup
++            deleting
++        """
          return 'A running non-blocking (parallel) instance of Sage (number %s)'%(self._number)
  
 +    def _openfile(self, filename, mode='r'):
@@ -98,10 +129,25 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
 +
 +        Input:
 +
-+            - `filename`: The file that is to be opened
-+            - `mode`: The mode in which to open the file (default: 'r')
-+ 
++            - ``filename`` -- The file that is to be opened
++
++            - ``mode`` -- The mode in which to open the file (default: 'r')
++
 +        Output: a handle to the opened file.
++
++        TESTS::
++
++            sage: v = PSage(); w = v('1+1');
++            sage: t = tmp_filename()
++            sage: v._openfile(t+'x')
++            Traceback (most recent call last):
++            ...
++            RuntimeError: The file ... does not exist
++            sage: v.__del__()
++            deleting
++            deleting
++            kill -9 ...
++
 +        """
 +        # Raising an IOError or allowing open() to generate the IOError
 +        # results in an infinite recursion of RuntimeError. See #12061
@@ -113,26 +159,59 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
 +        return open(filename, mode)
 +
      def _unlock(self):
++        r"""
++        Unlock this instance of PSage().
++
++        EXAMPLES::
++
++            sage: v = PSage()
++            sage: v._unlock(); v._locked
++            False
++            sage: v.__del__()
++            deleting
++        """
          self._locked = False
 -        open(self.__tmp, 'w').write('__unlocked__')
 +        self._openfile(self.__tmp, 'w').write('__unlocked__')
  
      def _lock(self):
++        r"""
++        Lock this instance of PSage().
++
++        EXAMPLES::
++
++            sage: v = PSage()
++            sage: v._lock(); v._locked
++            True
++            sage: v.__del__()
++            deleting
++        """
          self._locked = True
 -        open(self.__tmp, 'w').write('__locked__')
 +        self._openfile(self.__tmp, 'w').write('__locked__')
  
      def _start(self):
          Sage._start(self)
-@@ -81,15 +103,38 @@
+@@ -81,15 +167,44 @@
          self.expect().delaybeforesend = 0.01
  
      def is_locked(self):
 -        if open(self.__tmp).read() == '__locked__':
 +        r"""
 +        Test if a computation is running.
++
++        EXAMPLES::
++
++            sage: v = PSage()
++            sage: v('factor(2**500-1)')
++            <<currently executing code>>
++            sage: v.is_locked()
++            True
++            sage: v.__del__()
++            deleting
++            kill -9 ...
++
 +        """
-+        # This is doctested below along with __del__()
 +        if self._openfile(self.__tmp).read() == '__locked__':
              try:
                  self.expect().expect(self._prompt)
@@ -150,13 +229,8 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
 +        EXAMPLES::
 +
 +            sage: v = PSage()
-+            sage: v('factor(2^500-1)')
-+            <<currently executing code>>
-+            sage: v.is_locked()
-+            True
 +            sage: v.__del__()
 +            deleting
-+            kill -9 ...
 +            sage: v('print 1') # This should give error now
 +            Traceback (most recent call last):
 +            ...
@@ -165,7 +239,7 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
          print "deleting"
          for x in os.listdir(self.__tmp_dir):
              os.remove('%s/%s'%(self.__tmp_dir, x))
-@@ -102,11 +147,15 @@
+@@ -102,11 +217,29 @@
          
      def eval(self, x, strip=True, **kwds):
          """
@@ -174,17 +248,31 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
 +        Evaluate the string x.
 +
 +        Input:
-+            - `x` -- code
-+            - `strip` -- This parameter is ignored at present
++
++            - ``x`` -- code, provided as a string.
++
++            - ``strip`` -- This parameter is ignored at present
++
++        Output: Result of the evaluation. If the result is not yet
++            available, then the string '<<currently executing code>>' is
++            displayed.
++
++        EXAMPLES::
++
++            sage: v = PSage(); w = v.eval('1+1'); w
++            '2'
++            sage: v.__del__()
++            deleting
++            kill -9 ...
++
          """
-+        # This is indirectly doctested by the other functions
          if self.is_locked():
 -            return "<<currently executing code>>"
 +            return self._curr_string
          if self._locked:
              self._locked = False
              #self._expect.expect('__unlocked__')
-@@ -116,22 +165,35 @@
+@@ -116,34 +249,70 @@
          try:
              return Sage.eval(self, x, **kwds)
          except:
@@ -196,17 +284,23 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
          """
          Get the value of the variable var.
 +
++        Input:
++
++            - ``var`` -- A symbolic variable
++
++        Output: The value stored in ``var``.
++
 +        EXAMPLES::
 +
 +            sage: import time
-+            sage: a = var('a'); v = PSage()
-+            sage: v.set(a, 1)
-+            sage: while v.get(a) == '': time.sleep(0.5)
++            sage: a = var('a'); v = PSage(); v.set(a, 1)
++            sage: while v.get(a) == '': time.sleep(0.5) # long time
 +            sage: v.get(a)
 +            '1'
 +            sage: v.__del__()
 +            deleting
 +            kill -9 ...
++
          """
          try:
              return self.eval('print %s'%var)
@@ -216,13 +310,36 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
  
      def set(self, var, value):
          """
-         Set the variable var to the given value.
+-        Set the variable var to the given value.
++        Set the variable ``var`` to the given ``value``.
++
++        Input:
++
++            - ``var`` -- A symbolic variable
++
++            - ``value`` -- any variable or number
++
++        EXAMPLES::
++
++            sage: import time
++            sage: a = var('a'); v = PSage(); v.set(a, 1)
++            sage: while v.get(a) == '': time.sleep(0.5) # long time
++            sage: v.get(a)
++            '1'
++            sage: v.__del__()
++            deleting
++            kill -9 ...
          """
-+        # This is doctested along with the get() function.
-         cmd = '%s=%s'%(var,value)        
+-        cmd = '%s=%s'%(var,value)        
++        cmd = '%s=%s'%(var,value)
          self._send_nowait(cmd)
          time.sleep(0.02)
-@@ -143,7 +205,7 @@
+ 
+     def _send_nowait(self, x):
++        # How would one doctest this function? It gives no output.
+         if x.find('\n') != -1:
+             raise ValueError, "x must not have any newlines"
+         # Now we want the client Python process to execute two things.
          # The first is x and the second is c.  The effect of c
          # will be to unlock the lock.
          if self.is_locked():

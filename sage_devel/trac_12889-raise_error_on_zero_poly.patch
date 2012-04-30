@@ -1,0 +1,27 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1335768554 -28800
+# Node ID 321e606581ba5a2a1edbe930c6ce0eff5fb89489
+# Parent  346c9acef2dd6a2a2b8a146cc498a724f5d8341a
+raise ValueError on zero polynomial to make behavior consistent with GF(p)
+
+diff --git a/sage/rings/polynomial/polynomial_gf2x.pyx b/sage/rings/polynomial/polynomial_gf2x.pyx
+--- a/sage/rings/polynomial/polynomial_gf2x.pyx
++++ b/sage/rings/polynomial/polynomial_gf2x.pyx
+@@ -263,7 +263,16 @@
+             False
+             sage: (x^3 + x + 1).is_irreducible()
+             True
++
++        TESTS::
++
++            sage: R.<x> = GF(2)[]; (x-x).is_irreducible()
++            Traceback (most recent call last):
++            ...
++            ValueError: The polynomial must be nonzero
+         """
++        if self.is_zero():
++            raise ValueError("The polynomial must be nonzero")
+         if 0 == GF2X_IterIrredTest(self.x):
+             return False
+         else:

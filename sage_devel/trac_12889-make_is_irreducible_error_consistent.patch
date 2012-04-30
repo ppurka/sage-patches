@@ -1,0 +1,30 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1335776058 -28800
+# Node ID 23027ed76561ca9dfffcc1c07ecc07581d9341e9
+# Parent  733a43ae3c59950d8d923038da8386f66a5f4c72
+make is_irreducible on zero polynomial behavior consistent with other fields
+
+diff --git a/sage/rings/polynomial/polynomial_zmod_flint.pyx b/sage/rings/polynomial/polynomial_zmod_flint.pyx
+--- a/sage/rings/polynomial/polynomial_zmod_flint.pyx
++++ b/sage/rings/polynomial/polynomial_zmod_flint.pyx
+@@ -546,9 +546,7 @@
+         TESTS::
+ 
+             sage: R(0).is_irreducible()
+-            Traceback (most recent call last):
+-            ...
+-            ValueError: must be nonzero
++            False
+             sage: R(1).is_irreducible()
+             False
+             sage: R(2).is_irreducible()
+@@ -567,7 +565,7 @@
+             NotImplementedError: checking irreducibility of polynomials over rings with composite characteristic is not implemented
+         """
+         if self.is_zero():
+-            raise ValueError("must be nonzero")
++            return False
+         if self.is_unit():
+             return False
+ 

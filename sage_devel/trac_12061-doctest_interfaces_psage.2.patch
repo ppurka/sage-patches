@@ -81,7 +81,7 @@ diff --git a/sage/interfaces/psage.py b/sage/interfaces/psage.py
      def __init__(self,  **kwds):
 +        r"""
 +        Note that we need to work around a bug by using str(w).
-+        See :trac:`1991`.
++        See :trac:`#1991`.
 +
 +        EXAMPLES::
 +

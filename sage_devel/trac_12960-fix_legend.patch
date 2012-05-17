@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1337239403 -28800
-# Node ID fc71d0fa6b2cd3599c03a8c8d582697a4b1904e2
-# Parent  199c38b75b051010fb474d36e0e49541f069c0c1
+# Node ID 39d63912d0b6c177158934d4c49efcb35fe6a879
+# Parent  a41459d5bc8a9b45b2c15c7906a2199cba63dcd0
 set a basic set of legend options so that matplotlib() works
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
@@ -10,7 +10,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py
 @@ -273,6 +273,16 @@
          else:
-             self._show_legend = bool(show)
+             self.__show_legend = bool(show)
  
 +        # Add a basic set of legend options to self.__legend_opts so that
 +        # self.matplotlib() does not fail.

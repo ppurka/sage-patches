@@ -1,0 +1,639 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1337254915 -28800
+# Node ID 8af2f2319f493d7d2a0fed128a87378fc3c0f358
+# Parent  25c88c81ce45ed0cfe75226e1a5c2d15a446585c
+[mq]: add_loggraphics.patch
+
+diff --git a/sage/plot/all.py b/sage/plot/all.py
+--- a/sage/plot/all.py
++++ b/sage/plot/all.py
+@@ -15,6 +15,7 @@
+ from ellipse import ellipse
+ from contour_plot import contour_plot, implicit_plot, region_plot
+ from density_plot import density_plot
++from loggraphics  import LogGraphics
+ 
+ from sage.misc.lazy_import import lazy_import
+ lazy_import("sage.plot.complex_plot",["complex_plot"])
+diff --git a/sage/plot/loggraphics.py b/sage/plot/loggraphics.py
+new file mode 100644
+--- /dev/null
++++ b/sage/plot/loggraphics.py
+@@ -0,0 +1,616 @@
++from sage.plot.graphics import Graphics, ALLOWED_EXTENSIONS
++from sage.misc.decorators import suboptions
++import sage.misc.misc
++
++class LogGraphics(Graphics):
++    r"""
++    class LogGraphics is use to create a graphics object which is one of
++    the 'loglog', 'semilogx' or 'semilogy' plot type graphic. If both of
++    your axes are linear then use the Graphics() class or plot() function
++    of Sage directly.
++
++    Examples::
++
++    This declares that p is an instance of type 'loglog' plot::
++
++        sage: p = LogGraphics('loglog')
++        sage: pplot = p(range(10), map(lambda i:e^i, range(10)))
++        sage: q = LogGraphics('loglog')
++        sage: qplot = q(range(10), map(lambda i:5^i, range(10)))
++        sage: r = pplot + qplot # This works
++
++    This declares that q is an instance of type 'semilogx' plot::
++
++        sage: q = LogGraphics('semilogx')
++        sage: qplot = q(range(10), map(lambda i:5^i, range(10)))
++        sage: r = pplot + qplot # Error. Can not combine different scalings
++    """
++
++    def __add__(self, other):
++        if not isinstance(other, LogGraphics):
++            raise TypeError("You can not add a LogGraphics object to "
++            "a non LogGraphics object")
++        if self._scale != other._scale:
++            raise TypeError("Both the graphics must have the same scale "
++            "along both the x-axis and y-axis")
++        g = LogGraphics(self._scale)
++        g._data = self._data + other._data
++        g._kwds = self._kwds + other._kwds
++        g._show_legend = self._show_legend or other._show_legend
++        g._extra_kwds.update(self._extra_kwds)
++        g._extra_kwds.update(other._extra_kwds)
++        if self.aspect_ratio()=='automatic':
++            g.set_aspect_ratio(other.aspect_ratio())
++        elif other.aspect_ratio()=='automatic':
++            g.set_aspect_ratio(self.aspect_ratio())
++        else:
++            g.set_aspect_ratio(max(self.aspect_ratio(), other.aspect_ratio()))
++        return g
++
++    def __call__(self, data, **options):
++        self._data = [data]
++        self._kwds = [options]
++        return self
++
++    def __delitem__(self, i):
++        """
++        If G is of type Graphics, then del(G[i]) removes the ith distinct
++        graphic primitive making up that object.
++        
++        EXAMPLES::
++        
++            sage: G = circle((1,1),1) + circle((1,2),1) + circle((1,2),5); print G
++            Graphics object consisting of 3 graphics primitives
++            sage: len(G)
++            3
++            sage: del(G[2])
++            sage: print G
++            Graphics object consisting of 2 graphics primitives
++            sage: len(G)
++            2
++        """
++        # We don't use Graphics()._objects
++        del self._data[int(i)]
++        del self._kwds[int(i)]
++
++    def __getitem__(self, i):
++        """
++        Returns the ith graphics primitive object:
++        
++        EXAMPLE::
++        
++            sage: G = circle((1,1),2) + circle((2,2),5); print G
++            Graphics object consisting of 2 graphics primitives
++            sage: G[1]
++            Circle defined by (2.0,2.0) with r=5.0
++        """
++        # We can combine only logarithmic graphics, so this doesn't make
++        # sense any more.
++        raise NotImplementedError
++
++    def __init__(self, scale):
++        if scale not in ('loglog', 'semilogx', 'semilogy'):
++            raise AttributeError("The scale must be one of 'loglog', "
++            "'semilogx', or 'semilogy'")
++        self._data  = []
++        self._kwds  = {}
++        self._scale = scale
++        # We don't use Graphics()._objects
++        Graphics.__init__(self)
++
++    def __len__(self):
++        """
++        If G is of type Graphics, then len(G) gives the number of distinct
++        graphics primitives making up that object.
++        
++        EXAMPLES::
++        
++            sage: G = circle((1,1),1) + circle((1,2),1) + circle((1,2),5); print G
++            Graphics object consisting of 3 graphics primitives
++            sage: len(G)
++            3
++        """
++        return len(self._data)
++
++    def __setitem__(self, i, x):
++        """
++        You can replace a GraphicPrimitive (point, line, circle, etc...) in
++        a Graphics object G with any other GraphicPrimitive
++        
++        EXAMPLES::
++        
++            sage: G = circle((1,1),1) + circle((1,2),1) + circle((1,2),5); print G
++            Graphics object consisting of 3 graphics primitives
++        
++        ::
++        
++            sage: p = polygon([[1,3],[2,-2],[1,1],[1,3]]); print p
++            Graphics object consisting of 1 graphics primitive
++        
++        ::
++        
++            sage: G[1] = p[0]
++            sage: G    # show the plot
++        """
++        # Doesn't make sense since we don't deal with primitives.
++        raise NotImplementedError
++
++    def __str__(self):
++        r"""
++        Return string representation of this plot.
++        
++        EXAMPLES::
++        
++            sage: S = circle((0,0), 2); S.__str__()
++            'Graphics object consisting of 1 graphics primitive'
++            sage: print S
++            Graphics object consisting of 1 graphics primitive
++        
++        .. warning::
++
++           ``__str__`` is not called when printing lists of graphics
++           objects, which can be confusing, since they will all pop
++           up. One workaround is to call ``show_default``:
++        
++        For example, below when we do ``print v`` two plots are
++        displayed::
++        
++            sage: v = [circle((0,0), 2), circle((2,3), 1)]
++            sage: print v
++            [, ]
++        
++        However, if we call ``show_default`` then we see the
++        text representations of the graphics::
++        
++            sage: show_default(False)
++            sage: print v
++            [Graphics object consisting of 1 graphics primitive, Graphics object consisting of 1 graphics primitive]
++            sage: v
++            [Graphics object consisting of 1 graphics primitive,
++             Graphics object consisting of 1 graphics primitive]
++        
++        ::
++        
++            sage: show_default(True)
++        """
++        s = 'LogGraphics object of type {0} with {1} plots'.format(
++                self._scale, len(self))
++        if len(self) == 1:
++            s = s[:-1]
++        return s
++
++    def add_primitive(self, primitive):
++        # We don't use primitives
++        raise NotImplementedError
++
++    def get_minmax_data(self):
++        """
++        Return a dictionary whose keys give the xmin, xmax, ymin, and ymax
++        data for this graphic.
++        
++        .. warning::
++
++           The returned dictionary is mutable, but changing it does
++           not change the xmin/xmax/ymin/ymax data.  The minmax data is a function
++           of the primitives which make up this Graphics object.  To change the
++           range of the axes, call methods :meth:`xmin`, :meth:`xmax`,
++           :meth:`ymin`, :meth:`ymax`, or :meth:`set_axes_range`.
++
++        EXAMPLES::
++
++            sage: g = line([(-1,1), (3,2)])
++            sage: list(sorted(g.get_minmax_data().items()))
++            [('xmax', 3.0), ('xmin', -1.0), ('ymax', 2.0), ('ymin', 1.0)]
++
++        Note that changing ymax doesn't change the output of get_minmax_data::
++
++            sage: g.ymax(10)
++            sage: list(sorted(g.get_minmax_data().items()))
++            [('xmax', 3.0), ('xmin', -1.0), ('ymax', 2.0), ('ymin', 1.0)]
++        """
++        
++        xmin_list = []
++        ymin_list = []
++        for data in self._data:
++            xdata, ydata = zip(*data)
++            xmin_list += [min(xdata)]
++            ymin_list += [min(ydata)]
++            xmax_list += [max(xdata)]
++            ymax_list += [max(ydata)]
++
++        xmin = min(xmin_list)
++        ymin = min(ymin_list)
++        xmax = min(xmax_list)
++        ymax = min(ymax_list)
++        return {'xmin':xmin, 'xmax':xmax, 'ymin':ymin, 'ymax':ymax}
++        
++    # All the keywords except the first are alphabetically arranged.
++    def matplotlib(self, filename=None,
++                   aspect_ratio=None, axes=None, axes_labels=None, axes_pad=0.02,
++                   figsize=None, figure=None, fontsize=None, frame=False,
++                   gridlines=None, gridlinesstyle=None, hgridlinesstyle=None,
++                   legend_options={}, show_legend=None, sub=None,
++                   tick_formatter=None, ticks=None, ticks_integer=None,
++                   xmin=None, xmax=None, ymin=None, ymax=None,
++                   vgridlinesstyle=None, verify=True):
++        r"""
++        This function calls the actual matplotlib commands. It uses pyplot.
++        """
++
++        import matplotlib.pyplot as Pyl
++        Pyl.hold(False)
++        for i in xrange(len(self._kwds)):
++            xdata, ydata = zip(*self._data[i])
++            o = self._kwds[i].copy()
++
++            #-------------------------------------------------------------#
++            #                     ACTUAL PLOTTING                         #
++            #-------------------------------------------------------------#
++            if self._scale == 'loglog':
++                Pyl.loglog(xdata, ydata, **o)
++            elif self._scale == 'semilogx':
++                Pyl.semilogx(xdata, ydata, **o)
++            elif self._scale == 'semilogy':
++                Pyl.semilogy(xdata, ydata, **o)
++            Pyl.hold(True)
++
++        #-----------------------------------------------------------------#
++        #                              LEGEND                             #
++        #-----------------------------------------------------------------#
++        if show_legend is None:
++            show_legend = self._show_legend
++
++        if show_legend:
++            from matplotlib.font_manager import FontProperties
++            lopts = dict()
++            lopts.update(legend_options)
++            lopts.update(self._legend_opts)
++            prop = FontProperties(
++                    family = lopts.pop('font_family'),
++                    size   = lopts.pop('font_size'),
++                    style  = lopts.pop('font_style'),
++                    variant= lopts.pop('font_variant'),
++                    weight = lopts.pop('font_weight')
++                   )
++            color = lopts.pop('back_color')
++            leg = Pyl.legend(prop=prop, **lopts)
++            if leg is None:
++                sage.misc.misc.warn("legend requested but no items are labeled")
++            else:
++                # color
++                lframe = leg.get_frame()
++                lframe.set_facecolor(color)
++
++        #-----------------------------------------------------------------#
++        #                           GRID LINES                            #
++        #-----------------------------------------------------------------#
++        if gridlines is not None:
++            if isinstance(gridlines, (list, tuple)):
++                vgridlines,hgridlines=gridlines
++            else:
++                hgridlines=gridlines
++                vgridlines=gridlines
++
++            if gridlinesstyle is None:
++                # Set up the default grid style
++                gridlinesstyle=dict(color='black',linestyle=':',linewidth=0.5)
++
++            vgridstyle=gridlinesstyle.copy()
++            if vgridlinesstyle is not None:
++                vgridstyle.update(vgridlinesstyle)
++
++            hgridstyle=gridlinesstyle.copy()
++            if hgridlinesstyle is not None:
++                hgridstyle.update(hgridlinesstyle)
++
++            if hgridlines=='minor':
++                hgridstyle['which']='both'
++            if vgridlines=='minor':
++                vgridstyle['which']='both'
++                
++            if hasattr(hgridlines, '__iter__'):
++                hlines=iter(hgridlines)
++                hgridstyle.pop("minor",None)
++                for hline in hlines:
++                    if isinstance(hline, (list, tuple)):
++                        hl, style=hline
++                        st=hgridstyle.copy()
++                        st.update(style)
++                    else:
++                        hl=hline
++                        st=hgridstyle
++                    Pyl.axhline(hl,**st)
++            else:
++                if hgridlines not in (None, False):
++                    Pyl.grid(True, axis='y', **hgridstyle)
++
++            if hasattr(vgridlines, '__iter__'):
++                vlines=iter(vgridlines)
++                vgridstyle.pop("minor",None)
++                for vline in vlines:
++                    if isinstance(vline, (list, tuple)):
++                        vl, style=vline
++                        st=vgridstyle.copy()
++                        st.update(style)
++                    else:
++                        vl=vline
++                        st=vgridstyle
++                    Pyl.axvline(vl,**st)
++            else:
++                if vgridlines not in (None, False):
++                    Pyl.grid(True, axis='x', **vgridstyle)
++        return Pyl
++        
++        # Ticks and axes
++        if not isinstance(ticks, (list, tuple)):
++            ticks = (ticks, None)
++
++        from sage.symbolic.ring import SR
++        if not isinstance(tick_formatter, (list, tuple)):  # make sure both formatters typeset or both don't
++            if tick_formatter == "latex" or tick_formatter in SR:
++                tick_formatter = (tick_formatter, "latex")
++            else:
++                tick_formatter = (tick_formatter, None)
++
++        
++        self.set_axes_range(xmin, xmax, ymin, ymax)
++        d = self.get_axes_range()
++        xmin = d['xmin']
++        xmax = d['xmax']
++        ymin = d['ymin']
++        ymax = d['ymax']
++        
++        x_pad = (xmax-xmin)*float(axes_pad)
++        y_pad = (ymax-ymin)*float(axes_pad)
++
++        xmin -= x_pad
++        xmax += x_pad
++        ymin -= y_pad
++        ymax += y_pad
++
++        if axes is None:
++            axes = self._show_axes
++                
++        self.fontsize(fontsize)
++        self.axes_labels(l=axes_labels)
++
++            
++        
++
++
++
++
++
++        import matplotlib.pyplot as Pyl
++        return Pyl
++
++        ###################### THE OLD MATPLOTLIB #######################
++        axes_labels = []        # x and y axis labels
++        gopts       = dict()    # grid options
++        has_legend  = False     # Whether there is a legend
++        lopts       = dict()    # legend options
++        title       = ''        # Title of the plot
++
++        import matplotlib.pyplot as Pyl
++        Pyl.hold(False)
++
++        # Fix the xmin and xmax of the data
++        self.set_axes_range(xmin, xmax, ymin, ymax)
++        d = self.get_axes_range()
++        xmin = d['xmin']
++        xmax = d['xmax']
++        ymin = d['ymin']
++        ymax = d['ymax']
++        Pyl.axis([xmin, xmax, ymin, ymax])
++
++        for i in xrange(len(self._xdata)):
++            o = self._options[i].copy()
++            o.update(**options)
++            if 'plotjoined' in o:
++                if o['plotjoined']:
++                    if 'linestyle' not in o:
++                        o.update(linestyle='-')
++                else:
++                    if 'marker' not in o:
++                        o.update(marker='o')
++                    o.update(linestyle='')
++                del o['plotjoined']
++            
++            for _o in o.copy():
++                if _o == 'axes_labels':
++                    axes_labels = o.pop(_o)
++                elif _o == 'color':
++                    from sage.plot.colors import rgbcolor, Color, to_mpl_color
++                    o.update(color=to_mpl_color(o[_o]))
++                elif _o == 'fancybox':
++                    lopts.update(fancybox=o[_o])
++                    del o[_o]
++                elif _o == 'fontsize':
++                    has_legend = True
++                    from matplotlib.font_manager import FontProperties
++                    f = FontProperties(size=o[_o])
++                    lopts.update(prop=f)
++                    del o[_o]
++                elif _o == 'gridlines':
++                    gopts.update(b=o[_o])
++                    gopts.update(which='both')
++                    del o[_o]
++                elif _o == 'legend_label' or _o == 'legend':
++                    has_legend = True
++                    o.update(label=o[_o])
++                    del o[_o]
++                elif _o == 'linewidth':
++                    o.update(linewidth=float(o[_o]))
++                elif _o == 'loc':
++                    lopts[_o] = o.pop(_o)
++                elif _o == 'title':
++                    title = o.pop(_o)
++                elif _o == 'markersize':
++                    o.update(markersize=float(o[_o]))
++                elif _o == 'rgbcolor':
++                    from sage.plot.colors import rgbcolor, Color, to_mpl_color
++                    o.update(color=to_mpl_color(o[_o]))
++                    del o[_o]
++                elif _o == 'size':
++                    o.update(markersize=float(o[_o]))
++                    del o[_o]
++                elif _o == 'thickness':
++                    o.update(linewidth=float(o[_o]))
++                    del o[_o]
++                    
++            if self._plottype == 'loglog':
++                Pyl.loglog(self._xdata[i], self._ydata[i], **o)
++            elif self._plottype == 'semilogx':
++                Pyl.semilogx(self._xdata[i], self._ydata[i], **o)
++            elif self._plottype == 'semilogy':
++                Pyl.semilogy(self._xdata[i], self._ydata[i], **o)
++
++            # Now set the hold
++            Pyl.hold(True)
++            
++        if axes_labels != []:
++            Pyl.xlabel(axes_labels[0])
++            Pyl.ylabel(axes_labels[1])
++        if len(gopts) > 0:
++            Pyl.grid(**gopts)
++        if has_legend or len(lopts) > 0:
++            Pyl.legend(**lopts)
++        if title != '':
++            Pyl.title(title)
++
++        return Pyl
++
++    def plot3d(self, z=0, **kwds):
++        raise NotImplementedError
++
++    @suboptions('legend',
++                back_color=(0.9, 0.9, 0.9), borderpad=0.6,
++                borderaxespad=None,
++                columnspacing=None,
++                fancybox=False, font_family='sans-serif',
++                font_size='medium', font_style='normal',
++                font_variant='normal', font_weight='medium',
++                handlelength=0.05, handletextpad=0.5,
++                labelspacing=0.02, loc='best',
++                markerscale=0.6, ncol=1, numpoints=2,
++                shadow=False, title=None)
++    def save(self, filename=None, **kwds):
++        r"""
++        Save the graphics to an image file.
++       
++        INPUT:
++        
++        - ``filename`` -- a string (default: autogenerated), the filename and
++          the image format given by the extension, which can be one of the
++          following:
++         
++            * ``.eps``,
++           
++            * ``.pdf``,
++           
++            * ``.png``,
++           
++            * ``.ps``,
++           
++            * ``.sobj`` (for a Sage object you can load later),
++            
++            * ``.svg``,
++           
++            * empty extension will be treated as ``.sobj``.
++           
++        All other keyword arguments will be passed to the plotter.
++        
++        OUTPUT:
++        
++        - none.
++
++        EXAMPLES::
++        
++            sage: c = circle((1,1), 1, color='red')
++            sage: filename = os.path.join(SAGE_TMP, 'test.png')
++            sage: c.save(filename, xmin=-1, xmax=3, ymin=-1, ymax=3)
++
++        To make a figure bigger or smaller, use ``figsize``::
++
++            sage: c.save(filename, figsize=5, xmin=-1, xmax=3, ymin=-1, ymax=3)
++
++        By default, the figure grows to include all of the graphics and text,
++        so the final image may not be exactly the figure size you specified.
++        If you want a figure to be exactly a certain size, specify the keyword
++        ``fig_tight=False``::
++
++            sage: c.save(filename, figsize=[8,4], fig_tight=False,
++            ...       xmin=-1, xmax=3, ymin=-1, ymax=3)
++        
++        You can also pass extra options to the plot command instead of this
++        method, e.g. ::
++        
++            sage: plot(x^2 - 5, (x, 0, 5), ymin=0).save(
++            ...       sage.misc.misc.tmp_filename() + '.png')
++            
++        will save the same plot as the one shown by this command::
++        
++            sage: plot(x^2 - 5, (x, 0, 5), ymin=0)
++            
++        (This test verifies that :trac:`8632` is fixed.)
++
++        TESTS:
++
++        Legend labels should save correctly::
++
++            sage: P = plot(x,(x,0,1),legend_label='$xyz$')
++            sage: P.set_legend_options(back_color=(1,0,0))
++            sage: P.set_legend_options(loc=7)
++            sage: filename=os.path.join(SAGE_TMP, 'test.png')
++            sage: P.save(filename)
++
++        This plot should save with the frame shown, showing :trac:`7524`
++        is fixed (same issue as :trac:`7981` and :trac:`8632`)::
++
++            sage: var('x,y')
++            (x, y)
++            sage: a = plot_vector_field((x,-y),(x,-1,1),(y,-1,1))
++            sage: filename=os.path.join(SAGE_TMP, 'test2.png')
++            sage: a.save(filename)
++        """
++        options = dict()
++        options.update(self.SHOW_OPTIONS)
++        options.update(self._extra_kwds)
++        options.update(kwds)
++        # Note that we don't update options with self._kwds because 
++        dpi = options.pop('dpi')
++        transparent = options.pop('transparent')
++        fig_tight = options.pop('fig_tight')
++        
++        if filename is None:
++            filename = options.pop('filename')
++        if filename is None:
++            filename = sage.misc.misc.graphics_filename()
++        import os
++        ext = os.path.splitext(filename)[1].lower()
++        
++        if ext not in ALLOWED_EXTENSIONS:
++            raise ValueError("allowed file extensions for images are '"
++                             + "', '".join(ALLOWED_EXTENSIONS) + "'!")
++        elif ext in ['', '.sobj']:
++            from sage.structure.sage_object import SageObject
++            SageObject.save(self, filename)
++        else:
++            figure = self.matplotlib(**options)
++            # You can output in PNG, PS, EPS, PDF, or SVG format, depending on the file extension.
++            # matplotlib looks at the file extension to see what the renderer should be.
++            # this messes up the aspect ratio!
++            #figure.canvas.mpl_connect('draw_event', pad_for_tick_labels)
++            
++            # tight_layout adjusts the *subplot* parameters so ticks aren't cut off, etc.
++            figure.tight_layout()
++
++            if fig_tight is True:
++                figure.savefig(filename, dpi=dpi, bbox_inches='tight',
++                    bbox_extra_artists=self._bbox_extra_artists,
++                    transparent=transparent)
++            else:
++                figure.savefig(filename, dpi=dpi,
++                           transparent=transparent)
++
++

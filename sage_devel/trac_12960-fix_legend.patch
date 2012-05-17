@@ -25,28 +25,3 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
      def set_legend_options(self, **kwds):
          r"""
          Set various legend options.
-@@ -1600,17 +1610,15 @@
-             ymax += 1
-         return {'xmin':xmin, 'xmax':xmax, 'ymin':ymin, 'ymax':ymax}
-         
-+    # All the keywords except the first are alphabetically arranged.
-     def matplotlib(self, filename=None,
-+                   aspect_ratio=None, axes=None, axes_labels=None, axes_pad=0.02,
-+                   figsize=None, figure=None, fontsize=None, frame=False,
-+                   gridlines=None, gridlinesstyle=None, hgridlinesstyle=None,
-+                   legend_options={}, show_legend=None, sub=None,
-+                   ticks=None, ticks_integer=None, tick_formatter=None,
-                    xmin=None, xmax=None, ymin=None, ymax=None,
--                   figsize=None, figure=None, sub=None,
--                   axes=None, axes_labels=None, fontsize=None,
--                   frame=False, verify=True,
--                   aspect_ratio = None,
--                   gridlines=None, gridlinesstyle=None,
--                   vgridlinesstyle=None, hgridlinesstyle=None,
--                   show_legend=None, legend_options={},
--                   axes_pad=0.02, ticks_integer=None,
--                   tick_formatter=None, ticks=None):
-+                   vgridlinesstyle=None, verify=True):
-         r"""
-         Return a matplotlib figure object representing the graphic
- 

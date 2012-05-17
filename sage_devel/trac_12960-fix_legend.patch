@@ -12,15 +12,15 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          else:
              self._show_legend = bool(show)
  
-+        # Add a basic set of legend options to self._legend_opts so that
++        # Add a basic set of legend options to self.__legend_opts so that
 +        # self.matplotlib() does not fail.
-+        if self._show_legend:
++        if self.__show_legend:
 +            d = dict(back_color=(0.9, 0.9, 0.9), font_family='sans-serif',
 +                    font_size='medium', font_style='normal',
 +                    font_weight='medium', font_variant='normal')
 +            for key in d.iterkeys():
-+                if key not in self._legend_opts:
-+                    self._legend_opts[key] = d[key]
++                if key not in self.__legend_opts:
++                    self.__legend_opts[key] = d[key]
 +
      def set_legend_options(self, **kwds):
          r"""

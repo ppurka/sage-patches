@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1337254915 -28800
-# Node ID 8af2f2319f493d7d2a0fed128a87378fc3c0f358
-# Parent  25c88c81ce45ed0cfe75226e1a5c2d15a446585c
+# Date 1337335164 -28800
+# Node ID 56caa95293c3393d787342acbb8ff5ea44f1a343
+# Parent  ba908cedc963480ba135b90bcc2419cd8aac354d
 [mq]: add_loggraphics.patch
 
 diff --git a/sage/plot/all.py b/sage/plot/all.py
@@ -20,7 +20,7 @@ diff --git a/sage/plot/loggraphics.py b/sage/plot/loggraphics.py
 new file mode 100644
 --- /dev/null
 +++ b/sage/plot/loggraphics.py
-@@ -0,0 +1,616 @@
+@@ -0,0 +1,699 @@
 +from sage.plot.graphics import Graphics, ALLOWED_EXTENSIONS
 +from sage.misc.decorators import suboptions
 +import sage.misc.misc
@@ -234,6 +234,8 @@ new file mode 100644
 +        
 +        xmin_list = []
 +        ymin_list = []
++        xmax_list = []
++        ymax_list = []
 +        for data in self._data:
 +            xdata, ydata = zip(*data)
 +            xmin_list += [min(xdata)]
@@ -262,13 +264,21 @@ new file mode 100644
 +
 +        import matplotlib.pyplot as Pyl
 +        Pyl.hold(False)
++        #-----------------------------------------------------------------#
++        #                          FIGURE SIZE                            #
++        #-----------------------------------------------------------------#
++        if figsize is not None and not isinstance(figsize, (list, tuple)):
++            default_width, default_height = Pyl.rcParams['figure.figsize']
++            figsize=(figsize, default_height*figsize/default_width)
++            tmp = Pyl.figure(figsize=figsize)
++
++        #-----------------------------------------------------------------#
++        #                         ACTUAL PLOTTING                         #
++        #-----------------------------------------------------------------#
 +        for i in xrange(len(self._kwds)):
 +            xdata, ydata = zip(*self._data[i])
 +            o = self._kwds[i].copy()
 +
-+            #-------------------------------------------------------------#
-+            #                     ACTUAL PLOTTING                         #
-+            #-------------------------------------------------------------#
 +            if self._scale == 'loglog':
 +                Pyl.loglog(xdata, ydata, **o)
 +            elif self._scale == 'semilogx':
@@ -277,6 +287,41 @@ new file mode 100644
 +                Pyl.semilogy(xdata, ydata, **o)
 +            Pyl.hold(True)
 +
++        ax = Pyl.axes()
++        #-----------------------------------------------------------------#
++        #                          ASPECT RATIO                           #
++        #-----------------------------------------------------------------#
++        # setting aspect ratio only works for loglog
++        if self._scale == 'loglog':
++            if aspect_ratio is None:
++                aspect_ratio = self.aspect_ratio()
++            if aspect_ratio == 'automatic':
++                ax.set_aspect('auto', adjustable='box')
++            else:
++                ax.set_aspect(aspect_ratio, adjustable='box')
++
++        #-----------------------------------------------------------------#
++        #                         X AND Y AXIS LIMITS                     #
++        #-----------------------------------------------------------------#
++        
++        self.set_axes_range(xmin, xmax, ymin, ymax)
++        d = self.get_axes_range()
++        xmin = d['xmin']
++        xmax = d['xmax']
++        ymin = d['ymin']
++        ymax = d['ymax']
++        
++        x_pad = (xmax-xmin)*float(axes_pad)
++        y_pad = (ymax-ymin)*float(axes_pad)
++
++        xmin -= x_pad
++        xmax += x_pad
++        ymin -= y_pad
++        ymax += y_pad
++
++        ax.set_xlim([xmin, xmax])
++        ax.set_ylim([ymin, ymax])
++        
 +        #-----------------------------------------------------------------#
 +        #                              LEGEND                             #
 +        #-----------------------------------------------------------------#
@@ -289,13 +334,13 @@ new file mode 100644
 +            lopts.update(legend_options)
 +            lopts.update(self._legend_opts)
 +            prop = FontProperties(
-+                    family = lopts.pop('font_family'),
-+                    size   = lopts.pop('font_size'),
-+                    style  = lopts.pop('font_style'),
-+                    variant= lopts.pop('font_variant'),
-+                    weight = lopts.pop('font_weight')
++                    family  = lopts.pop('font_family', 'sans-serif'),
++                    size    = lopts.pop('font_size', 'medium'),
++                    style   = lopts.pop('font_style', 'normal'),
++                    weight  = lopts.pop('font_weight', 'medium'),
++                    variant = lopts.pop('font_variant', 'normal')
 +                   )
-+            color = lopts.pop('back_color')
++            color = lopts.pop('back_color', (0.9, 0.9, 0.9))
 +            leg = Pyl.legend(prop=prop, **lopts)
 +            if leg is None:
 +                sage.misc.misc.warn("legend requested but no items are labeled")
@@ -362,43 +407,81 @@ new file mode 100644
 +            else:
 +                if vgridlines not in (None, False):
 +                    Pyl.grid(True, axis='x', **vgridstyle)
-+        return Pyl
 +        
-+        # Ticks and axes
-+        if not isinstance(ticks, (list, tuple)):
-+            ticks = (ticks, None)
-+
-+        from sage.symbolic.ring import SR
-+        if not isinstance(tick_formatter, (list, tuple)):  # make sure both formatters typeset or both don't
-+            if tick_formatter == "latex" or tick_formatter in SR:
-+                tick_formatter = (tick_formatter, "latex")
-+            else:
-+                tick_formatter = (tick_formatter, None)
-+
-+        
-+        self.set_axes_range(xmin, xmax, ymin, ymax)
-+        d = self.get_axes_range()
-+        xmin = d['xmin']
-+        xmax = d['xmax']
-+        ymin = d['ymin']
-+        ymax = d['ymax']
-+        
-+        x_pad = (xmax-xmin)*float(axes_pad)
-+        y_pad = (ymax-ymin)*float(axes_pad)
-+
-+        xmin -= x_pad
-+        xmax += x_pad
-+        ymin -= y_pad
-+        ymax += y_pad
-+
++        #-----------------------------------------------------------------#
++        #                              AXES                               #
++        #-----------------------------------------------------------------#
 +        if axes is None:
 +            axes = self._show_axes
-+                
++ 
 +        self.fontsize(fontsize)
 +        self.axes_labels(l=axes_labels)
++        if axes:
++            ax.set_frame_on(False)
++            #----------------------- AXES COLORS ---------------------#
++            Pyl.axhline(color=self._axes_color,
++                        linewidth=self._axes_width,
++                        xmin=xmin, xmax=xmax, y=ymin)
++            Pyl.axvline(color=self._axes_color,
++                        linewidth=self._axes_width,
++                        ymin=ymin, ymax=ymax, x=xmin)
++            ax.set_axis_on()
 +
-+            
-+        
++        #-----------------------------------------------------------------#
++        #                           AXES LABELS                           #
++        #-----------------------------------------------------------------#
++        if self._axes_labels is not None:
++            l = dict(color = self._axes_label_color,
++                     size  = self._fontsize)
++            Pyl.xlabel(self._axes_labels[0], **l)
++            Pyl.ylabel(self._axes_labels[1], **l)
++
++        #    #-------------------- Which axes to draw? ----------------#
++        #    ymiddle=False
++        #    xmiddle=False
++        #    if xmin>0:
++        #        ax.spines['right'].set_visible(False)
++        #        ax.spines['left'].set_position(('outward',10))
++        #        ax.yaxis.set_ticks_position('left')
++        #        ax.yaxis.set_label_position('left')
++        #        yaxis='left'
++        #    elif xmax<0:
++        #        ax.spines['left'].set_visible(False)
++        #        ax.spines['right'].set_position(('outward',10))
++        #        ax.yaxis.set_ticks_position('right')
++        #        ax.yaxis.set_label_position('right')
++        #        yaxis='right'
++        #    else:
++        #        ax.spines['left'].set_position('zero')
++        #        ax.yaxis.set_ticks_position('left')
++        #        ax.yaxis.set_label_position('left')
++        #        ax.spines['right'].set_visible(False)
++        #        ymiddle=True
++        #        yaxis='left'
++
++        #    if ymin>0:
++        #        ax.spines['top'].set_visible(False)
++        #        ax.spines['bottom'].set_position(('outward',10))
++        #        ax.xaxis.set_ticks_position('bottom')
++        #        ax.xaxis.set_label_position('bottom')
++        #        xaxis='bottom'
++        #    elif ymax<0:
++        #        ax.spines['bottom'].set_visible(False)
++        #        ax.spines['top'].set_position(('outward',10))
++        #        ax.xaxis.set_ticks_position('top')
++        #        ax.xaxis.set_label_position('top')
++        #        xaxis='top'
++        #    else:
++        #        ax.spines['bottom'].set_position('zero')
++        #        ax.xaxis.set_ticks_position('bottom')
++        #        ax.xaxis.set_label_position('bottom')
++        #        ax.spines['top'].set_visible(False)
++        #        xmiddle=True
++        #        xaxis='bottom'
++
++        return Pyl
++
++
 +
 +
 +

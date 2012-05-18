@@ -1,27 +1,28 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1337239403 -28800
-# Node ID 39d63912d0b6c177158934d4c49efcb35fe6a879
-# Parent  a41459d5bc8a9b45b2c15c7906a2199cba63dcd0
+# Date 1337321429 -28800
+# Node ID 4002b718eac4bfe482e549549257b3bacc2ce5eb
+# Parent  aa148c3c0d7b06fd049b9e845eebeda2421d32bf
 set a basic set of legend options so that matplotlib() works
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 --- a/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py
-@@ -273,6 +273,16 @@
-         else:
-             self.__show_legend = bool(show)
- 
-+        # Add a basic set of legend options to self.__legend_opts so that
-+        # self.matplotlib() does not fail.
-+        if self.__show_legend:
-+            d = dict(back_color=(0.9, 0.9, 0.9), font_family='sans-serif',
-+                    font_size='medium', font_style='normal',
-+                    font_weight='medium', font_variant='normal')
-+            for key in d.iterkeys():
-+                if key not in self.__legend_opts:
-+                    self.__legend_opts[key] = d[key]
-+
-     def set_legend_options(self, **kwds):
-         r"""
-         Set various legend options.
+@@ -1713,9 +1713,14 @@
+             lopts = dict()
+             lopts.update(legend_options)
+             lopts.update(self.__legend_opts)
+-            prop = FontProperties(family=lopts.pop('font_family'), weight=lopts.pop('font_weight'), \
+-                    size=lopts.pop('font_size'), style=lopts.pop('font_style'), variant=lopts.pop('font_variant'))
+-            color = lopts.pop('back_color')
++            prop = FontProperties(
++                    family  = lopts.pop('font_family', 'sans-serif'),
++                    size    = lopts.pop('font_size', 'medium'),
++                    style   = lopts.pop('font_style', 'normal'),
++                    weight  = lopts.pop('font_weight', 'medium'),
++                    variant = lopts.pop('font_variant', 'normal')
++                   )
++            color = lopts.pop('back_color', (0.9, 0.9, 0.9))
+             leg = subplot.legend(prop=prop, **lopts)
+             if leg is None:
+                 sage.misc.misc.warn("legend requested but no items are labeled")

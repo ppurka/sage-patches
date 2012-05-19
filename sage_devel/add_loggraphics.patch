@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1337335164 -28800
-# Node ID 56caa95293c3393d787342acbb8ff5ea44f1a343
-# Parent  ba908cedc963480ba135b90bcc2419cd8aac354d
+# Node ID 8e6eb04623407a3394927f61ac761cdd838cb983
+# Parent  daf24233b2b1cfad16d6b099c19854d5482a09a0
 [mq]: add_loggraphics.patch
 
 diff --git a/sage/plot/all.py b/sage/plot/all.py
@@ -20,7 +20,7 @@ diff --git a/sage/plot/loggraphics.py b/sage/plot/loggraphics.py
 new file mode 100644
 --- /dev/null
 +++ b/sage/plot/loggraphics.py
-@@ -0,0 +1,699 @@
+@@ -0,0 +1,684 @@
 +from sage.plot.graphics import Graphics, ALLOWED_EXTENSIONS
 +from sage.misc.decorators import suboptions
 +import sage.misc.misc
@@ -409,6 +409,11 @@ new file mode 100644
 +                    Pyl.grid(True, axis='x', **vgridstyle)
 +        
 +        #-----------------------------------------------------------------#
++        #                           TICK PARAMETERS                       #
++        #-----------------------------------------------------------------#
++        ax.tick_params(labelcolor=self._tick_label_color)
++        
++        #-----------------------------------------------------------------#
 +        #                              AXES                               #
 +        #-----------------------------------------------------------------#
 +        if axes is None:
@@ -416,70 +421,50 @@ new file mode 100644
 + 
 +        self.fontsize(fontsize)
 +        self.axes_labels(l=axes_labels)
-+        if axes:
-+            ax.set_frame_on(False)
-+            #----------------------- AXES COLORS ---------------------#
-+            Pyl.axhline(color=self._axes_color,
-+                        linewidth=self._axes_width,
-+                        xmin=xmin, xmax=xmax, y=ymin)
-+            Pyl.axvline(color=self._axes_color,
-+                        linewidth=self._axes_width,
-+                        ymin=ymin, ymax=ymax, x=xmin)
-+            ax.set_axis_on()
++        #------------------------- AXES PARAMETERS -----------------------#
++        for s in ax.spines:
++            ax.spines[s].set_color(self._axes_color)
++            ax.spines[s].set_linewidth(self._axes_width)
 +
-+        #-----------------------------------------------------------------#
-+        #                           AXES LABELS                           #
-+        #-----------------------------------------------------------------#
++        #--------------------------- AXES LABELS -------------------------#
 +        if self._axes_labels is not None:
 +            l = dict(color = self._axes_label_color,
 +                     size  = self._fontsize)
-+            Pyl.xlabel(self._axes_labels[0], **l)
-+            Pyl.ylabel(self._axes_labels[1], **l)
++            ax.set_xlabel(self._axes_labels[0], **l)
++            ax.set_ylabel(self._axes_labels[1], **l)
 +
-+        #    #-------------------- Which axes to draw? ----------------#
-+        #    ymiddle=False
-+        #    xmiddle=False
-+        #    if xmin>0:
-+        #        ax.spines['right'].set_visible(False)
-+        #        ax.spines['left'].set_position(('outward',10))
-+        #        ax.yaxis.set_ticks_position('left')
-+        #        ax.yaxis.set_label_position('left')
-+        #        yaxis='left'
-+        #    elif xmax<0:
-+        #        ax.spines['left'].set_visible(False)
-+        #        ax.spines['right'].set_position(('outward',10))
-+        #        ax.yaxis.set_ticks_position('right')
-+        #        ax.yaxis.set_label_position('right')
-+        #        yaxis='right'
-+        #    else:
-+        #        ax.spines['left'].set_position('zero')
-+        #        ax.yaxis.set_ticks_position('left')
-+        #        ax.yaxis.set_label_position('left')
-+        #        ax.spines['right'].set_visible(False)
-+        #        ymiddle=True
-+        #        yaxis='left'
++        if axes:
++            #-------------------- Which axes to draw? --------------------#
++            if xmin > 0:
++                ax.spines['right'].set_visible(False)
++                ax.yaxis.label_position = 'left'
++                ax.yaxis.tick_left()
++            elif xmax < 0:
++                ax.spines['left'].set_visible(False)
++                ax.yaxis.label_position = 'right'
++                ax.yaxis.tick_right()
++            else:   # xmin < 0 < xmax
++                ax.spines['left'].set_position('center')
++                ax.spines['right'].set_visible(False)
++                ax.yaxis.label_position = 'left'
++                ax.yaxis.tick_left()
 +
-+        #    if ymin>0:
-+        #        ax.spines['top'].set_visible(False)
-+        #        ax.spines['bottom'].set_position(('outward',10))
-+        #        ax.xaxis.set_ticks_position('bottom')
-+        #        ax.xaxis.set_label_position('bottom')
-+        #        xaxis='bottom'
-+        #    elif ymax<0:
-+        #        ax.spines['bottom'].set_visible(False)
-+        #        ax.spines['top'].set_position(('outward',10))
-+        #        ax.xaxis.set_ticks_position('top')
-+        #        ax.xaxis.set_label_position('top')
-+        #        xaxis='top'
-+        #    else:
-+        #        ax.spines['bottom'].set_position('zero')
-+        #        ax.xaxis.set_ticks_position('bottom')
-+        #        ax.xaxis.set_label_position('bottom')
-+        #        ax.spines['top'].set_visible(False)
-+        #        xmiddle=True
-+        #        xaxis='bottom'
-+
++            if ymin > 0:
++                ax.spines['top'].set_visible(False)
++                ax.xaxis.label_position = 'bottom'
++                ax.xaxis.tick_bottom()
++            elif xmax < 0:
++                ax.spines['bottom'].set_visible(False)
++                ax.xaxis.label_position = 'top'
++                ax.xaxis.tick_top()
++            else:   # ymin < 0 < ymax
++                ax.spines['bottom'].set_position('center')
++                ax.spines['top'].set_visible(False)
++                ax.xaxis.label_position = 'bottom'
++                ax.xaxis.tick_bottom()
 +        return Pyl
++
++
 +
 +
 +

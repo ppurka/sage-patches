@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1337510735 -28800
-# Node ID 5ef9ac1c05f5c2578b2131dde1e6ab7471e5d809
+# Date 1337533475 -28800
+# Node ID fa6385e572d44e1ba135efd4920ffff8afe33e4e
 # Parent  d980750cc2b4ed5f3605383ffc8b7effd7d4d70f
 add log scale to Graphics class
 
@@ -447,10 +447,10 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +          ``basex`` sets the base of the logarithm along the horizontal
 +          axis and ``basey`` sets the base along the vertical axis.
 +
-+        - ``scale`` -- (default `linear`) string. The scale of the axes.
++        - ``scale`` -- (default: `linear`) string. The scale of the axes.
 +          Possible values are `linear`, `loglog`, `semilogx`, `semilogy`.
 +
-+          The INPUT can be also be given as single argument that is a list
++          The scale can be also be given as single argument that is a list
 +          or tuple ``(scale, base)`` or ``(scale, basex, basey)``.
 +
 +          The `loglog` scale sets both the horizontal and vertical axes to

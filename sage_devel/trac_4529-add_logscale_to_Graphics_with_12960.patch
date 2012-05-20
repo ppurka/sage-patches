@@ -1,14 +1,35 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1337439587 -28800
-# Node ID e2f682d7055529cd26a252f243229e7838e78a84
+# Date 1337510735 -28800
+# Node ID 234acf3352dff02d91c7168810d2654c4b30d6a6
 # Parent  1a6d1a3eb0e41027bcf8617c6529da8336ff0669
 add log scale to Graphics class
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 --- a/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py
-@@ -150,6 +150,8 @@
+@@ -9,6 +9,7 @@
+ AUTHORS:
+ 
+ - Jeroen Demeyer (2012-04-19): split off this file from plot.py (:trac:`12857`)
++- Punarbasu Purkayastha (2012-05-20): Add logarithmic scale (:trac:`45291)
+ 
+ """
+ 
+@@ -117,6 +118,12 @@
+         ...        G+=line(l,color=hue(c + p*(x/h)))
+         sage: G.show(figsize=[5,5])
+ 
++    We can change the scale of the axes in the graphics before displaying::
++
++        sage: G = plot(exp, 1, 10)
++        sage: G.set_scale('semilogy')
++        sage: G.show()
++
+     TESTS:
+ 
+     From :trac:`4604`, ensure Graphics can handle 3d objects::
+@@ -150,6 +157,8 @@
          self._axes_color = (0, 0, 0)
          self._axes_label_color = (0, 0, 0)
          self._axes_width = 0.8
@@ -17,7 +38,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          self._bbox_extra_artists = []
          self._extra_kwds = {}
          self._fontsize = 10
-@@ -158,6 +160,8 @@
+@@ -158,6 +167,8 @@
          self._show_axes = True
          self._show_legend = False
          self._tick_label_color = (0, 0, 0)
@@ -26,7 +47,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
  
      def set_aspect_ratio(self, ratio):
          """
-@@ -389,6 +393,252 @@
+@@ -389,6 +400,296 @@
          else:
              self._legend_opts.update(kwds)
  
@@ -111,8 +132,8 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +            ('linear', 10)
 +            sage: p.set_scale('loglog'); p.get_yscale()
 +            ('log', 10)
-+            sage: p.set_scale(('semilogx', 2)); p.get_yscale()
-+            ('linear', 2)
++            sage: p.set_scale(('semilogy', 2)); p.get_yscale()
++            ('log', 2)
 +        """
 +        return (self._yscale, self._basey)
 +
@@ -122,8 +143,8 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +
 +        INPUT:
 +
-+        - ``scale`` -- the scale. Possible values are `linear`, `loglog`,
-+          `semilogx`, `semilogy`.
++        - ``scale`` -- string. The scale of the axes. Possible values are
++          `linear`, `loglog`, `semilogx`, `semilogy`.
 +
 +        - ``base`` -- (Default: 10) the base of the logarithm if
 +          a logarithmic scale is set. This must be greater than 1. The base
@@ -152,18 +173,22 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +            sage: p.set_scale(('semilogx', 2)); p.get_scale()
 +            ('semilogx', 2, 10)
 +            sage: p.set_scale(('semilogy', 2, 3)); p.get_scale()
-+            ('semilogy', 2, 3)
++            ('semilogy', 10, 3)
 +
 +        TESTS::
 +
 +            sage: p = Graphics()
 +            sage: p.set_scale('log')
-+
++            Traceback (most recent call last):
++            ...
++            ValueError: The scale must be one of 'linear', 'loglog', 'semilogx' or 'semilogy' -- got log
 +            sage: p.set_scale(('loglog', 1))
-+
++            Traceback (most recent call last):
++            ...
++            ValueError: The base of the logarithm must be greater than 1
 +        """
 +        if isinstance(scale, (list, tuple)):
-+            if len(scale) != 2 or len(scale) != 3:
++            if len(scale) != 2 and len(scale) != 3:
 +                raise ValueError("If the input is a tuple, it must be of "
 +                    "the form (scale, base) or (scale, basex, basey)")
 +            if len(scale) == 2:
@@ -182,7 +207,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +
 +        if basex <= 1 or basey <= 1:
 +            raise ValueError("The base of the logarithm must be greater "
-+                    "than 1")
++                             "than 1")
 +
 +        if scale == 'linear':
 +            self.set_xscale('linear')
@@ -203,12 +228,15 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +
 +        INPUT:
 +
-+        - ``scale`` -- the scale. Possible values are `linear`, `log`.
++        - ``scale`` -- string. The scale of the horizontal axes. Possible
++          values are `linear`, `log`.
++
 +        - ``base`` -- (Default: 10) the base of the logarithm if
 +          a logarithmic scale is set. This must be greater than 1.
 +
 +        The INPUT can be also be given as single argument that is a list or
-+        tuple ``(scale, base)``.
++        tuple ``(scale, base)``. If the scale is given as `linear`, then
++        the ``base`` is set to `10` irrespective of the input given.
 +
 +        IMPORTANT: This parameter sets the scale of all the graphics
 +        primitives in this graphics object. If you try to add two graphics
@@ -219,22 +247,39 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +            sage: p = Graphics()
 +            sage: p.set_xscale('log'); p.get_xscale()
 +            ('log', 10)
-+            sage: p.set_xscale(['log'], 2); p.get_xscale()
++            sage: p.set_xscale(('log', 2)); p.get_xscale()
 +            ('log', 2)
++            sage: p.set_xscale(['linear', 1]); p.get_xscale()
++            ('linear', 10)
++
++        TESTS::
++
++            sage: p = Graphics()
++            sage: p.set_xscale('loglog')
++            Traceback (most recent call last):
++            ...
++            ValueError: The scale must be one of 'linear', 'log'
++            sage: p.set_xscale(('log', 2, 3))
++            Traceback (most recent call last):
++            ...
++            ValueError: If the input is a tuple, it must be of the form (scale, base)
 +        """
 +        if isinstance(scale, (list, tuple)):
 +            if len(scale) != 2:
 +                raise ValueError("If the input is a tuple, it must be of "
-+                    "the form (scale, base)")
++                                 "the form (scale, base)")
 +            base  = scale[1]
 +            scale = scale[0]
 +
 +        if scale not in ('linear', 'log'):
 +            raise ValueError("The scale must be one of 'linear', 'log'")
-+        if base <= 1:
-+            raise ValueError("The base of the logarithm must be greater "
-+                    "than 1")
-+        self._basex  = base
++        if scale == 'log':
++            if base <= 1:
++                raise ValueError("The base of the logarithm must be greater "
++                                 "than 1")
++            self._basex = base
++        else:
++            self._basex = 10
 +        self._xscale = scale
 +
 +    def set_yscale(self, scale, base=10):
@@ -243,12 +288,15 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +
 +        INPUT:
 +
-+        - ``scale`` -- the scale. Possible values are `linear`, `log`.
++        - ``scale`` -- string. The scale of the vertical axes. Possible
++          values are `linear`, `log`.
++
 +        - ``base`` -- (Default: 10) the base of the logarithm if
 +          a logarithmic scale is set. This must be greater than 1.
 +
 +        The INPUT can be also be given as single argument that is a list or
-+        tuple ``(scale, base)``.
++        tuple ``(scale, base)``. If the scale is given as `linear`, then
++        the ``base`` is set to `10` irrespective of the input given.
 +
 +        IMPORTANT: This parameter sets the scale of all the graphics
 +        primitives in this graphics object. If you try to add two graphics
@@ -259,44 +307,112 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +            sage: p = Graphics()
 +            sage: p.set_yscale('log'); p.get_yscale()
 +            ('log', 10)
-+            sage: p.set_yscale(['log'], 2); p.get_yscale()
++            sage: p.set_yscale(['log', 2]); p.get_yscale()
 +            ('log', 2)
++            sage: p.set_yscale('linear', 1); p.get_yscale()
++            ('linear', 10)
++
++        TESTS::
++
++            sage: p = Graphics()
++            sage: p.set_yscale('loglog')
++            Traceback (most recent call last):
++            ...
++            ValueError: The scale must be one of 'linear', 'log'
++            sage: p.set_yscale(('log', 2, 3))
++            Traceback (most recent call last):
++            ...
++            ValueError: If the input is a tuple, it must be of the form (scale, base)
 +        """
 +        if isinstance(scale, (list, tuple)):
 +            if len(scale) != 2:
 +                raise ValueError("If the input is a tuple, it must be of "
-+                    "the form (scale, base)")
++                                 "the form (scale, base)")
 +            base  = scale[1]
 +            scale = scale[0]
 +
 +        if scale not in ('linear', 'log'):
 +            raise ValueError("The scale must be one of 'linear', 'log'")
-+        if base <= 1:
-+            raise ValueError("The base of the logarithm must be greater "
-+                    "than 1")
-+        self._basey  = base
++        if scale == 'log':
++            if base <= 1:
++                raise ValueError("The base of the logarithm must be greater "
++                                 "than 1")
++            self._basey = base
++        else:
++            self._basey = 10
 +        self._yscale = scale
  
      def get_axes_range(self):
          """
-@@ -986,11 +1236,15 @@
+@@ -839,18 +1140,29 @@
+             [Graphics object consisting of 1 graphics primitive,
+              Graphics object consisting of 1 graphics primitive]
+ 
++        If the graphics are in logarithmic scale, then the scale is also
++        mentioned::
++
++            sage: p = plot(x); p.set_xscale('log')
++            sage: q = plot(x**2); q.set_xscale('log')
++            sage: (p+q).__str__()
++            'Graphics object consisting of 2 graphics primitives in semilogx scale'
++
+         ::
+ 
+             sage: show_default(True)
+         """
+-        pr, i = '', 0
+-        for x in self:
+-            pr += '\n\t%s -- %s'%(i, x)
+-            i += 1
+         s = "Graphics object consisting of %s graphics primitives"%(len(self))
+         if len(self) == 1:
+             s = s[:-1]
+-        return s
++        t = ""
++        if self._xscale == 'log' and self._yscale == 'log':
++            t = " in loglog scale"
++        elif self._xscale == 'log':
++            t = " in semilogx scale"
++        elif self._yscale == 'log':
++            t = " in semilogy scale"
++        return s+t
+ 
+     def __getitem__(self, i):
+         """
+@@ -983,14 +1295,31 @@
+             sage: g2.set_aspect_ratio(3)
+             sage: (g1+g2).aspect_ratio()
+             3.0
++
++        Graphics of different scales can not be added::
++
++            sage: p = plot(exp, 1, 10); p.set_scale('loglog')
++            sage: q = plot(x, 1, 10)
++            sage: p + q
++            Traceback (most recent call last):
++            ...
++            TypeError: Both the Graphics objects must have the same scale and the same base for the logarithms
          """
          if isinstance(other, int) and other == 0:
              return self
-+        if self._xscale != other._xscale or self._yscale != other._yscale \
-+            or self._basex != other._basex or self._basey != other._basey:
-+            raise TypeError("Both the Graphics objects must have the same "
-+                "scale and the same base for the logarithms")
++
          if not isinstance(other, Graphics):
              from sage.plot.plot3d.base import Graphics3d
              if isinstance(other, Graphics3d):
                  return self.plot3d() + other
 -            raise TypeError, "other (=%s) must be a Graphics objects"%other
 +            raise TypeError("other (={0}) must be a Graphics object".format(other))
++        
++        # If we have come here, then other is a Graphics object, which
++        # means it has got the _[xy]scale and _base[xy] attributes.
++        if self._xscale != other._xscale or self._yscale != other._yscale \
++            or self._basex != other._basex or self._basey != other._basey:
++            raise TypeError("Both the Graphics objects must have the same "
++                            "scale and the same base for the logarithms")
          g = Graphics()
          g._objects = self._objects + other._objects
          g._show_legend = self._show_legend or other._show_legend
-@@ -1001,7 +1255,9 @@
+@@ -1001,7 +1330,9 @@
          elif other.aspect_ratio()=='automatic':
              g.set_aspect_ratio(self.aspect_ratio())
          else:
@@ -307,7 +423,85 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          return g
  
      def add_primitive(self, primitive):
-@@ -1617,13 +1873,17 @@
+@@ -1107,11 +1438,11 @@
+     # this dictionary to contain the default value for that parameter.
+ 
+     SHOW_OPTIONS = dict(aspect_ratio=None, axes=None, axes_labels=None,
+-                        axes_pad=.02, dpi=DEFAULT_DPI,
++                        axes_pad=.02, base=None, dpi=DEFAULT_DPI,
+                         fig_tight=True, figsize=None, filename=None,
+                         fontsize=None, frame=False,
+                         gridlines=None, gridlinesstyle=None,
+-                        hgridlinesstyle=None, legend_options={},
++                        hgridlinesstyle=None, legend_options={}, scale=None,
+                         show_legend=None, tick_formatter=None, ticks=None,
+                         ticks_integer=False, transparent=False,
+                         xmin=None, xmax=None, ymin=None, ymax=None,
+@@ -1269,6 +1600,24 @@
+ 
+         - ``legend_*`` - all the options valid for :meth:`set_legend_options` prefixed with ``legend_``
+ 
++        - ``base`` - (default: 10) the base of the logarithm if
++          a logarithmic scale is set. This must be greater than 1. The base
++          can be also given as a list or tuple ``(basex, basey)``.
++          ``basex`` sets the base of the logarithm along the horizontal
++          axis and ``basey`` sets the base along the vertical axis.
++
++        - ``scale`` -- (default `linear`) string. The scale of the axes.
++          Possible values are `linear`, `loglog`, `semilogx`, `semilogy`.
++
++          The INPUT can be also be given as single argument that is a list
++          or tuple ``(scale, base)`` or ``(scale, basex, basey)``.
++
++          The `loglog` scale sets both the horizontal and vertical axes to
++          logarithmic scale. The `semilogx` scale sets the horizontal axis
++          to logarithmic scale. The `semilogy` scale sets the vertical axis
++          to logarithmic scale. The `linear` scale is the default value
++          when :class:`Graphics` is initialized.
++
+         EXAMPLES::
+ 
+             sage: c = circle((1,1), 1, color='red')
+@@ -1295,6 +1644,12 @@
+ 
+             sage: plot(sin(x), (x, -4, 4), transparent=True)
+ 
++        We can change the scale of the axes in the graphics before
++        displaying::
++
++            sage: G = plot(exp, 1, 10)
++            sage: G.show(scale=('semilogy', 2))
++
+         Add grid lines at the major ticks of the axes.
+ 
+         ::
+@@ -1606,24 +1961,41 @@
+         return {'xmin':xmin, 'xmax':xmax, 'ymin':ymin, 'ymax':ymax}
+ 
+     def _matplotlib_tick_formatter(self, subplot, locator_options={},
+-            tick_formatter=None, ticks=None, xmax=None, xmin=None,
+-            ymax=None, ymin=None):
++            tick_formatter=(None, None), ticks=(None, None),
++            xmax=None, xmin=None, ymax=None, ymin=None):
+         r"""
+         Take a matplotlib subplot instance representing the graphic and set
+         the ticks formatting. This function is only for internal use.
+ 
+         INPUT:
+         - ``subplot`` -- the subplot instance.
++
++        EXAMPLES::
++
++            sage: from matplotlib.figure import Figure
++            sage: p = plot(x); d = p.get_minmax_data()
++            sage: subplot = Figure().add_subplot(111)
++            sage: p._objects[0]._render_on_subplot(subplot)
++            sage: p._matplotlib_tick_formatter(subplot, **d)
++            (<matplotlib.axes.AxesSubplot object at ...>,
++            <matplotlib.ticker.MaxNLocator instance at ...>,
++            <matplotlib.ticker.MaxNLocator instance at ...>,
++            <matplotlib.ticker.OldScalarFormatter instance at ...>,
++            <matplotlib.ticker.OldScalarFormatter instance at ...>)
          """
          # This function is created to refactor some code that is repeated
          # in the matplotlib function
@@ -328,7 +522,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          elif isinstance(x_locator,Locator):
              pass
          elif x_locator == []:
-@@ -1641,7 +1901,10 @@
+@@ -1641,7 +2013,10 @@
  
          #---------------------- Location of y-ticks ---------------------#
          if y_locator is None:
@@ -340,7 +534,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          elif isinstance(y_locator,Locator):
              pass
          elif y_locator == []:
-@@ -1663,7 +1926,10 @@
+@@ -1663,7 +2038,10 @@
          from sage.symbolic.ring import SR
          #---------------------- Formatting x-ticks ----------------------#
          if x_formatter is None:
@@ -352,7 +546,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          elif x_formatter in SR:
              from misc import _multiple_of_constant
              x_const = x_formatter
-@@ -1673,7 +1939,10 @@
+@@ -1673,7 +2051,10 @@
              x_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
          #---------------------- Formatting y-ticks ----------------------#
          if y_formatter is None:
@@ -364,35 +558,74 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          elif y_formatter in SR:
              from misc import _multiple_of_constant
              y_const = y_formatter
-@@ -1790,6 +2059,13 @@
+@@ -1689,14 +2070,14 @@
+ 
+         return (subplot, x_locator, y_locator, x_formatter, y_formatter)
+ 
+-    def matplotlib(self, filename=None,
+-                   aspect_ratio=None, axes=None, axes_labels=None, axes_pad=0.02,
++    def matplotlib(self, filename=None, aspect_ratio=None, axes=None,
++                   axes_labels=None, axes_pad=0.02, base=None,
+                    figsize=None, figure=None, fontsize=None, frame=False,
+-                   gridlines=None, gridlinesstyle=None, hgridlinesstyle=None,
+-                   legend_options={}, show_legend=None, sub=None,
+-                   tick_formatter=None, ticks=None, ticks_integer=None,
+-                   xmin=None, xmax=None, ymin=None, ymax=None,
+-                   vgridlinesstyle=None, verify=True):
++                   gridlines=None, gridlinesstyle=None,
++                   hgridlinesstyle=None, legend_options={}, scale=None,
++                   show_legend=None, sub=None, tick_formatter=None,
++                   ticks=None, ticks_integer=None, xmin=None, xmax=None,
++                   ymin=None, ymax=None, vgridlinesstyle=None, verify=True):
+         r"""
+         Return a matplotlib figure object representing the graphic
+ 
+@@ -1790,7 +2171,20 @@
              if hasattr(g, '_bbox_extra_artists'):
                  self._bbox_extra_artists.extend(g._bbox_extra_artists)
  
+-        #add the legend if requested
 +        #--------------------------- Set the scale -----------------------#
-+        if self._xscale == 'log':
++        if scale is not None:
++            if base is not None:
++                self.set_scale(scale, base)
++            else:
++                self.set_scale(scale)
++        xscale = self._xscale
++        yscale = self._yscale
++        if xscale == 'log':
 +            figure.get_axes()[0].set_xscale('log', basex=self._basex)
-+        if self._yscale == 'log':
++        if yscale == 'log':
 +            figure.get_axes()[0].set_yscale('log', basey=self._basey)
 +
-+
-         #add the legend if requested
++        #-------------------------- Set the legend -----------------------#
          if show_legend is None:
              show_legend = self._show_legend
-@@ -1842,7 +2118,7 @@
+ 
+@@ -1817,7 +2211,7 @@
+ 
+ 
+         subplot.set_xlim([xmin, xmax])
+-        subplot.set_ylim([ymin,ymax])
++        subplot.set_ylim([ymin, ymax])
+ 
+         locator_options=dict(nbins=9,steps=[1,2,5,10],integer=ticks_integer)
+ 
+@@ -1842,7 +2236,7 @@
                              xmax=xmax, xmin=xmin, ymax=ymax, ymin=ymin)
  
              subplot.set_frame_on(True)
 -            if axes:
-+            if axes and self._xscale == 'linear' and self._yscale == 'linear':
++            if axes and xscale == 'linear' and yscale == 'linear':
                  if ymin<=0 and ymax>=0:
                      subplot.axhline(color=self._axes_color,
                                      linewidth=self._axes_width)
-@@ -1855,18 +2131,21 @@
+@@ -1855,18 +2249,21 @@
              xmiddle=False
              if xmin>0:
                  subplot.spines['right'].set_visible(False)
 -                subplot.spines['left'].set_position(('outward',10))
-+                if self._xscale != 'log' and self._yscale != 'log':
++                if xscale == 'linear' and yscale == 'linear':
 +                    subplot.spines['left'].set_position(('outward',10))
                  subplot.yaxis.set_ticks_position('left')
                  subplot.yaxis.set_label_position('left')
@@ -400,24 +633,24 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
              elif xmax<0:
                  subplot.spines['left'].set_visible(False)
 -                subplot.spines['right'].set_position(('outward',10))
-+                if self._xscale != 'log' and self._yscale != 'log':
++                if xscale == 'linear' and yscale == 'linear':
 +                    subplot.spines['right'].set_position(('outward',10))
                  subplot.yaxis.set_ticks_position('right')
                  subplot.yaxis.set_label_position('right')
                  yaxis='right'
              else:
 -                subplot.spines['left'].set_position('zero')
-+                if self._xscale != 'log' and self._yscale != 'log':
++                if xscale == 'linear' and yscale == 'linear':
 +                    subplot.spines['left'].set_position('zero')
                  subplot.yaxis.set_ticks_position('left')
                  subplot.yaxis.set_label_position('left')
                  subplot.spines['right'].set_visible(False)
-@@ -1875,18 +2154,21 @@
+@@ -1875,18 +2272,21 @@
  
              if ymin>0:
                  subplot.spines['top'].set_visible(False)
 -                subplot.spines['bottom'].set_position(('outward',10))
-+                if self._xscale != 'log' and self._yscale != 'log':
++                if xscale == 'linear' and yscale == 'linear':
 +                    subplot.spines['bottom'].set_position(('outward',10))
                  subplot.xaxis.set_ticks_position('bottom')
                  subplot.xaxis.set_label_position('bottom')
@@ -425,31 +658,31 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
              elif ymax<0:
                  subplot.spines['bottom'].set_visible(False)
 -                subplot.spines['top'].set_position(('outward',10))
-+                if self._xscale != 'log' and self._yscale != 'log':
++                if xscale == 'linear' and yscale == 'linear':
 +                    subplot.spines['top'].set_position(('outward',10))
                  subplot.xaxis.set_ticks_position('top')
                  subplot.xaxis.set_label_position('top')
                  xaxis='top'
              else:
 -                subplot.spines['bottom'].set_position('zero')
-+                if self._xscale != 'log' and self._yscale != 'log':
++                if xscale == 'linear' and yscale == 'linear':
 +                    subplot.spines['bottom'].set_position('zero')
                  subplot.xaxis.set_ticks_position('bottom')
                  subplot.xaxis.set_label_position('bottom')
                  subplot.spines['top'].set_visible(False)
-@@ -1921,8 +2203,9 @@
+@@ -1921,8 +2321,9 @@
              #                     t.set_markersize(4)
  
              # Make the zero tick labels disappear if the axes cross
 -            # inside the picture
 -            if xmiddle and ymiddle:
 +            # inside the picture, but only if log scale is not used
-+            if xmiddle and ymiddle and self._xscale == 'linear' and \
-+                self._yscale == 'linear':
++            if xmiddle and ymiddle and xscale == 'linear' and \
++                yscale == 'linear':
                  from sage.plot.plot import SelectiveFormatter
                  subplot.yaxis.set_major_formatter(SelectiveFormatter(
                      subplot.yaxis.get_major_formatter(), skip_values=[0]))
-@@ -1940,30 +2223,24 @@
+@@ -1940,30 +2341,24 @@
  
          if frame or axes:
              # Make minor tickmarks, unless we specify fixed ticks or no ticks
@@ -479,12 +712,12 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 -                subplot.yaxis.get_minorticklines()
 -            for tickline in ticklines:
 -                tickline.set_color(self._axes_color)
-+            if self._xscale == 'linear':
++            if xscale == 'linear':
 +                if isinstance(x_locator, (NullLocator, FixedLocator)):
 +                    subplot.xaxis.set_minor_locator(NullLocator())
 +                else:
 +                    subplot.xaxis.set_minor_locator(AutoMinorLocator())
-+            if self._yscale == 'linear':
++            if yscale == 'linear':
 +                if isinstance(y_locator, (NullLocator, FixedLocator)):
 +                    subplot.yaxis.set_minor_locator(NullLocator())
 +                else:

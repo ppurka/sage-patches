@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1337510735 -28800
-# Node ID fcecba17deeeb1a8639e54b3234501b205474ca7
+# Node ID 5ef9ac1c05f5c2578b2131dde1e6ab7471e5d809
 # Parent  d980750cc2b4ed5f3605383ffc8b7effd7d4d70f
 add log scale to Graphics class
 
@@ -12,7 +12,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
  AUTHORS:
  
  - Jeroen Demeyer (2012-04-19): split off this file from plot.py (:trac:`12857`)
-+- Punarbasu Purkayastha (2012-05-20): Add logarithmic scale (:trac:`45291`)
++- Punarbasu Purkayastha (2012-05-20): Add logarithmic scale (:trac:`4529`)
  
  """
  

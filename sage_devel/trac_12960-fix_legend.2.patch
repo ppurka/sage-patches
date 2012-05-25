@@ -1,14 +1,44 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1337321429 -28800
-# Node ID 4002b718eac4bfe482e549549257b3bacc2ce5eb
+# Date 1337922287 -28800
+# Node ID e7f560aac58d54393390cbcae92992c36c2ccc44
 # Parent  aa148c3c0d7b06fd049b9e845eebeda2421d32bf
 set a basic set of legend options so that matplotlib() works
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 --- a/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py
-@@ -1713,9 +1713,14 @@
+@@ -1637,13 +1637,22 @@
+ 
+         We verify that :trac:`10291` is fixed::
+ 
+-          sage: p = plot(sin(x), (x, -2*pi, 2*pi))
+-          sage: figure = p.matplotlib()
+-          sage: axes_range = p.get_axes_range()
+-          sage: figure = p.matplotlib()
+-          sage: axes_range2 = p.get_axes_range()
+-          sage: axes_range == axes_range2
+-          True
++            sage: p = plot(sin(x), (x, -2*pi, 2*pi))
++            sage: figure = p.matplotlib()
++            sage: axes_range = p.get_axes_range()
++            sage: figure = p.matplotlib()
++            sage: axes_range2 = p.get_axes_range()
++            sage: axes_range == axes_range2
++            True
++
++        We verify that legend options are properly handled (:trac:`12960`).
++        First, we test with no options, and next with an incomplete set of
++        options.::
++
++            sage: p = plot(x, legend_label='aha')
++            sage: p.legend(True)
++            sage: pm = p.matplotlib()
++            sage: pm = p.matplotlib(legend_options={'font_size':'small'})
+         """
+         if not isinstance(ticks, (list, tuple)):
+             ticks = (ticks, None)
+@@ -1713,9 +1722,14 @@
              lopts = dict()
              lopts.update(legend_options)
              lopts.update(self.__legend_opts)

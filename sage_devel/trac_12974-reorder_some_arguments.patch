@@ -1,0 +1,115 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1337940388 -28800
+# Node ID ecb491216a37b527feb483705309e40de31ce89e
+# Parent  326401aa2def0c15759b005e33a365a49b59b38f
+reorder some arguments to make it easier to find and edit them later
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1106,23 +1106,33 @@
+     # NOTE: If you intend to use a new parameter in show(), you should update
+     # this dictionary to contain the default value for that parameter.
+ 
+-    SHOW_OPTIONS = dict(xmin=None, xmax=None, ymin=None, ymax=None,
+-                        figsize=None, fig_tight=True,
+-                        filename=None,
+-                        dpi=DEFAULT_DPI, axes=None, axes_labels=None,frame=False,
+-                        fontsize=None,
+-                        aspect_ratio=None,
++    SHOW_OPTIONS = dict(filename=None,
++                        # axes options
++                        axes=None, axes_labels=None, axes_pad=.02,
++                        xmin=None, xmax=None, ymin=None, ymax=None,
++                        # Figure options
++                        aspect_ratio=None, dpi=DEFAULT_DPI, fig_tight=True,
++                        figsize=None, fontsize=None, frame=False,
++                        transparent=False,
++                        # Grid options
+                         gridlines=None, gridlinesstyle=None,
+-                        vgridlinesstyle=None, hgridlinesstyle=None,transparent=False,
+-                        show_legend=None, legend_options={},
+-                        axes_pad=.02, ticks_integer=False,
+-                        ticks=None, tick_formatter=None)
+-
+-    @suboptions('legend', numpoints=2, borderpad=0.6, markerscale=0.6, shadow=False,
+-                labelspacing=0.02, handlelength=0.05, handletextpad=0.5, borderaxespad=None,
+-                loc='best', font_size='medium', font_family='sans-serif', font_style='normal',
+-                font_weight='medium', font_variant='normal', back_color=(0.9, 0.9, 0.9),
+-                title=None, ncol=1, columnspacing=None, fancybox=False)
++                        hgridlinesstyle=None, vgridlinesstyle=None,
++                        # Legend options
++                        legend_options={}, show_legend=None,
++                        # Ticks options
++                        ticks=None, tick_formatter=None, ticks_integer=False)
++
++    @suboptions('legend',
++                back_color=(0.9, 0.9, 0.9), borderpad=0.6,
++                borderaxespad=None,
++                columnspacing=None,
++                fancybox=False, font_family='sans-serif',
++                font_size='medium', font_style='normal',
++                font_variant='normal', font_weight='medium',
++                handlelength=0.05, handletextpad=0.5,
++                labelspacing=0.02, loc='best',
++                markerscale=0.6, ncol=1, numpoints=2,
++                shadow=False, title=None)
+     def show(self, **kwds):
+         """
+         Show this graphics image with the default image viewer.
+@@ -1697,17 +1707,20 @@
+ 
+         return (subplot, x_locator, y_locator, x_formatter, y_formatter)
+ 
+-    def matplotlib(self, filename=None,
+-                   xmin=None, xmax=None, ymin=None, ymax=None,
+-                   figsize=None, figure=None, sub=None,
+-                   axes=None, axes_labels=None, fontsize=None,
+-                   frame=False, verify=True,
+-                   aspect_ratio = None,
+-                   gridlines=None, gridlinesstyle=None,
+-                   vgridlinesstyle=None, hgridlinesstyle=None,
+-                   show_legend=None, legend_options={},
+-                   axes_pad=0.02, ticks_integer=None,
+-                   tick_formatter=None, ticks=None):
++    def matplotlib(self, filename=None, sub=None, verify=True,
++                    # axes options
++                    axes=None, axes_labels=None, axes_pad=0.02,
++                    xmin=None, xmax=None, ymin=None, ymax=None,
++                    # Figure options
++                    aspect_ratio = None, figsize=None, figure=None,
++                    fontsize=None, frame=False,
++                    # Grid options
++                    gridlines=None, gridlinesstyle=None,
++                    hgridlinesstyle=None, vgridlinesstyle=None,
++                    # Legend options
++                    legend_options={}, show_legend=None,
++                    # Ticks options
++                    ticks=None, tick_formatter=None, ticks_integer=None):
+         r"""
+         Return a matplotlib figure object representing the graphic
+ 
+@@ -2094,11 +2107,17 @@
+     # ALLOWED_EXTENSIONS is the list of recognized formats.
+     # filename argument is written explicitly so that it can be used as a
+     # positional one, which is a very likely usage for this function.
+-    @suboptions('legend', numpoints=2, borderpad=0.6, markerscale=0.6, shadow=False,
+-                labelspacing=0.02, handlelength=0.05, handletextpad=0.5, borderaxespad=None,
+-                loc='best', font_size='medium', font_family='sans-serif', font_style='normal',
+-                font_weight='medium', font_variant='normal', back_color=(0.9, 0.9, 0.9),
+-                title=None, ncol=1, columnspacing=None, fancybox=False)
++    @suboptions('legend',
++                back_color=(0.9, 0.9, 0.9), borderpad=0.6,
++                borderaxespad=None,
++                columnspacing=None,
++                fancybox=False, font_family='sans-serif',
++                font_size='medium', font_style='normal',
++                font_variant='normal', font_weight='medium',
++                handlelength=0.05, handletextpad=0.5,
++                labelspacing=0.02, loc='best',
++                markerscale=0.6, ncol=1, numpoints=2,
++                shadow=False, title=None)
+     def save(self, filename=None, **kwds):
+         r"""
+         Save the graphics to an image file.

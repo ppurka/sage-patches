@@ -1,0 +1,302 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1337970087 -28800
+# Node ID e8f0843b0561053bb2d22b2f8dfb63a514512cb3
+# Parent  a225ede259f7484a2fdf5fd1378bbe84b0b49b2a
+refactor the tick formatter in Graphics.matplotlib
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1599,7 +1599,104 @@
+             ymin -= 1
+             ymax += 1
+         return {'xmin':xmin, 'xmax':xmax, 'ymin':ymin, 'ymax':ymax}
+-        
++
++    def _matplotlib_tick_formatter(self, subplot, locator_options={},
++                            tick_formatter=(None, None), ticks=(None, None),
++                            xmax=None, xmin=None, ymax=None, ymin=None):
++        r"""
++        Take a matplotlib subplot instance representing the graphic and set
++        the ticks formatting. This function is only for internal use.
++
++        INPUT:
++        - ``subplot`` -- the subplot instance.
++
++        EXAMPLES::
++
++            sage: from matplotlib.figure import Figure
++            sage: p = plot(x); d = p.get_minmax_data()
++            sage: subplot = Figure().add_subplot(111)
++            sage: p._objects[0]._render_on_subplot(subplot)
++            sage: p._matplotlib_tick_formatter(subplot, **d)
++            (<matplotlib.axes.AxesSubplot object at ...>,
++            <matplotlib.ticker.MaxNLocator instance at ...>,
++            <matplotlib.ticker.MaxNLocator instance at ...>,
++            <matplotlib.ticker.OldScalarFormatter instance at ...>,
++            <matplotlib.ticker.OldScalarFormatter instance at ...>)
++        """
++        # This function is created to refactor some code that is repeated
++        # in the matplotlib function
++        from matplotlib.ticker import (FixedLocator, Locator, MaxNLocator,
++                MultipleLocator, NullLocator, OldScalarFormatter)
++
++        x_locator, y_locator = ticks
++        #---------------------- Location of x-ticks ---------------------#
++        if x_locator is None:
++            x_locator = MaxNLocator(**locator_options)
++        elif isinstance(x_locator,Locator):
++            pass
++        elif x_locator == []:
++            x_locator = NullLocator()
++        elif isinstance(x_locator,list):
++            x_locator = FixedLocator(x_locator)
++        else: # x_locator is a number which can be made a float
++            from sage.functions.other import ceil, floor
++            if floor(xmax/x_locator)-ceil(xmin/x_locator)>1:
++                x_locator=MultipleLocator(float(x_locator))
++            else: # not enough room for two major ticks
++                raise ValueError('Expand the range of the independent '
++                'variable to allow two multiples of your tick locator '
++                '(option `ticks`).')
++
++        #---------------------- Location of y-ticks ---------------------#
++        if y_locator is None:
++            y_locator = MaxNLocator(**locator_options)
++        elif isinstance(y_locator,Locator):
++            pass
++        elif y_locator == []:
++            y_locator = NullLocator()
++        elif isinstance(y_locator,list):
++            y_locator = FixedLocator(y_locator)
++        else: # y_locator is a number which can be made a float
++            from sage.functions.other import ceil, floor
++            if floor(ymax/y_locator)-ceil(ymin/y_locator)>1:
++                y_locator=MultipleLocator(float(y_locator))
++            else: # not enough room for two major ticks
++                raise ValueError('Expand the range of the dependent '
++                'variable to allow two multiples of your tick locator '
++                '(option `ticks`).')
++
++        x_formatter, y_formatter = tick_formatter
++        from matplotlib.ticker import FuncFormatter
++        from sage.misc.latex import latex
++        from sage.symbolic.ring import SR
++        #---------------------- Formatting x-ticks ----------------------#
++        if x_formatter is None:
++            x_formatter = OldScalarFormatter()
++        elif x_formatter in SR:
++            from misc import _multiple_of_constant
++            x_const = x_formatter
++            x_formatter = FuncFormatter(lambda n,pos:
++                                        _multiple_of_constant(n,pos,x_const))
++        elif x_formatter == "latex":
++            x_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
++        #---------------------- Formatting y-ticks ----------------------#
++        if y_formatter is None:
++            y_formatter = OldScalarFormatter()
++        elif y_formatter in SR:
++            from misc import _multiple_of_constant
++            y_const = y_formatter
++            y_formatter = FuncFormatter(lambda n,pos:
++                                        _multiple_of_constant(n,pos,y_const))
++        elif y_formatter == "latex":
++            y_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
++
++        subplot.xaxis.set_major_locator(x_locator)
++        subplot.yaxis.set_major_locator(y_locator)
++        subplot.xaxis.set_major_formatter(x_formatter)
++        subplot.yaxis.set_major_formatter(y_formatter)
++
++        return (subplot, x_locator, y_locator, x_formatter, y_formatter)
++
+     def matplotlib(self, filename=None,
+                    xmin=None, xmax=None, ymin=None, ymax=None,
+                    figsize=None, figure=None, sub=None,
+@@ -1744,61 +1841,11 @@
+             # sort of what we are used to.  We should eventually look at
+             # the default one to see if we like it better.
+ 
+-            from matplotlib.ticker import OldScalarFormatter, MaxNLocator, MultipleLocator, FixedLocator, NullLocator, Locator
+-            x_locator, y_locator = ticks
+-            if x_locator is None:
+-                x_locator = MaxNLocator(**locator_options)
+-            elif isinstance(x_locator,Locator):
+-                pass
+-            elif x_locator == []:
+-                x_locator = NullLocator()
+-            elif isinstance(x_locator,list):
+-                x_locator = FixedLocator(x_locator)
+-            else: # x_locator is a number which can be made a float
+-                from sage.functions.other import ceil, floor
+-                if floor(xmax/x_locator)-ceil(xmin/x_locator)>1:
+-                    x_locator=MultipleLocator(float(x_locator))
+-                else: # not enough room for two major ticks
+-                    raise ValueError('Expand the range of the independent variable to allow two multiples of your tick locator (option `ticks`).')
+-            if y_locator is None:
+-                y_locator = MaxNLocator(**locator_options)
+-            elif isinstance(y_locator,Locator):
+-                pass
+-            elif y_locator == []:
+-                y_locator = NullLocator()
+-            elif isinstance(y_locator,list):
+-                y_locator = FixedLocator(y_locator)
+-            else: # y_locator is a number which can be made a float
+-                from sage.functions.other import ceil, floor
+-                if floor(ymax/y_locator)-ceil(ymin/y_locator)>1:
+-                    y_locator=MultipleLocator(float(y_locator))
+-                else: # not enough room for two major ticks
+-                    raise ValueError('Expand the range of the dependent variable to allow two multiples of your tick locator (option `ticks`).')
+-
+-            x_formatter, y_formatter = tick_formatter
+-            from matplotlib.ticker import FuncFormatter
+-            from sage.misc.latex import latex
+-            if x_formatter is None:
+-                x_formatter = OldScalarFormatter()
+-            elif x_formatter in SR:
+-                from misc import _multiple_of_constant
+-                x_const = x_formatter
+-                x_formatter = FuncFormatter(lambda n,pos: _multiple_of_constant(n,pos,x_const))
+-            elif x_formatter == "latex":
+-                x_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
+-            if y_formatter is None:
+-                y_formatter = OldScalarFormatter()
+-            elif y_formatter in SR:
+-                from misc import _multiple_of_constant
+-                y_const = y_formatter
+-                y_formatter = FuncFormatter(lambda n,pos: _multiple_of_constant(n,pos,y_const))
+-            elif y_formatter == "latex":
+-                y_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
+-
+-            subplot.xaxis.set_major_locator(x_locator)
+-            subplot.yaxis.set_major_locator(y_locator)
+-            subplot.xaxis.set_major_formatter(x_formatter)
+-            subplot.yaxis.set_major_formatter(y_formatter)
++            (subplot, x_locator, y_locator,
++                    x_formatter, y_formatter) = self._matplotlib_tick_formatter(
++                            subplot, locator_options=locator_options,
++                            tick_formatter=tick_formatter, ticks=ticks,
++                            xmax=xmax, xmin=xmin, ymax=ymax, ymin=ymin)
+             
+             subplot.set_frame_on(True)
+             if axes:
+@@ -1855,64 +1902,13 @@
+             # For now, set the formatter to the old one, since that is
+             # sort of what we are used to.  We should eventually look at
+             # the default one to see if we like it better.
++
++            (subplot, x_locator, y_locator,
++                    x_formatter, y_formatter) = self._matplotlib_tick_formatter(
++                            subplot, locator_options=locator_options,
++                            tick_formatter=tick_formatter, ticks=ticks,
++                            xmax=xmax, xmin=xmin, ymax=ymax, ymin=ymin)
+             
+-            from matplotlib.ticker import OldScalarFormatter, MaxNLocator, MultipleLocator, FixedLocator, NullLocator, Locator
+-            x_locator, y_locator = ticks
+-            if x_locator is None:
+-                x_locator = MaxNLocator(**locator_options)
+-            elif isinstance(x_locator,Locator):
+-                pass
+-            elif x_locator == []:
+-                x_locator = NullLocator()
+-            elif isinstance(x_locator,list):
+-                x_locator = FixedLocator(x_locator)
+-            else: # x_locator is a number which can be made a float
+-                from sage.functions.other import ceil, floor
+-                if floor(xmax/x_locator)-ceil(xmin/x_locator)>1:
+-                    x_locator=MultipleLocator(float(x_locator))
+-                else: # not enough room for two major ticks
+-                    raise ValueError('Expand the range of the independent variable to allow two multiples of your tick locator (option `ticks`).')
+-            if y_locator is None:
+-                y_locator = MaxNLocator(**locator_options)
+-            elif isinstance(y_locator,Locator):
+-                pass
+-            elif y_locator == []:
+-                y_locator = NullLocator()
+-            elif isinstance(y_locator,list):
+-                y_locator = FixedLocator(y_locator)
+-            else: # y_locator is a number which can be made a float
+-                from sage.functions.other import ceil, floor
+-                if floor(ymax/y_locator)-ceil(ymin/y_locator)>1:
+-                    y_locator=MultipleLocator(float(y_locator))
+-                else: # not enough room for two major ticks
+-                    raise ValueError('Expand the range of the dependent variable to allow two multiples of your tick locator (option `ticks`).')
+-
+-            x_formatter, y_formatter = tick_formatter
+-            from matplotlib.ticker import FuncFormatter
+-            from sage.misc.latex import latex
+-            from sage.symbolic.ring import SR
+-            if x_formatter is None:
+-                x_formatter = OldScalarFormatter()
+-            elif x_formatter in SR:
+-                from misc import _multiple_of_constant
+-                x_const = x_formatter
+-                x_formatter = FuncFormatter(lambda n,pos: _multiple_of_constant(n,pos,x_const))
+-            elif x_formatter == "latex":
+-                x_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
+-            if y_formatter is None:
+-                y_formatter = OldScalarFormatter()
+-            elif y_formatter in SR:
+-                from misc import _multiple_of_constant
+-                y_const = y_formatter
+-                y_formatter = FuncFormatter(lambda n,pos: _multiple_of_constant(n,pos,y_const))
+-            elif y_formatter == "latex":
+-                y_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
+-
+-            subplot.xaxis.set_major_locator(x_locator)
+-            subplot.yaxis.set_major_locator(y_locator)
+-            subplot.xaxis.set_major_formatter(x_formatter)
+-            subplot.yaxis.set_major_formatter(y_formatter)
+-
+             # Make ticklines go on both sides of the axes
+             #             if xmiddle:
+             #                 for t in subplot.xaxis.get_majorticklines():
+@@ -1934,8 +1930,10 @@
+             # inside the picture
+             if xmiddle and ymiddle:
+                 from sage.plot.plot import SelectiveFormatter
+-                subplot.yaxis.set_major_formatter(SelectiveFormatter(subplot.yaxis.get_major_formatter(),skip_values=[0]))
+-                subplot.xaxis.set_major_formatter(SelectiveFormatter(subplot.xaxis.get_major_formatter(),skip_values=[0]))
++                subplot.yaxis.set_major_formatter(SelectiveFormatter(
++                    subplot.yaxis.get_major_formatter(),skip_values=[0]))
++                subplot.xaxis.set_major_formatter(SelectiveFormatter(
++                    subplot.xaxis.get_major_formatter(),skip_values=[0]))
+ 
+         else:
+             for spine in subplot.spines.values():
+@@ -2072,16 +2070,20 @@
+                 xlabel.set_horizontalalignment(xaxis_horiz)
+                 xlabel.set_verticalalignment(xaxis_vert)
+                 trans=subplot.spines[xaxis].get_transform()
+-                labeltrans=offset_copy(trans, figure, x=xaxis_labeloffset, y=0, units='points')
+-                subplot.xaxis.set_label_coords(x=xaxis_labelx,y=xaxis_labely,transform=labeltrans)
++                labeltrans=offset_copy(trans, figure, x=xaxis_labeloffset,
++                                    y=0, units='points')
++                subplot.xaxis.set_label_coords(x=xaxis_labelx,
++                                    y=xaxis_labely, transform=labeltrans)
+ 
+                 ylabel=subplot.yaxis.get_label()
+                 ylabel.set_horizontalalignment('center')
+                 ylabel.set_verticalalignment(yaxis_vert)
+                 ylabel.set_rotation('horizontal')
+                 trans=subplot.spines[yaxis].get_transform()
+-                labeltrans=offset_copy(trans, figure, x=0, y=yaxis_labeloffset, units='points')
+-                subplot.yaxis.set_label_coords(x=yaxis_labelx,y=yaxis_labely,transform=labeltrans)
++                labeltrans=offset_copy(trans, figure, x=0,
++                                    y=yaxis_labeloffset, units='points')
++                subplot.yaxis.set_label_coords(x=yaxis_labelx,
++                                    y=yaxis_labely, transform=labeltrans)
+ 
+         # This option makes the xlim and ylim limits not take effect
+         # todo: figure out which limits were specified, and let the
+@@ -2197,7 +2199,8 @@
+             SageObject.save(self, filename)
+         else:
+             figure = self.matplotlib(**options)
+-            # You can output in PNG, PS, EPS, PDF, or SVG format, depending on the file extension.
++            # You can output in PNG, PS, EPS, PDF, or SVG format, depending
++            # on the file extension.
+             # matplotlib looks at the file extension to see what the renderer should be.
+             # The default is FigureCanvasAgg for PNG's because this is by far the most
+             # common type of files rendered, like in the notebook, for example.

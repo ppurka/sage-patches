@@ -1,0 +1,68 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1338109823 -28800
+# Node ID f2655af5d767771645fcdd71b866ddc1a862ebbf
+# Parent  459c5094f70bf6f10a64dc60349943e5abdf36f6
+check for the presence of single tick
+  - this is not robust enough in all cases for the log scale
+  - including this patch will mean that most graphics such as arc, disk, etc
+    which "just work" with log scale, will stop working.
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1446,17 +1446,6 @@
+             sage: G = parametric_plot((x, x**2), (x, 1, 10))
+             sage: G.show(scale='loglog')
+ 
+-            sage: G = arc((2,3), 2, 1, angle=pi/2, sector=(0,pi/2))
+-            sage: G.show(scale=('loglog', 2))
+-
+-            sage: disk((0.1,0.1), 1, (pi/3, pi/2)).show(scale='loglog')
+-
+-            sage: polygon([(1,1), (10,10), (10,1)]).show(scale='loglog')
+-
+-            sage: x, y = var('x, y')
+-            sage: G =  plot_vector_field((sin(x),cos(y)),(x,0.1,3),(y,0.1,3))
+-            sage: G.show(scale='loglog')
+-
+         Add grid lines at the major ticks of the axes.
+ 
+         ::
+@@ -1628,6 +1617,18 @@
+ 
+             sage: plot(arcsin(x),(x,-1,1),ticks=[None,pi/6],tick_formatter=[None,pi]) # Not so nice-looking
+ 
++        When using logarithmic scale along the axis, make sure to have
++        enough room for two ticks so that the user can tell what the scale
++        is. This can be effected by increasing the range of the independent
++        variable, or by changing the ``base``.::
++
++            sage: p = list_plot(range(1, 10), plotjoined=True)
++            sage: p.show(scale='loglog')
++            Traceback (most recent call last):
++            ...
++            ValueError: Either expand the range of the independent variable to allow two multiples of the tick locator (option `ticks`), or change your `base` to a smaller number.
++            sage: p.show(scale='loglog', base=8) # this works.
++
+         """
+ 
+         # This option should not be passed on to save().
+@@ -1889,6 +1890,17 @@
+         subplot.xaxis.set_major_formatter(x_formatter)
+         subplot.yaxis.set_major_formatter(y_formatter)
+ 
++        # Only way to reasonably check for too few ticks on log scale seems
++        # to be to first set the ticks and then raise an error.
++        if scale[0] == 'log' and len(subplot.xaxis.get_ticklocs()) <= 2:
++            raise ValueError('Either expand the range of the independent '
++            'variable to allow two multiples of the tick locator (option '
++            '`ticks`), or change your `base` to a smaller number.')
++        if scale[1] == 'log' and len(subplot.yaxis.get_ticklocs()) <= 2:
++            raise ValueError('Either expand the range of the dependent '
++            'variable to allow two multiples of the tick locator (option '
++            '`ticks`), or change your `base` to a smaller number.')
++
+         return (subplot, x_locator, y_locator, x_formatter, y_formatter)
+ 
+     def matplotlib(self, filename=None,

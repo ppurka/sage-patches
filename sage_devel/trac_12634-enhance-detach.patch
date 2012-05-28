@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1331021841 -28800
-# Node ID 9f1f09a4e369fb42092a5dfb5e3969e6cd4b5400
-# Parent  aaa5b1d74d52ab4bbd011856bf25ed6e39e22625
+# Node ID bfd9146b61a9a3459856aeb3547f3f95fc331951
+# Parent  85838cfb9e9501fa2acf8e840b0300e99d074292
 Make detach take as input lists of files and files with relative paths
 
 diff --git a/sage/misc/preparser.py b/sage/misc/preparser.py
@@ -17,7 +17,7 @@ diff --git a/sage/misc/preparser.py b/sage/misc/preparser.py
  
      EXAMPLES::
  
-@@ -1915,22 +1915,33 @@
+@@ -1915,22 +1915,40 @@
          []
          sage: attach('test.py')
          111
@@ -30,7 +30,14 @@ diff --git a/sage/misc/preparser.py b/sage/misc/preparser.py
          sage: attached_files()
          []
          sage: sage.misc.reset.reset_attached(); reset_load_attach_path() # clean up
-         
+-        
++
++    TESTS::
++
++        sage: detach('/tmp/a b/a.sage')
++        Traceback (most recent call last):
++        ...
++        ValueError: File '/tmp/a b/a.sage' seems not to be attached. To see a list of attached files, call the function attached_files
      """
 -    fpath = os.path.expanduser(filename)
 -    if not os.path.isabs(fpath):
@@ -42,12 +49,12 @@ diff --git a/sage/misc/preparser.py b/sage/misc/preparser.py
 -    
 -    if fpath in attached:
 -        attached.pop(fpath)
-+    if type(filename) in [list, tuple]:
-+        filelist = filename
++    if isinstance(filename, basestring):
++        filelist = [filename]
      else:
 -        raise ValueError("File '%r' seems not to be attached. To see a list \
 -            of attached files, call attached_files()" % filename)
-+        filelist = [filename]
++        filelist = [str(x) for x in filename]
 +
 +    for filename in filelist:
 +        fpath = os.path.expanduser(filename)
@@ -62,5 +69,6 @@ diff --git a/sage/misc/preparser.py b/sage/misc/preparser.py
 +        if fpath in attached:
 +            attached.pop(fpath)
 +        else:
-+            raise ValueError("File '%r' seems not to be attached. To see a list \
-+                of attached files, call attached_files()" % filename)
++            raise ValueError("File '{0}' seems not to be attached. To see a "
++                             "list of attached files, call the function "
++                             "attached_files".format(filename))

@@ -1,7 +1,7 @@
 # HG changeset patch
 # User P Purkayastha <ppurka@gmail.com>
 # Date 1323841229 -28800
-# Node ID 5159c092fd6163ef957913af72e76b985ccb6fd7
+# Node ID 85838cfb9e9501fa2acf8e840b0300e99d074292
 # Parent  c26aeb64b77e00ba38533058460e1ec541404aef
 trac 11775: make pretty_print accept multiple arguments (rebased to #12156)
 
@@ -274,7 +274,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
          else:
 -            print JSMath().eval(object, mode='inline')
 -        return
-+            s += [object]
++            s.append(object)
 +
 +    _show_s(s)
 +    return

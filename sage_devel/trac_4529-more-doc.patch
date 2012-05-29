@@ -1,0 +1,240 @@
+# HG changeset patch
+# User Karl-Dieter Crisman <kcrisman@gmail.com>
+# Date 1338249593 14400
+# Node ID 0686251eb34967018ab34b6333fbf455054c3806
+# Parent  fcbbe547cfd9ef630204a54763c595b1d3dd6da0
+[mq]: finalizelog
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1426,12 +1426,16 @@
+ 
+             sage: G.show(scale='semilogy', base=2) # y axis as powers of 2
+ 
++        ::
++
+             sage: G.show(scale='semilogy', base=(3,2)) # base ignored for x-axis
+ 
+         The scale can be also given as a 2-tuple or a 3-tuple.::
+ 
+             sage: G.show(scale=('loglog', 2)) # both x and y axes in base 2
+ 
++        ::
++
+             sage: G.show(scale=('loglog', 2, 3)) # x in base 2, y in base 3
+ 
+         The base need not be an integer, though it does have to be made
+@@ -1446,11 +1450,17 @@
+             sage: G = list_plot(map(lambda i: 10**i, range(10)))
+             sage: G.show(scale='semilogy')
+ 
++        ::
++
+             sage: G = parametric_plot((x, x**2), (x, 1, 10))
+             sage: G.show(scale='loglog')
+ 
++        ::
++
+             sage: disk((5,5), 4, (0, 3*pi/2)).show(scale='loglog',base=2)
+ 
++        ::
++
+             sage: x, y = var('x, y')
+             sage: G =  plot_vector_field((2^x,y^2),(x,1,10),(y,1,100))
+             sage: G.show(scale='semilogx',base=2)
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -62,6 +62,16 @@
+ 
+ -  :func:`graphics_array`
+ 
++-  The following log plotting functions:
++
++   - :func:`plot_loglog`
++
++   - :func:`plot_semilogx` and :func:`plot_semilogy`
++
++   - :func:`list_plot_loglog`
++
++   - :func:`list_plot_semilogx` and :func:`list_plot_semilogy`
++
+ 
+ The following miscellaneous Graphics functions are included:
+ 
+@@ -607,7 +617,7 @@
+       logarithmic scale. The `semilogx` scale sets the horizontal axis
+       to logarithmic scale. The `semilogy` scale sets the vertical axis
+       to logarithmic scale. The `linear` scale is the default value
+-      when :class:`~sage.graphics.Graphics` is initialized.
++      when :class:`~sage.plot.graphics.Graphics` is initialized.
+ 
+     - ``xmin`` - starting x value
+ 
+@@ -802,10 +812,16 @@
+ 
+         sage: plot(exp, (1, 10), scale='semilogy') # log axis on vertical
+ 
++    ::
++
+         sage: plot_semilogy(exp, (1, 10)) # same thing
+ 
++    ::
++
+         sage: plot_loglog(exp, (1, 10), scale='loglog')   # both axes are log
+ 
++    ::
++
+         sage: plot(exp, (1, 10), scale='loglog', base=2) # base of log is 2
+ 
+     We can also change the scale of the axes in the graphics just before
+@@ -1396,14 +1412,14 @@
+         sage: parametric_plot( vector([t, t+1, t^2]), (t, 0, 1))
+ 
+     Plotting in logarithmic scale is possible with 2D plots. The keyword
+-    ``aspect_ratio`` will be ignored if the scale is not `loglog` or
+-    `linear`.::
++    ``aspect_ratio`` will be ignored if the scale is not ``'loglog'`` or
++    ``'linear'``.::
+ 
+         sage: parametric_plot((x, x**2), (x, 1, 10), scale='loglog')
+ 
+     We can also change the scale of the axes in the graphics just before
+     displaying. In this case, the ``aspect_ratio`` must be specified as
+-    `automatic` if the ``scale`` is set to `semilogx` or `semilogy`. For
++    ``'automatic'`` if the ``scale`` is set to ``'semilogx'`` or ``'semilogy'``. For
+     other values of the ``scale`` parameter, any ``aspect_ratio`` can be
+     used, or the keyword need not be provided.::
+ 
+@@ -1603,14 +1619,23 @@
+ 
+         sage: list_plot({22: 3365, 27: 3295, 37: 3135, 42: 3020, 47: 2880, 52: 2735, 57: 2550})
+ 
+-    Plotting in logarithmic scale is possible for 2D plots.::
++    Plotting in logarithmic scale is possible for 2D list plots.
++    There are two different syntaxes available::
+ 
+         sage: yl = [2**k for k in range(10)]
+         sage: list_plot(yl, scale='semilogy')       # log axis on vertical
+ 
++    ::
++
++        sage: list_plot_semilogy(yl)       # same
++
++    ::
++
+         sage: list_plot(yl, scale='loglog')         # both axes are log
+ 
+-        sage: list_plot(yl, scale='loglog', base=2) # base of log is 2
++    ::
++
++        sage: list_plot_loglog(yl, base=2) # base of log is 2
+ 
+     We can also change the scale of the axes in the graphics just before
+     displaying::
+@@ -1685,8 +1710,12 @@
+ 
+         sage: plot_loglog(exp, (1,10)) # plot in loglog scale with base 10
+ 
++    ::
++
+         sage: plot_loglog(exp, (1,10), base=2) # with base 2 on both axes
+ 
++    ::
++
+         sage: plot_loglog(exp, (1,10), base=(2,3))
+ 
+     """
+@@ -1711,6 +1740,8 @@
+ 
+         sage: plot_semilogx(exp, (1,10)) # plot in semilogx scale, base 10
+ 
++    ::
++
+         sage: plot_semilogx(exp, (1,10), base=2) # with base 2
+ 
+     """
+@@ -1735,6 +1766,8 @@
+ 
+         sage: plot_semilogy(exp, (1,10)) # plot in semilogy scale, base 10
+ 
++    ::
++
+         sage: plot_semilogy(exp, (1,10), base=2) # with base 2
+ 
+     """
+@@ -1743,7 +1776,7 @@
+ @options(base=10)
+ def list_plot_loglog(data, plotjoined=False, **kwds):
+     """
+-    Plot the `data` in 'loglog' scale, that is, both the horizontal and the
++    Plot the ``data`` in 'loglog' scale, that is, both the horizontal and the
+     vertical axes will be in logarithmic scale.
+ 
+     INPUTS:
+@@ -1760,8 +1793,12 @@
+         sage: yl = [5**k for k in range(10)]; xl = [2**k for k in range(10)]
+         sage: list_plot_loglog(zip(xl, yl)) # plot in loglog scale with base 10
+ 
++    ::
++
+         sage: list_plot_loglog(zip(xl, yl), base=2) # with base 2 on both axes
+ 
++    ::
++
+         sage: list_plot_loglog(zip(xl, yl), base=(2,5))
+ 
+     """
+@@ -1770,7 +1807,7 @@
+ @options(base=10)
+ def list_plot_semilogx(data, plotjoined=False, **kwds):
+     """
+-    Plot `data` in 'semilogx' scale, that is, the horizontal axis will be
++    Plot ``data`` in 'semilogx' scale, that is, the horizontal axis will be
+     in logarithmic scale.
+ 
+     INPUTS:
+@@ -1778,13 +1815,15 @@
+     - ``base`` -- (default: 10) the base of the logarithm. This must be
+       greater than 1.
+ 
+-    For all other inputs, look at the documentation of :func:`plot`.
++    For all other inputs, look at the documentation of :func:`list_plot`.
+ 
+     EXAMPLES::
+ 
+         sage: yl = [5**k for k in range(10)]
+         sage: list_plot_semilogx(yl) # plot in semilogx scale, base 10
+ 
++    ::
++
+         sage: list_plot_semilogx(yl, base=2) # with base 2
+ 
+     """
+@@ -1793,7 +1832,7 @@
+ @options(base=10)
+ def list_plot_semilogy(data, plotjoined=False, **kwds):
+     """
+-    Plot `data` in 'semilogy' scale, that is, the vertical axis will be
++    Plot ``data`` in 'semilogy' scale, that is, the vertical axis will be
+     in logarithmic scale.
+ 
+     INPUTS:
+@@ -1801,13 +1840,15 @@
+     - ``base`` -- (default: 10) the base of the logarithm. This must be
+       greater than 1.
+ 
+-    For all other inputs, look at the documentation of :func:`plot`.
++    For all other inputs, look at the documentation of :func:`list_plot`.
+ 
+     EXAMPLES::
+ 
+         sage: yl = [5**k for k in range(10)]
+         sage: list_plot_semilogy(yl) # plot in semilogy scale, base 10
+ 
++    ::
++
+         sage: list_plot_semilogy(yl, base=5) # with base 5
+ 
+     """

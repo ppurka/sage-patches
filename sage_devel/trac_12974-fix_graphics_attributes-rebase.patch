@@ -1,0 +1,727 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1337245532 -28800
+# Node ID 529a15e6df54738eff17c07841002796c1c88a7c
+# Parent  a2546990db40e385f8e5df0e233656d892aee347
+change all .__ attributes to ._
+This ensures that the Graphics class can be inherited.
+
+diff --git a/sage/functions/piecewise.py b/sage/functions/piecewise.py
+--- a/sage/functions/piecewise.py
++++ b/sage/functions/piecewise.py
+@@ -1023,7 +1023,7 @@
+             sage: p = f.plot(legend_label='$f(x)$')
+             sage: lines = [
+             ...     line
+-            ...     for line in p._Graphics__objects
++            ...     for line in p._objects
+             ...     if line.options()['legend_label'] is not None ]
+             sage: len(lines)
+             1
+diff --git a/sage/geometry/polyhedron/base.py b/sage/geometry/polyhedron/base.py
+--- a/sage/geometry/polyhedron/base.py
++++ b/sage/geometry/polyhedron/base.py
+@@ -2570,7 +2570,7 @@
+ 
+             sage: p = Polyhedron([[1,2,],[1,1],[0,0]])
+             sage: p_wireframe = p.render_wireframe()
+-            sage: p_wireframe._Graphics__objects
++            sage: p_wireframe._objects
+             [Line defined by 2 points, Line defined by 2 points, Line defined by 2 points]
+         """
+         proj = self.projection()
+diff --git a/sage/geometry/polyhedron/plot.py b/sage/geometry/polyhedron/plot.py
+--- a/sage/geometry/polyhedron/plot.py
++++ b/sage/geometry/polyhedron/plot.py
+@@ -47,7 +47,7 @@
+         sage: q1.show() + q2.show() + q3.show() + q4.show()
+         sage: from sage.geometry.polyhedron.plot import render_2d
+         sage: q = render_2d(p1.projection())
+-        sage: q._Graphics__objects
++        sage: q._objects
+         [Point set defined by 1 point(s),
+          Arrow from (1.0,1.0) to (2.0,2.0),
+          Polygon defined by 3 points]
+@@ -850,7 +850,7 @@
+             sage: hex = polytopes.regular_polygon(6)
+             sage: proj = hex.projection()
+             sage: hex_points = proj.render_points_2d()
+-            sage: hex_points._Graphics__objects
++            sage: hex_points._objects
+             [Point set defined by 6 point(s)]
+         """
+         return point2d(self.coordinates_of(self.points), **kwds)
+@@ -864,7 +864,7 @@
+ 
+             sage: penta = polytopes.regular_polygon(5)
+             sage: outline = penta.projection().render_outline_2d()
+-            sage: outline._Graphics__objects[0]
++            sage: outline._objects[0]
+             Line defined by 2 points
+         """
+         wireframe = [];
+diff --git a/sage/graphs/graph_list.py b/sage/graphs/graph_list.py
+--- a/sage/graphs/graph_list.py
++++ b/sage/graphs/graph_list.py
+@@ -319,7 +319,7 @@
+         for j in range (rows*cols):
+             glist.append(plist[ i*rows*cols + j ])
+         ga = graphics_array(glist, rows, cols)
+-        ga.__set_figsize__([8,10])
++        ga._set_figsize_([8,10])
+         g_arrays.append(ga)
+     
+     last = len(plist)%20
+@@ -332,7 +332,7 @@
+     for i in range (last):
+         glist.append(plist[ i + index])
+     ga = graphics_array(glist, last_rows, cols)
+-    ga.__set_figsize__([8, 2*last_rows])
++    ga._set_figsize_([8, 2*last_rows])
+     g_arrays.append(ga)
+     
+     return g_arrays
+diff --git a/sage/plot/animate.py b/sage/plot/animate.py
+--- a/sage/plot/animate.py
++++ b/sage/plot/animate.py
+@@ -76,7 +76,7 @@
+     TESTS: This illustrates that ticket #2066 is fixed (setting axes
+     ranges when an endpoint is 0)::
+     
+-        sage: animate([plot(sin, -1,1)], xmin=0, ymin=0)._Animation__kwds['xmin']
++        sage: animate([plot(sin, -1,1)], xmin=0, ymin=0)._kwds['xmin']
+         0
+         
+     We check that Trac #7981 is fixed::
+@@ -105,8 +105,8 @@
+             w.append(x)
+         if len(w) == 0:
+             w = [sage.plot.graphics.Graphics()]
+-        self.__frames = w
+-        self.__kwds = kwds
++        self._frames = w
++        self._kwds = kwds
+ 
+     def _combine_kwds(self, *kwds_tuple):
+         """
+@@ -162,9 +162,9 @@
+             sage: a[3:7].show() # optional -- ImageMagick
+         """
+         if isinstance(i, slice):
+-            return Animation(self.__frames[i], **self.__kwds)
++            return Animation(self._frames[i], **self._kwds)
+         else:
+-            return self.__frames[i]
++            return self._frames[i]
+ 
+     def _repr_(self):
+         """
+@@ -179,7 +179,7 @@
+             sage: a._repr_()
+             'Animation with 10 frames'
+         """
+-        return "Animation with %s frames"%(len(self.__frames))
++        return "Animation with %s frames"%(len(self._frames))
+ 
+     def __add__(self, other):
+         """
+@@ -202,12 +202,12 @@
+         if not isinstance(other, Animation):
+             other = Animation(other)
+             
+-        kwds = self._combine_kwds(self.__kwds, other.__kwds)
++        kwds = self._combine_kwds(self._kwds, other._kwds)
+ 
+         #Combine the frames
+-        m = max(len(self.__frames), len(other.__frames))
+-        frames = [a+b for a,b in zip(self.__frames, other.__frames)]
+-        frames += self.__frames[m:] + other.__frames[m:]
++        m = max(len(self._frames), len(other._frames))
++        frames = [a+b for a,b in zip(self._frames, other._frames)]
++        frames += self._frames[m:] + other._frames[m:]
+                 
+         return Animation(frames, **kwds)
+ 
+@@ -232,9 +232,9 @@
+         if not isinstance(other, Animation):
+             other = Animation(other)
+ 
+-        kwds = self._combine_kwds(self.__kwds, other.__kwds)
++        kwds = self._combine_kwds(self._kwds, other._kwds)
+         
+-        return Animation(self.__frames + other.__frames, **kwds)
++        return Animation(self._frames + other._frames, **kwds)
+ 
+     def png(self, dir=None):
+         """
+@@ -249,15 +249,15 @@
+             ['00000000.png', '00000001.png', '00000002.png', '00000003.png']
+         """
+         try:
+-            return self.__png_dir
++            return self._png_dir
+         except AttributeError:
+             pass
+         d = sage.misc.misc.tmp_dir()
+-        G = self.__frames
+-        for i, frame in enumerate(self.__frames):
++        G = self._frames
++        for i, frame in enumerate(self._frames):
+             filename = '%s/%s'%(d,sage.misc.misc.pad_zeros(i,8))
+-            frame.save(filename + '.png', **self.__kwds)
+-        self.__png_dir = d
++            frame.save(filename + '.png', **self._kwds)
++        self._png_dir = d
+         return d
+ 
+     def graphics_array(self, ncols=3):
+@@ -288,9 +288,9 @@
+             Graphics Array of size 2 x 2
+             sage: g.show('sage.png')         # optional
+         """
+-        n = len(self.__frames)
++        n = len(self._frames)
+         ncols = int(ncols)
+-        return plot.graphics_array(self.__frames, int(n/ncols),  ncols)
++        return plot.graphics_array(self._frames, int(n/ncols),  ncols)
+ 
+     def gif(self, delay=20, savefile=None, iterations=0, show_path=False,
+             use_ffmpeg=False):
+diff --git a/sage/plot/colors.py b/sage/plot/colors.py
+--- a/sage/plot/colors.py
++++ b/sage/plot/colors.py
+@@ -409,9 +409,9 @@
+             RGB color (0.8235294117647058, 0.4117647058823529, 0.11764705882352941)
+         """
+         if g is None and b is None:
+-            self.__rgb = rgbcolor(r)
++            self._rgb = rgbcolor(r)
+         else:
+-            self.__rgb = rgbcolor((r, g, b), space=space)
++            self._rgb = rgbcolor((r, g, b), space=space)
+ 
+     def __repr__(self):
+         """
+@@ -428,7 +428,7 @@
+             sage: Color(1, 0.5, 1/16, space='hsl').__repr__()
+             'RGB color (0.09375, 0.03125, 0.03125)'
+         """
+-        return "RGB color %s" % (self.__rgb, )
++        return "RGB color %s" % (self._rgb, )
+ 
+     def blend(self, color, fraction=0.5):
+         """
+@@ -472,11 +472,11 @@
+         """
+         fraction = float(fraction)
+         if isinstance(color, Color):
+-            color = color.__rgb
++            color = color._rgb
+         if isinstance(color, (list, tuple)) and len(color) == 3:
+             color = map(float, color)
+             return Color(rgbcolor([(1 - fraction) * a + fraction * b
+-                                   for a, b in zip(self.__rgb, color)]))
++                                   for a, b in zip(self._rgb, color)]))
+         raise TypeError("%s must be a Color or float-convertible 3-tuple/list" % (color, ))
+ 
+     def __add__(self, right):
+@@ -572,7 +572,7 @@
+             RGB color (0.764705882352942, 0.1529411764705877, 0.1529411764705877)
+         """
+         right = float(right)
+-        return Color([x * right for x in self.__rgb])
++        return Color([x * right for x in self._rgb])
+ 
+     def __rmul__(self, left):
+         """
+@@ -707,7 +707,7 @@
+             sage: vector(maroon) == vector(Color(maroon)) == vector(Color('maroon'))
+             True
+         """
+-        return iter(self.__rgb)
++        return iter(self._rgb)
+ 
+     def __getitem__(self, i):
+         """
+@@ -736,7 +736,7 @@
+             ...
+             IndexError: tuple index out of range
+         """
+-        return self.__rgb[i]
++        return self._rgb[i]
+ 
+     def rgb(self):
+         """
+@@ -761,7 +761,7 @@
+             sage: Color(1, 0.7, 0.9, space='hsv').rgb()
+             (0.9, 0.2700000000000001, 0.2700000000000001)
+         """
+-        return self.__rgb
++        return self._rgb
+ 
+     def hls(self):
+         """
+@@ -784,7 +784,7 @@
+             sage: orchid.hls()
+             (0.8396226415094339, 0.6470588235294117, 0.5888888888888889)
+         """
+-        return tuple(map(float, rgb_to_hls(*self.__rgb)))
++        return tuple(map(float, rgb_to_hls(*self._rgb)))
+ 
+     def hsl(self):
+         """
+@@ -805,7 +805,7 @@
+             sage: Color('#aabbcc').hsl()
+             (0.5833333333333334, 0.25000000000000017, 0.7333333333333334)
+         """
+-        h, l, s = tuple(map(float, rgb_to_hls(*self.__rgb)))
++        h, l, s = tuple(map(float, rgb_to_hls(*self._rgb)))
+         return (h, s, l)
+ 
+     def hsv(self):
+@@ -827,7 +827,7 @@
+             sage: Color('gray').hsv()
+             (0.0, 0.0, 0.5019607843137255)
+         """
+-        return tuple(map(float, rgb_to_hsv(*self.__rgb)))
++        return tuple(map(float, rgb_to_hsv(*self._rgb)))
+ 
+     def html_color(self):
+         """
+@@ -849,7 +849,7 @@
+             sage: honeydew.html_color()
+             '#f0fff0'
+         """
+-        return float_to_html(*self.__rgb)
++        return float_to_html(*self._rgb)
+ 
+     def lighter(self, fraction=1.0/3.0):
+         """
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -147,17 +147,17 @@
+         
+             sage: G = Graphics()
+         """
+-        self.__fontsize = 10
+-        self.__show_axes = True
+-        self.__show_legend = False
+-        self.__legend_opts = {}
+-        self.__axes_color = (0, 0, 0)
+-        self.__axes_label_color = (0, 0, 0)
+-        self.__tick_label_color = (0, 0, 0)
+-        self.__axes_width = 0.8
+-        self.__objects = []
++        self._axes_color = (0, 0, 0)
++        self._axes_label_color = (0, 0, 0)
++        self._axes_width = 0.8
++        self._bbox_extra_artists = []
+         self._extra_kwds = {}
+-        self.__bbox_extra_artists = []
++        self._fontsize = 10
++        self._legend_opts = {}
++        self._objects = []
++        self._show_axes = True
++        self._show_legend = False
++        self._tick_label_color = (0, 0, 0)
+ 
+     def set_aspect_ratio(self, ratio):
+         """
+@@ -269,9 +269,9 @@
+             sage: P # show with the legend
+         """
+         if show is None:
+-            return self.__show_legend
++            return self._show_legend
+         else:
+-            self.__show_legend = bool(show)
++            self._show_legend = bool(show)
+ 
+     def set_legend_options(self, **kwds):
+         r"""
+@@ -385,9 +385,9 @@
+             sage: p.set_legend_options(loc=(0.5,0.5)); p # aligns the bottom of the box to the center
+         """
+         if len(kwds) == 0:
+-            return self.__legend_opts
++            return self._legend_opts
+         else:
+-            self.__legend_opts.update(kwds)
++            self._legend_opts.update(kwds)
+     
+ 
+     def get_axes_range(self):
+@@ -456,10 +456,10 @@
+             {'xmin': -1.0}
+         """
+         try:
+-            return self.__axes_range
++            return self._axes_range
+         except AttributeError:
+-            self.__axes_range = {}
+-            return self.__axes_range
++            self._axes_range = {}
++            return self._axes_range
+ 
+     def fontsize(self, s=None):
+         """
+@@ -488,11 +488,11 @@
+         """
+         if s is None:
+             try:
+-                return self.__fontsize
++                return self._fontsize
+             except AttributeError:
+-                self.__fontsize = 10
+-                return self.__fontsize
+-        self.__fontsize = int(s)
++                self._fontsize = 10
++                return self._fontsize
++        self._fontsize = int(s)
+ 
+     def axes(self, show=None):
+         """
+@@ -534,11 +534,11 @@
+         """
+         if show is None:
+             try:
+-                return self.__show_axes
++                return self._show_axes
+             except AttributeError:
+-                self.__show_axes = True
+-                return self.__show_axes
+-        self.__show_axes = bool(show)
++                self._show_axes = True
++                return self._show_axes
++        self._show_axes = bool(show)
+ 
+     def axes_color(self, c=None):
+         """
+@@ -579,12 +579,12 @@
+         """
+         if c is None:
+             try:
+-                return self.__axes_color
++                return self._axes_color
+             
+             except AttributeError:
+-                self.__axes_color = (0.0, 0.0, 0.0)
+-                return self.__axes_color
+-        self.__axes_color = rgbcolor(c)
++                self._axes_color = (0.0, 0.0, 0.0)
++                return self._axes_color
++        self._axes_color = rgbcolor(c)
+ 
+     def axes_labels(self, l=None):
+         """
+@@ -623,15 +623,15 @@
+         """
+         if l is None:
+             try:
+-                return self.__axes_labels
++                return self._axes_labels
+             except AttributeError:
+-                self.__axes_labels = None
+-                return self.__axes_labels
++                self._axes_labels = None
++                return self._axes_labels
+         if not isinstance(l, (list, tuple)):
+             raise TypeError, "l must be a list or tuple"
+         if len(l) != 2:
+             raise ValueError, "l must have length 2"
+-        self.__axes_labels = (str(l[0]), str(l[1]))
++        self._axes_labels = (str(l[0]), str(l[1]))
+ 
+     def axes_label_color(self, c=None):
+         r"""
+@@ -678,11 +678,11 @@
+         """
+         if c is None:
+             try:
+-                return self.__axes_label_color
++                return self._axes_label_color
+             except AttributeError:
+-                self.__axes_label_color = (0, 0, 0)
+-                return self.__axes_label_color
+-        self.__axes_label_color = rgbcolor(c)
++                self._axes_label_color = (0, 0, 0)
++                return self._axes_label_color
++        self._axes_label_color = rgbcolor(c)
+ 
+ 
+     def axes_width(self, w=None):
+@@ -719,11 +719,11 @@
+         """
+         if w is None:
+             try:
+-                return self.__axes_width
++                return self._axes_width
+             except AttributeError:
+-                self.__axes_width = True
+-                return self.__axes_width
+-        self.__axes_width = float(w)
++                self._axes_width = True
++                return self._axes_width
++        self._axes_width = float(w)
+ 
+     def tick_label_color(self, c=None):
+         """
+@@ -750,11 +750,11 @@
+         """
+         if c is None:
+             try:
+-                return self.__tick_label_color
++                return self._tick_label_color
+             except AttributeError:
+-                self.__tick_label_color = (0, 0, 0)
+-                return self.__tick_label_color
+-        self.__tick_label_color = rgbcolor(c)
++                self._tick_label_color = (0, 0, 0)
++                return self._tick_label_color
++        self._tick_label_color = rgbcolor(c)
+ 
+     def _repr_(self):
+         r"""
+@@ -863,7 +863,7 @@
+             sage: G[1]
+             Circle defined by (2.0,2.0) with r=5.0
+         """
+-        return self.__objects[i]
++        return self._objects[i]
+ 
+     def __len__(self):
+         """
+@@ -877,7 +877,7 @@
+             sage: len(G)
+             3
+         """
+-        return len(self.__objects)
++        return len(self._objects)
+ 
+     def __delitem__(self, i):
+         """
+@@ -896,7 +896,7 @@
+             sage: len(G)
+             2
+         """
+-        del self.__objects[int(i)]
++        del self._objects[int(i)]
+ 
+     def __setitem__(self, i, x):
+         """
+@@ -921,7 +921,7 @@
+         from sage.plot.primitive import GraphicPrimitive
+         if not isinstance(x, GraphicPrimitive):
+             raise TypeError, "x must be a GraphicPrimitive"
+-        self.__objects[int(i)] = x
++        self._objects[int(i)] = x
+ 
+     def __radd__(self, other):
+         """
+@@ -1015,8 +1015,8 @@
+                 return self.plot3d() + other
+             raise TypeError, "other (=%s) must be a Graphics objects"%other
+         g = Graphics()
+-        g.__objects = self.__objects + other.__objects
+-        g.__show_legend = self.__show_legend or other.__show_legend
++        g._objects = self._objects + other._objects
++        g._show_legend = self._show_legend or other._show_legend
+         g._extra_kwds.update(self._extra_kwds)
+         g._extra_kwds.update(other._extra_kwds)
+         g._Graphics__legend_opts.update(self._Graphics__legend_opts)
+@@ -1046,7 +1046,7 @@
+             sage: G.add_primitive(A)
+             sage: G
+         """
+-        self.__objects.append(primitive)
++        self._objects.append(primitive)
+ 
+     def plot(self, *args, **kwds):
+         """
+@@ -1072,7 +1072,7 @@
+             sage: sum([plot(z*sin(x), 0, 10).plot3d(z) for z in range(6)]) # long time
+         """
+         from sage.plot.plot3d.base import Graphics3dGroup
+-        g = Graphics3dGroup([g.plot3d(**kwds) for g in self.__objects])
++        g = Graphics3dGroup([g.plot3d(**kwds) for g in self._objects])
+         if z:
+             g = g.translate(0,0,z)
+         return g
+@@ -1597,7 +1597,7 @@
+             sage: list(sorted(g.get_minmax_data().items()))
+             [('xmax', 3.0), ('xmin', -1.0), ('ymax', 2.0), ('ymin', 1.0)]
+         """
+-        objects = self.__objects
++        objects = self._objects
+         if objects:
+             minmax_data = [o.get_minmax_data() for o in objects]
+             xmin = min(d['xmin'] for d in minmax_data)
+@@ -1699,7 +1699,7 @@
+         do_verify = verify
+ 
+         if axes is None:
+-            axes = self.__show_axes
++            axes = self._show_axes
+ 
+         from matplotlib.figure import Figure
+         from matplotlib import rcParams
+@@ -1724,20 +1724,20 @@
+         else:
+             subplot.set_aspect(aspect_ratio, adjustable='box')
+         #add all the primitives to the subplot
+-        for g in self.__objects:
++        for g in self._objects:
+             g._render_on_subplot(subplot)
+             if hasattr(g, '_bbox_extra_artists'):
+-                self.__bbox_extra_artists.extend(g._bbox_extra_artists)
++                self._bbox_extra_artists.extend(g._bbox_extra_artists)
+         
+         #add the legend if requested
+         if show_legend is None:
+-            show_legend = self.__show_legend
++            show_legend = self._show_legend
+         
+         if show_legend:
+             from matplotlib.font_manager import FontProperties
+             lopts = dict()
+             lopts.update(legend_options)
+-            lopts.update(self.__legend_opts)
++            lopts.update(self._legend_opts)
+             prop = FontProperties(family=lopts.pop('font_family'), weight=lopts.pop('font_weight'), \
+                     size=lopts.pop('font_size'), style=lopts.pop('font_style'), variant=lopts.pop('font_variant'))
+             color = lopts.pop('back_color')
+@@ -1757,11 +1757,11 @@
+ 
+ 
+         if axes is None:
+-            axes = self.__show_axes
++            axes = self._show_axes
+ 
+         for spine in subplot.spines.values():
+-            spine.set_color(self.__axes_color)
+-            spine.set_linewidth(self.__axes_width)
++            spine.set_color(self._axes_color)
++            spine.set_linewidth(self._axes_width)
+         
+ 
+         if frame:
+@@ -1828,11 +1828,11 @@
+             subplot.set_frame_on(True)
+             if axes:
+                 if ymin<=0 and ymax>=0:
+-                    subplot.axhline(color=self.__axes_color,
+-                                    linewidth=self.__axes_width)
++                    subplot.axhline(color=self._axes_color,
++                                    linewidth=self._axes_width)
+                 if xmin<=0 and xmax>=0:
+-                    subplot.axvline(color=self.__axes_color,
+-                                    linewidth=self.__axes_width)
++                    subplot.axvline(color=self._axes_color,
++                                    linewidth=self._axes_width)
+             
+         elif axes:
+             ymiddle=False
+@@ -1988,15 +1988,15 @@
+                 subplot.yaxis.get_majorticklabels() + \
+                 subplot.yaxis.get_minorticklabels()
+             for ticklabel in ticklabels:
+-                ticklabel.set_fontsize(self.__fontsize)
+-                ticklabel.set_color(self.__tick_label_color)
++                ticklabel.set_fontsize(self._fontsize)
++                ticklabel.set_color(self._tick_label_color)
+ 
+             ticklines=subplot.xaxis.get_majorticklines() + \
+                 subplot.xaxis.get_minorticklines() + \
+                 subplot.yaxis.get_majorticklines() + \
+                 subplot.yaxis.get_minorticklines()
+             for tickline in ticklines:
+-                tickline.set_color(self.__axes_color)
++                tickline.set_color(self._axes_color)
+                 
+             
+         if gridlines is not None:
+@@ -2057,12 +2057,12 @@
+ 
+ 
+ 
+-        if self.__axes_labels is not None:
++        if self._axes_labels is not None:
+             label_options={}
+-            label_options['color']=self.__axes_label_color
+-            label_options['size']=self.__fontsize
+-            subplot.set_xlabel(self.__axes_labels[0], **label_options)
+-            subplot.set_ylabel(self.__axes_labels[1], **label_options)
++            label_options['color']=self._axes_label_color
++            label_options['size']=self._fontsize
++            subplot.set_xlabel(self._axes_labels[0], **label_options)
++            subplot.set_ylabel(self._axes_labels[1], **label_options)
+                 
+ 
+             if axes is True and frame is False:
+@@ -2237,7 +2237,7 @@
+ 
+             if fig_tight is True:
+                 figure.savefig(filename, dpi=dpi, bbox_inches='tight',
+-                    bbox_extra_artists=self.__bbox_extra_artists,
++                    bbox_extra_artists=self._bbox_extra_artists,
+                     transparent=transparent)
+             else:
+                 figure.savefig(filename, dpi=dpi,
+@@ -2442,7 +2442,7 @@
+         i = int(i)
+         self._glist[i] = g
+         
+-    def __set_figsize__(self, ls):
++    def _set_figsize_(self, ls):
+         """
+         Set the figsize of all plots in the array.
+ 
+@@ -2565,7 +2565,7 @@
+             sage: G = graphics_array(L)
+             sage: G.save(F,500,axes=False)  # long time (6s on sage.math, 2012)
+         """
+-        if (figsize is not None): self.__set_figsize__(figsize)
++        if (figsize is not None): self._set_figsize_(figsize)
+         self._render(filename, dpi=dpi, figsize=self._figsize, axes = axes, **args)
+ 
+     def show(self, filename=None, dpi=DEFAULT_DPI, figsize=None,
+@@ -2596,7 +2596,7 @@
+             sage: G = graphics_array([[plot(sin), plot(cos)], [plot(tan), plot(sec)]])
+             sage: G.show(axes=False)
+         """
+-        if (figsize is not None): self.__set_figsize__(figsize)
++        if (figsize is not None): self._set_figsize_(figsize)
+         if sage.plot.plot.DOCTEST_MODE:
+             self.save(DOCTEST_MODE_FILE,
+                       dpi=dpi, figsize=self._figsize, axes = axes, **args)
+diff --git a/sage/plot/primitive.py b/sage/plot/primitive.py
+--- a/sage/plot/primitive.py
++++ b/sage/plot/primitive.py
+@@ -48,7 +48,7 @@
+             sage: GraphicPrimitive({})
+             Graphics primitive
+         """
+-        self.__options = options
++        self._options = options
+         
+     def _allowed_options(self):
+         """
+@@ -133,7 +133,7 @@
+             sage: q.options()['zorder']
+             3
+         """
+-        self.__options['zorder'] = zorder
++        self._options['zorder'] = zorder
+         
+     def options(self):
+         """
+@@ -150,7 +150,7 @@
+         """
+         from sage.plot.graphics import do_verify
+         from sage.plot.colors import hue
+-        O = dict(self.__options)
++        O = dict(self._options)
+         if do_verify:
+             A = self._allowed_options()
+             t = False

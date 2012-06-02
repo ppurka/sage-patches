@@ -1,0 +1,495 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1338275792 -28800
+# Node ID 7eaaee0e5bb03f3672ca1502e9be1dc5ffd35e5e
+# Parent  b866943164a4f7dc55e2578148b39a136f9155a5
+fix typos, add warnings, and fix aspect_ratio
+  - fix `linear` to ``"linear"``, etc
+  - add warnings to list_plot* and for noninteger base
+  - change aspect_ratio to "automatic" for many plots in sage.plot.*
+
+diff --git a/sage/plot/arc.py b/sage/plot/arc.py
+--- a/sage/plot/arc.py
++++ b/sage/plot/arc.py
+@@ -350,6 +350,13 @@
+         NotImplementedError
+     """
+     from sage.plot.all import Graphics
++
++    # Reset aspect_ratio to 'automatic' in case scale is 'semilog[xy]'.
++    # Otherwise matplotlib complains.
++    scale = options.get('scale', None)
++    if scale == 'semilogy' or scale == 'semilogx':
++        options['aspect_ratio'] = 'automatic'
++
+     if len(center)==2:
+         if r2 is None: r2 = r1
+         g = Graphics()
+diff --git a/sage/plot/circle.py b/sage/plot/circle.py
+--- a/sage/plot/circle.py
++++ b/sage/plot/circle.py
+@@ -321,6 +321,13 @@
+         1.0
+     """
+     from sage.plot.all import Graphics
++
++    # Reset aspect_ratio to 'automatic' in case scale is 'semilog[xy]'.
++    # Otherwise matplotlib complains.
++    scale = options.get('scale', None)
++    if scale == 'semilogy' or scale == 'semilogx':
++        options['aspect_ratio'] = 'automatic'
++
+     g = Graphics()
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options))
+     g.add_primitive(Circle(center[0], center[1], radius, options))
+diff --git a/sage/plot/contour_plot.py b/sage/plot/contour_plot.py
+--- a/sage/plot/contour_plot.py
++++ b/sage/plot/contour_plot.py
+@@ -483,6 +483,13 @@
+                               for y in xsrange(*ranges[1], include_endpoint=True)]
+ 
+     g = Graphics()
++
++    # Reset aspect_ratio to 'automatic' in case scale is 'semilog[xy]'.
++    # Otherwise matplotlib complains.
++    scale = options.get('scale', None)
++    if scale == 'semilogy' or scale == 'semilogx':
++        options['aspect_ratio'] = 'automatic'
++
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options, ignore=['xmin', 'xmax']))
+     g.add_primitive(ContourPlot(xy_data_array, xrange, yrange, options))
+     return g
+@@ -532,17 +539,18 @@
+       ``basex`` sets the base of the logarithm along the horizontal
+       axis and ``basey`` sets the base along the vertical axis.
+ 
+-    - ``scale`` -- (default: `linear`) string. The scale of the axes.
+-      Possible values are `linear`, `loglog`, `semilogx`, `semilogy`.
++    - ``scale`` -- (default: ``"linear"``) string. The scale of the axes.
++      Possible values are ``"linear"``, ``"loglog"``, ``"semilogx"``,
++      ``"semilogy"``.
+ 
+       The scale can be also be given as single argument that is a list
+       or tuple ``(scale, base)`` or ``(scale, basex, basey)``.
+ 
+-      The `loglog` scale sets both the horizontal and vertical axes to
+-      logarithmic scale. The `semilogx` scale sets the horizontal axis
+-      to logarithmic scale. The `semilogy` scale sets the vertical axis
+-      to logarithmic scale. The `linear` scale is the default value
+-      when :class:`Graphics` is initialized.
++      The ``"loglog"`` scale sets both the horizontal and vertical axes to
++      logarithmic scale. The ``"semilogx"`` scale sets the horizontal axis
++      to logarithmic scale. The ``"semilogy"`` scale sets the vertical axis
++      to logarithmic scale. The ``"linear"`` scale is the default value
++      when :class:`~sage.plot.graphics.Graphics` is initialized.
+ 
+     EXAMPLES:
+ 
+@@ -711,17 +719,18 @@
+       ``basex`` sets the base of the logarithm along the horizontal
+       axis and ``basey`` sets the base along the vertical axis.
+ 
+-    - ``scale`` -- (default: `linear`) string. The scale of the axes.
+-      Possible values are `linear`, `loglog`, `semilogx`, `semilogy`.
++    - ``scale`` -- (default: ``"linear"``) string. The scale of the axes.
++      Possible values are ``"linear"``, ``"loglog"``, ``"semilogx"``,
++      ``"semilogy"``.
+ 
+       The scale can be also be given as single argument that is a list
+       or tuple ``(scale, base)`` or ``(scale, basex, basey)``.
+ 
+-      The `loglog` scale sets both the horizontal and vertical axes to
+-      logarithmic scale. The `semilogx` scale sets the horizontal axis
+-      to logarithmic scale. The `semilogy` scale sets the vertical axis
+-      to logarithmic scale. The `linear` scale is the default value
+-      when :class:`Graphics` is initialized.
++      The ``"loglog"`` scale sets both the horizontal and vertical axes to
++      logarithmic scale. The ``"semilogx"`` scale sets the horizontal axis
++      to logarithmic scale. The ``"semilogy"`` scale sets the vertical axis
++      to logarithmic scale. The ``"linear"`` scale is the default value
++      when :class:`~sage.plot.graphics.Graphics` is initialized.
+ 
+ 
+     EXAMPLES:
+@@ -817,6 +826,13 @@
+     cmap.set_under(incol)
+ 
+     g = Graphics()
++
++    # Reset aspect_ratio to 'automatic' in case scale is 'semilog[xy]'.
++    # Otherwise matplotlib complains.
++    scale = options.get('scale', None)
++    if scale == 'semilogy' or scale == 'semilogx':
++        options['aspect_ratio'] = 'automatic'
++
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options, ignore=['xmin', 'xmax']))
+     g.add_primitive(ContourPlot(xy_data_array, xrange,yrange,
+                                 dict(contours=[-1e307, 0, 1e307], cmap=cmap, fill=True, **options)))
+diff --git a/sage/plot/disk.py b/sage/plot/disk.py
+--- a/sage/plot/disk.py
++++ b/sage/plot/disk.py
+@@ -284,6 +284,13 @@
+     """
+     from sage.plot.all import Graphics
+     g = Graphics()
++
++    # Reset aspect_ratio to 'automatic' in case scale is 'semilog[xy]'.
++    # Otherwise matplotlib complains.
++    scale = options.get('scale', None)
++    if scale == 'semilogy' or scale == 'semilogx':
++        options['aspect_ratio'] = 'automatic'
++
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options))
+     g.add_primitive(Disk(point, radius, angle, options))
+     if options['legend_label']:
+diff --git a/sage/plot/ellipse.py b/sage/plot/ellipse.py
+--- a/sage/plot/ellipse.py
++++ b/sage/plot/ellipse.py
+@@ -282,6 +282,13 @@
+     """
+     from sage.plot.all import Graphics
+     g = Graphics()
++
++    # Reset aspect_ratio to 'automatic' in case scale is 'semilog[xy]'.
++    # Otherwise matplotlib complains.
++    scale = options.get('scale', None)
++    if scale == 'semilogy' or scale == 'semilogx':
++        options['aspect_ratio'] = 'automatic'
++
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options))
+     g.add_primitive(Ellipse(center[0],center[1],r1,r2,angle,options))
+     if options['legend_label']:
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1133,7 +1133,7 @@
+         INPUT:
+         - ``figure`` -- the matplotlib figure instance.
+         - ``scale`` -- the scale of the figure. Values it can take are
+-          `"linear"`, `"loglog"`, `"semilogx"`, `"semilogy"`. See
++          ``"linear"``, ``"loglog"``, ``"semilogx"``, ``"semilogy"``. See
+           :meth:`show` for other options it can take.
+         - ``base`` -- the base of the logarithm if a logarithmic scale is
+           set. See :meth:`show` for the options it can take.
+@@ -1377,8 +1377,10 @@
+             `e`, or `sqrt(2)`, ticks will be formatted nicely at rational
+             multiples of this constant.
+ 
+-          .. warning:: This should only be used with the ``ticks`` option
+-             using nice rational multiples of that constant!
++          .. warning::
++
++             This should only be used with the ``ticks`` option using nice
++             rational multiples of that constant!
+ 
+           - If one of the entries is the string ``"latex"``, then the
+             formatting will be nice typesetting of the ticks.  This is
+@@ -1395,22 +1397,30 @@
+           ``basex`` sets the base of the logarithm along the horizontal
+           axis and ``basey`` sets the base along the vertical axis.
+ 
+-        - ``scale`` -- (default: `"linear"`) string. The scale of the axes.
++        - ``scale`` -- (default: ``"linear"``) string. The scale of the axes.
+           Possible values are
+ 
+-          - `"linear"` -- linear scaling of both the axes
+-          - `"loglog"` -- sets both the horizontal and vertical axes to
++          - ``"linear"`` -- linear scaling of both the axes
++          - ``"loglog"`` -- sets both the horizontal and vertical axes to
+             logarithmic scale
+-          - `"semilogx"` -- sets only the horizontal axis to logarithmic
++          - ``"semilogx"`` -- sets only the horizontal axis to logarithmic
+             scale.
+-          - `"semilogy"` -- sets only the vertical axis to logarithmic
++          - ``"semilogy"`` -- sets only the vertical axis to logarithmic
+             scale.
+ 
+           The scale can be also be given as single argument that is a list
+           or tuple ``(scale, base)`` or ``(scale, basex, basey)``.
+ 
+-          Note: If the ``scale`` is `"linear"`, then irrespective of what
+-          ``base`` is set to, it will default to 10 and will remain unused.
++          .. note::
++
++            - If the ``scale`` is ``"linear"``, then irrespective of what
++              ``base`` is set to, it will default to 10 and will remain
++              unused.
++
++            - Although it is possible to provide a noninteger ``base``, the
++              tick labeling and formatting is not ideal. Hence, in case you
++              do use noninteger ``base`` for the logarithm, then provide
++              your own tick formatter using the option ``tick_formatter``.
+ 
+         EXAMPLES::
+ 
+@@ -2233,7 +2243,7 @@
+ 
+             # Make the zero tick labels disappear if the axes cross
+             # inside the picture, but only if log scale is not used
+-            if (xmiddle and ymiddle and xscale == 'linear' and 
++            if (xmiddle and ymiddle and xscale == 'linear' and
+                 yscale == 'linear'):
+                 from sage.plot.plot import SelectiveFormatter
+                 subplot.yaxis.set_major_formatter(SelectiveFormatter(
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -607,16 +607,17 @@
+       ``basex`` sets the base of the logarithm along the horizontal
+       axis and ``basey`` sets the base along the vertical axis.
+ 
+-    - ``scale`` -- (default: `linear`) string. The scale of the axes.
+-      Possible values are `linear`, `loglog`, `semilogx`, `semilogy`.
++    - ``scale`` -- (default: ``"linear"``) string. The scale of the axes.
++      Possible values are ``"linear"``, ``"loglog"``, ``"semilogx"``,
++      ``"semilogy"``.
+ 
+       The scale can be also be given as single argument that is a list
+       or tuple ``(scale, base)`` or ``(scale, basex, basey)``.
+ 
+-      The `loglog` scale sets both the horizontal and vertical axes to
+-      logarithmic scale. The `semilogx` scale sets the horizontal axis
+-      to logarithmic scale. The `semilogy` scale sets the vertical axis
+-      to logarithmic scale. The `linear` scale is the default value
++      The ``"loglog"`` scale sets both the horizontal and vertical axes to
++      logarithmic scale. The ``"semilogx"`` scale sets the horizontal axis
++      to logarithmic scale. The ``"semilogy"`` scale sets the vertical axis
++      to logarithmic scale. The ``"linear"`` scale is the default value
+       when :class:`~sage.plot.graphics.Graphics` is initialized.
+ 
+     - ``xmin`` - starting x value
+@@ -632,6 +633,16 @@
+ 
+     - ``legend_label`` - the label for this item in the legend
+ 
++    .. note::
++
++        - If the ``scale`` is ``"linear"``, then irrespective of what
++          ``base`` is set to, it will default to 10 and will remain unused.
++
++        - Although it is possible to provide a noninteger ``base``, the
++          tick labeling and formatting is not ideal. Hence, in case you do
++          use noninteger ``base`` for the logarithm, then provide your own
++          tick formatter using the option ``tick_formatter``.
++
+     APPEARANCE OPTIONS:
+ 
+     The following options affect the appearance of
+@@ -818,7 +829,7 @@
+ 
+     ::
+ 
+-        sage: plot_loglog(exp, (1, 10), scale='loglog')   # both axes are log
++        sage: plot_loglog(exp, (1, 10))   # both axes are log
+ 
+     ::
+ 
+@@ -1622,20 +1633,31 @@
+     Plotting in logarithmic scale is possible for 2D list plots.
+     There are two different syntaxes available::
+ 
+-        sage: yl = [2**k for k in range(10)]
++        sage: yl = [2**k for k in range(20)]
+         sage: list_plot(yl, scale='semilogy')       # log axis on vertical
+ 
+     ::
+ 
+         sage: list_plot_semilogy(yl)       # same
+ 
++    .. warning::
++
++        If ``plotjoined`` is `False` then the axis that is in log scale
++        must have all points strictly positive. For instance, the following
++        plot will show no points in the figure since the points in the
++        horizontal axis starts from `(0,1)`.
++
+     ::
+ 
+         sage: list_plot(yl, scale='loglog')         # both axes are log
+ 
+-    ::
+-
+-        sage: list_plot_loglog(yl, base=2) # base of log is 2
++    Instead this will work. We drop the point `(0,1)`.::
++
++        sage: list_plot(zip(range(1,len(yl)), yl[1:]), scale='loglog')
++
++    We use :func:`list_plot_loglog` and plot in a different base.::
++
++        sage: list_plot_loglog(zip(range(1,len(yl)), yl[1:]), base=2)
+ 
+     We can also change the scale of the axes in the graphics just before
+     displaying::
+@@ -1706,6 +1728,13 @@
+ 
+     For all other inputs, look at the documentation of :func:`plot`.
+ 
++    .. note::
++
++        - Although it is possible to provide a noninteger ``base``, the
++          tick labeling and formatting is not ideal. Hence, in case you do
++          use noninteger ``base`` for the logarithm, then provide your own
++          tick formatter using the option ``tick_formatter``.
++
+     EXAMPLES::
+ 
+         sage: plot_loglog(exp, (1,10)) # plot in loglog scale with base 10
+@@ -1736,6 +1765,13 @@
+ 
+     For all other inputs, look at the documentation of :func:`plot`.
+ 
++    .. note::
++
++        - Although it is possible to provide a noninteger ``base``, the
++          tick labeling and formatting is not ideal. Hence, in case you do
++          use noninteger ``base`` for the logarithm, then provide your own
++          tick formatter using the option ``tick_formatter``.
++
+     EXAMPLES::
+ 
+         sage: plot_semilogx(exp, (1,10)) # plot in semilogx scale, base 10
+@@ -1762,6 +1798,13 @@
+ 
+     For all other inputs, look at the documentation of :func:`plot`.
+ 
++    .. note::
++
++        - Although it is possible to provide a noninteger ``base``, the
++          tick labeling and formatting is not ideal. Hence, in case you do
++          use noninteger ``base`` for the logarithm, then provide your own
++          tick formatter using the option ``tick_formatter``.
++
+     EXAMPLES::
+ 
+         sage: plot_semilogy(exp, (1,10)) # plot in semilogy scale, base 10
+@@ -1788,6 +1831,14 @@
+ 
+     For all other inputs, look at the documentation of :func:`list_plot`.
+ 
++
++    .. note::
++
++        - Although it is possible to provide a noninteger ``base``, the
++          tick labeling and formatting is not ideal. Hence, in case you do
++          use noninteger ``base`` for the logarithm, then provide your own
++          tick formatter using the option ``tick_formatter``.
++
+     EXAMPLES::
+ 
+         sage: yl = [5**k for k in range(10)]; xl = [2**k for k in range(10)]
+@@ -1801,6 +1852,22 @@
+ 
+         sage: list_plot_loglog(zip(xl, yl), base=(2,5))
+ 
++    .. warning::
++
++        If ``plotjoined`` is `False` then the axis that is in log scale
++        must have all points strictly positive. For instance, the following
++        plot will show no points in the figure since the points in the
++        horizontal axis starts from `(0,1)`.
++
++    ::
++
++        sage: yl = [2**k for k in range(20)]
++        sage: list_plot_loglog(yl)
++
++    Instead this will work. We drop the point `(0,1)`.::
++
++        sage: list_plot_loglog(zip(range(1,len(yl)), yl[1:]))
++
+     """
+     return list_plot(data, plotjoined=plotjoined, scale='loglog', **kwds)
+ 
+@@ -1817,10 +1884,33 @@
+ 
+     For all other inputs, look at the documentation of :func:`list_plot`.
+ 
++    .. note::
++
++        - Although it is possible to provide a noninteger ``base``, the
++          tick labeling and formatting is not ideal. Hence, in case you do
++          use noninteger ``base`` for the logarithm, then provide your own
++          tick formatter using the option ``tick_formatter``.
++
++
+     EXAMPLES::
+ 
+-        sage: yl = [5**k for k in range(10)]
+-        sage: list_plot_semilogx(yl) # plot in semilogx scale, base 10
++        sage: yl = [2**k for k in range(12)]
++        sage: list_plot_semilogx(zip(yl,yl))
++
++    .. warning::
++
++        If ``plotjoined`` is `False` then the horizontal axis must have all
++        points strictly positive. Otherwise the plot will come up empty.
++        For instance the following plot contains a point at `(0,1)`.
++
++    ::
++
++        sage: yl = [2**k for k in range(12)]
++        sage: list_plot_semilogx(yl) # plot is empty because of `(0,1)`
++
++    We remove `(0,1)` to fix this.::
++
++        sage: list_plot_semilogx(zip(range(1, len(yl)), yl[1:]))
+ 
+     ::
+ 
+@@ -1842,14 +1932,37 @@
+ 
+     For all other inputs, look at the documentation of :func:`list_plot`.
+ 
++    .. note::
++
++        - Although it is possible to provide a noninteger ``base``, the
++          tick labeling and formatting is not ideal. Hence, in case you do
++          use noninteger ``base`` for the logarithm, then provide your own
++          tick formatter using the option ``tick_formatter``.
++
+     EXAMPLES::
+ 
+-        sage: yl = [5**k for k in range(10)]
++        sage: yl = [2**k for k in range(12)]
+         sage: list_plot_semilogy(yl) # plot in semilogy scale, base 10
+ 
++    .. warning::
++
++        If ``plotjoined`` is `False` then the vertical axis must have all
++        points strictly positive. Otherwise the plot will come up empty.
++        For instance the following plot contains a point at `(1,0)`.
++
+     ::
+ 
+-        sage: list_plot_semilogy(yl, base=5) # with base 5
++        sage: xl = [2**k for k in range(12)]; yl = range(len(xl))
++        sage: list_plot_semilogy(zip(xl,yl)) # plot empty due to (1,0)
++
++    We remove `(1,0)` to fix this.::
++
++        sage: list_plot_semilogy(zip(xl[1:],yl[1:]))
++
++
++    ::
++
++        sage: list_plot_semilogy(yl, base=2) # with base 2
+ 
+     """
+     return list_plot(data, plotjoined=plotjoined, scale='semilogy', **kwds)
+diff --git a/sage/plot/polygon.py b/sage/plot/polygon.py
+--- a/sage/plot/polygon.py
++++ b/sage/plot/polygon.py
+@@ -364,6 +364,13 @@
+             options["thickness"] = 1
+     xdata, ydata = xydata_from_point_list(points)
+     g = Graphics()
++
++    # Reset aspect_ratio to 'automatic' in case scale is 'semilog[xy]'.
++    # Otherwise matplotlib complains.
++    scale = options.get('scale', None)
++    if scale == 'semilogy' or scale == 'semilogx':
++        options['aspect_ratio'] = 'automatic'
++
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options))
+     g.add_primitive(Polygon(xdata, ydata, options))
+     if options['legend_label']:

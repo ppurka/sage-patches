@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1337533730 -28800
-# Node ID fcbbe547cfd9ef630204a54763c595b1d3dd6da0
-# Parent  b6bb53fd456653d8dd6db394da1bde4bba9559d6
+# Node ID 20426b54923774fb9a03eff99b0d459591fadcec
+# Parent  ff43705445eef10e6845688d77a3fcd97d3f2b1e
  - add some examples for log scale to other user facing functions
  - also add a minor check in parametric_plot
  - finally add loglog_*, semilogx_*, semilogy_* plots
@@ -167,20 +167,22 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
      TESTS::
  
          sage: parametric_plot((x, t^2), (x, -4, 4))
-@@ -1406,6 +1456,12 @@
+@@ -1406,6 +1456,14 @@
      if num_vars>num_ranges:
          raise ValueError, "there are more variables than variable ranges"
  
 +    # Reset aspect_ratio to 'automatic' in case scale is 'semilog[xy]'.
 +    # Otherwise matplotlib complains.
 +    scale = kwargs.get('scale', None)
++    if isinstance(scale, (list, tuple)):
++        scale = scale[0]
 +    if scale == 'semilogy' or scale == 'semilogx':
 +        kwargs['aspect_ratio'] = 'automatic'
 +
      if num_funcs == 2 and num_ranges == 1:
          kwargs['parametric'] = True
          return plot(funcs, *args, **kwargs)
-@@ -1547,6 +1603,21 @@
+@@ -1547,6 +1605,21 @@
  
          sage: list_plot({22: 3365, 27: 3295, 37: 3135, 42: 3020, 47: 2880, 52: 2735, 57: 2550})
  
@@ -202,7 +204,7 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
      TESTS:
  
      We check to see that the x/y min/max data are set correctly.
-@@ -1592,6 +1663,156 @@
+@@ -1592,6 +1665,156 @@
          else:
              return point(data, **kwargs)
  

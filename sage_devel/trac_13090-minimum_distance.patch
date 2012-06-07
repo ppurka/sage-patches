@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1338974175 -28800
-# Node ID 8a808655a9ce2b61bf6f518c86e412399f5f9950
-# Parent  88886e965a3236718a3715363c94c9731b0cb420
+# Node ID e1622517868cf2f18efb79efc85c989a736a641b
+# Parent  8c16c23faac0e48277d86b528fd83913982a322d
 allow LinearCode to take minimum distance as a parameter
   - this allows us to store the minimum distance computations, once done
   - also, we can provide the minimum distance in the initialization of known codes
@@ -11,16 +11,18 @@ allow LinearCode to take minimum distance as a parameter
 diff --git a/sage/coding/code_constructions.py b/sage/coding/code_constructions.py
 --- a/sage/coding/code_constructions.py
 +++ b/sage/coding/code_constructions.py
-@@ -576,7 +576,7 @@
+@@ -576,7 +576,9 @@
          sage: C = BinaryGolayCode()
          sage: C
          Linear code of length 23, dimension 12 over Finite Field of size 2
 -        sage: C.minimum_distance()               # long time
 +        sage: C.minimum_distance()
++        7
++        sage: C.minimum_distance(algorithm='gap') # long time, check d=7
          7
      
      AUTHORS:
-@@ -599,7 +599,7 @@
+@@ -599,7 +601,7 @@
      # MS = MatrixSpace(F,12,23)
      # V = VectorSpace(F,23)
      V = span(B, F)
@@ -29,7 +31,59 @@ diff --git a/sage/coding/code_constructions.py b/sage/coding/code_constructions.
  
  
  def CyclicCodeFromGeneratingPolynomial(n,g,ignore=True):
-@@ -961,7 +961,8 @@
+@@ -825,9 +827,11 @@
+         sage: C = ExtendedBinaryGolayCode()
+         sage: C
+         Linear code of length 24, dimension 12 over Finite Field of size 2
+-        sage: C.minimum_distance()              
++        sage: C.minimum_distance()
+         8
+-    
++        sage: C.minimum_distance(algorithm='gap') # long time, check d=8
++        8
++
+     AUTHORS:
+ 
+     - David Joyner (2007-05)
+@@ -845,7 +849,7 @@
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1],\
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1]]
+     V = span(B, GF(2))
+-    return LinearCodeFromVectorSpace(V)
++    return LinearCodeFromVectorSpace(V, d=8)
+     # C = BinaryGolayCode()
+     # return C.extended_code()
+ 
+@@ -904,7 +908,9 @@
+         Linear code of length 12, dimension 6 over Finite Field of size 3
+         sage: C.minimum_distance()
+         6
+-    
++        sage: C.minimum_distance(algorithm='gap') # long time, check d=6
++        6
++
+     AUTHORS:
+ 
+     - David Joyner (11-2005)
+@@ -916,7 +922,7 @@
+          [0, 0, 0, 0, 1, 0, 2, 1, 2, 2, 0, 1],\
+          [0, 0, 0, 0, 0, 1, 0, 2, 1, 2, 2, 1]]
+     V = span(B, GF(3))
+-    return LinearCodeFromVectorSpace(V)
++    return LinearCodeFromVectorSpace(V, d=6)
+     # C = TernaryGolayCode()
+     # return C.extended_code()
+ 
+@@ -950,6 +956,8 @@
+         Linear code of length 13, dimension 10 over Finite Field of size 3
+         sage: C.minimum_distance()
+         3
++        sage: C.minimum_distance(algorithm='gap') # long time, check d=3
++        3
+         sage: C = HammingCode(3,GF(4,'a')); C
+         Linear code of length 21, dimension 18 over Finite Field in a of size 2^2
+     """
+@@ -961,7 +969,8 @@
      PFn = [list(p) for p in X.point_set(F).points(F)]
      H = MS(PFn).transpose()
      Cd = LinearCode(H)
@@ -39,7 +93,25 @@ diff --git a/sage/coding/code_constructions.py b/sage/coding/code_constructions.
  
  
  def LinearCodeFromCheckMatrix(H):
-@@ -1250,7 +1251,7 @@
+@@ -1220,6 +1229,8 @@
+         Linear code of length 6, dimension 4 over Finite Field in a of size 2^3
+         sage: C.minimum_distance()
+         3
++        sage: C.minimum_distance(algorithm='gap') # long time, check d=n-k+1
++        3
+         sage: F.<a> = GF(3^2,"a")
+         sage: pts = [0,1,a,a^2,2*a,2*a+1]
+         sage: len(Set(pts)) == 6 # to make sure there are no duplicates
+@@ -1228,7 +1239,7 @@
+         Linear code of length 6, dimension 4 over Finite Field in a of size 3^2
+         sage: C.minimum_distance()
+         3
+-    
++
+     REFERENCES:
+ 
+     - [W] http://en.wikipedia.org/wiki/Reed-Solomon
+@@ -1250,7 +1261,7 @@
      rowsG = []
      rowsG = [[power(x,j,F) for x in pts] for j in range(k)]
      G = MS(rowsG)
@@ -48,7 +120,18 @@ diff --git a/sage/coding/code_constructions.py b/sage/coding/code_constructions.
  
  
  def TernaryGolayCode():
-@@ -1279,7 +1280,7 @@
+@@ -1266,7 +1277,9 @@
+         Linear code of length 11, dimension 6 over Finite Field of size 3
+         sage: C.minimum_distance()
+         5
+-    
++        sage: C.minimum_distance(algorithm='gap') # long time, check d=5
++        5
++
+     AUTHORS:
+ 
+     - David Joyner (2007-5)
+@@ -1279,7 +1292,7 @@
           [0, 0, 0, 0, 2, 0, 1, 2, 1, 1, 0],\
           [0, 0, 0, 0, 0, 2, 0, 1, 2, 1, 1]]
      V = span(B, F)
@@ -57,7 +140,19 @@ diff --git a/sage/coding/code_constructions.py b/sage/coding/code_constructions.
  
  def ToricCode(P,F):
      r"""
-@@ -1386,4 +1387,4 @@
+@@ -1379,11 +1392,15 @@
+         Linear code of length 8, dimension 3 over Finite Field of size 2
+         sage: C.spectrum()
+         [1, 0, 0, 0, 7, 0, 0, 0, 0]
+-    
++        sage: C.minimum_distance()
++        4
++        sage: C.minimum_distance(algorithm='gap') # check d=2^(m-1)
++        4
++
+     REFERENCES:
+ 
+     - http://en.wikipedia.org/wiki/Hadamard_matrix
  
      - http://en.wikipedia.org/wiki/Walsh_code
      """
@@ -83,8 +178,8 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 +      code. This is an optional parameter.
 +
 +    .. note::
-+        The minimum distance ``d`` if provided is not verified whether it
-+        is correct.
++        The veracity of the minimum distance ``d``, if provided, is not
++        checked.
 +
      OUTPUT:
  
@@ -241,8 +336,8 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 +      code, if known. This is an optional parameter.
 +
 +    .. note::
-+        The minimum distance ``d`` if provided is not verified whether it
-+        is correct.
++        The veracity of the minimum distance ``d``, if provided, is not
++        checked.
 +
      EXAMPLES::
  

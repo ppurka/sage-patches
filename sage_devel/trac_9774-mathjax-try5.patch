@@ -1,0 +1,1552 @@
+# HG changeset patch
+# User J. H. Palmieri <palmieri@math.washington.edu>
+# Date 1326533960 -28800
+# Node ID 61753be3b18106c11184c4922108624a7793e0f7
+# Parent  e5bd429887d6498d54981862e9a25fa21289b9a0
+#9774: switch Sage library from jsMath to MathJax.
+
+Many people helped in this patch, including: Rob Beezer, Davide Cervone,
+John Palmieri, Rado Kirov, Nathan Carter, and Jason Grout
+
+diff --git a/doc/common/builder.py b/doc/common/builder.py
+--- a/doc/common/builder.py
++++ b/doc/common/builder.py
+@@ -791,7 +791,7 @@
+     s += "    sage -docbuild -FDC all\n"
+     s += "    sage -docbuild constructions pdf\n"
+     s += "    sage -docbuild reference html -jv3\n"
+-    s += "    sage -docbuild --jsmath tutorial html\n"
++    s += "    sage -docbuild --mathjax tutorial html\n"
+     s += "    sage -docbuild reference print_unincluded_modules\n"
+     s += "    sage -docbuild developer -j html --sphinx-opts -q,-aE --verbose 2"
+     return s
+@@ -964,9 +964,9 @@
+                         default=False, action="store_true",
+                         help="include variables prefixed with '_' in reference manual; may be slow, may fail for PDF output")
+ 
+-    standard.add_option("-j", "--jsmath", dest="jsmath",
++    standard.add_option("-j", "--mathjax", "--jsmath", dest="mathjax",
+                         action="store_true",
+-                        help="render math using jsMath; FORMATs: html, json, pickle, web")
++                        help="render math using MathJax; FORMATs: html, json, pickle, web")
+     standard.add_option("--no-pdf-links", dest="no_pdf_links",
+                         action="store_true",
+                         help="do not include PDF links in DOCUMENT 'website'; FORMATs: html, json, pickle, web")
+@@ -1074,8 +1074,9 @@
+     logger = setup_logger(options.verbose, options.color)
+ 
+     # Process selected options.
+-    if options.jsmath:
+-        os.environ['SAGE_DOC_JSMATH'] = "True"
++    if (options.mathjax or (os.environ.get('SAGE_DOC_MATHJAX', False))
++        or (os.environ.get('SAGE_DOC_JSMATH', False))):
++        os.environ['SAGE_DOC_MATHJAX'] = "True"
+ 
+     if options.check_nested:
+         os.environ['SAGE_CHECK_NESTED'] = 'True'
+diff --git a/doc/common/conf.py b/doc/common/conf.py
+--- a/doc/common/conf.py
++++ b/doc/common/conf.py
+@@ -27,12 +27,6 @@
+ #, 'sphinx.ext.intersphinx']
+ 
+ 
+-if 'SAGE_DOC_JSMATH' in os.environ:
+-    extensions.append('sphinx.ext.jsmath')
+-else:
+-    extensions.append('sphinx.ext.pngmath')
+-jsmath_path = 'jsmath_sage.js'
+-
+ # Add any paths that contain templates here, relative to this directory.
+ templates_path = [os.path.join(SAGE_DOC, 'common/templates'), 'templates']
+ 
+@@ -134,7 +128,7 @@
+ # -----------------------
+ 
+ # HTML theme (e.g., 'default', 'sphinxdoc').  We use a custom Sage
+-# theme to set a Pygments style, stylesheet, and insert jsMath macros. See
++# theme to set a Pygments style, stylesheet, and insert MathJax macros. See
+ # the directory doc/common/themes/sage/ for files comprising the custom Sage
+ # theme.
+ html_theme = 'sage'
+@@ -144,13 +138,6 @@
+ # see the documentation.
+ html_theme_options = {}
+ 
+-if 'SAGE_DOC_JSMATH' in os.environ:
+-    from sage.misc.latex_macros import sage_jsmath_macros_easy
+-    html_theme_options['jsmath_macros'] = sage_jsmath_macros_easy
+-
+-    from sage.misc.package import is_package_installed
+-    html_theme_options['jsmath_image_fonts'] = is_package_installed('jsmath-image-fonts')
+-
+ # Add any paths that contain custom themes here, relative to this directory.
+ html_theme_path = [os.path.join(SAGE_DOC, 'common/themes')]
+ 
+@@ -179,14 +166,32 @@
+ # so a file named "default.css" will overwrite the builtin "default.css".
+ html_static_path = [os.path.join(SAGE_DOC, 'common/static'), 'static']
+ 
+-# If we're using jsMath, we prepend its location to the static path
+-# array.  We can override / overwrite selected files by putting them
+-# in the remaining paths.
+-if 'SAGE_DOC_JSMATH' in os.environ:
++# The environment variable SAGE_DOC_MATHJAX may be set by the user or
++# by the file "builder.py".  If it's set, or if SAGE_DOC_JSMATH is set
++# (for backwards compatibility), use MathJax.
++if (os.environ.get('SAGE_DOC_MATHJAX', False)
++    or os.environ.get('SAGE_DOC_JSMATH', False)):
++
++    extensions.append('sphinx.ext.mathjax')
++    mathjax_path = 'MathJax.js?config=TeX-AMS_HTML-full,../mathjax_sage.js'
++
++    from sage.misc.latex_macros import sage_mathjax_macros
++    html_theme_options['mathjax_macros'] = sage_mathjax_macros
++
+     from pkg_resources import Requirement, working_set
+     sagenb_path = working_set.find(Requirement.parse('sagenb')).location
+-    jsmath_static = os.path.join(sagenb_path, 'sagenb', 'data', 'jsmath')
+-    html_static_path.insert(0, jsmath_static)
++    mathjax_relative = os.path.join('sagenb','data','mathjax')
++
++    # It would be really nice if sphinx would copy the entire mathjax directory,
++    # (so we could have a _static/mathjax directory), rather than the contents of the directory
++
++    mathjax_static = os.path.join(sagenb_path, mathjax_relative)
++    html_static_path.append(mathjax_static)
++    exclude_patterns=['**/'+os.path.join(mathjax_relative, i) for i in ('docs', 'README*', 'test',
++                                                                        'unpacked', 'LICENSE')]
++else:
++     extensions.append('sphinx.ext.pngmath')
++
+ 
+ # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
+ # using the given strftime format.
+@@ -428,19 +433,6 @@
+         for i in range(len(lines)):
+             docstringlines[i] = lines[i]
+ 
+-def process_mathtt(app, what, name, obj, options, docstringlines):
+-    r"""
+-    Replace \mathtt{BLAH} with \verb|BLAH| if using jsMath.
+-    See sage.misc.sagedoc.process_mathtt for more information
+-    """
+-    if (len(docstringlines) > 0 and 'SAGE_DOC_JSMATH' in os.environ
+-        and name.find("process_mathtt") == -1):
+-        from sage.misc.sagedoc import process_mathtt as sagedoc_mathtt
+-        s = sagedoc_mathtt("\n".join(docstringlines), True)
+-        lines = s.split("\n")
+-        for i in range(len(lines)):
+-            docstringlines[i] = lines[i]
+-
+ def process_inherited(app, what, name, obj, options, docstringlines):
+     """
+     If we're including inherited members, omit their docstrings.
+@@ -604,7 +596,6 @@
+     app.connect('autodoc-process-docstring', process_directives)
+     app.connect('autodoc-process-docstring', process_docstring_module_title)
+     app.connect('autodoc-process-docstring', process_dollars)
+-    app.connect('autodoc-process-docstring', process_mathtt)
+     app.connect('autodoc-process-docstring', process_inherited)
+     app.connect('autodoc-skip-member', skip_member)
+ 
+diff --git a/doc/common/themes/sage/static/jsmath_sage.js_t b/doc/common/themes/sage/static/mathjax_sage.js_t
+rename from doc/common/themes/sage/static/jsmath_sage.js_t
+rename to doc/common/themes/sage/static/mathjax_sage.js_t
+--- a/doc/common/themes/sage/static/jsmath_sage.js_t
++++ b/doc/common/themes/sage/static/mathjax_sage.js_t
+@@ -1,195 +1,21 @@
+-/**********************************************************************
+- *
+- *   Customize the values given below to suit your needs.
+- *   You can make additional copies of this file with
+- *   different customizated settings if you need to load
+- *   jsMath with different parameters.
+- *
+- *   Load this page via:
+- *
+- *   <SCRIPT SRC="path-to-jsMath/easy/load.js"></SCRIPT>
+- *
+- *   (If you are including this file into your page via Server-Side
+- *   Includes, you should remove line above.)
+- *
+- *   You can make copies of this file with different settings
+- *   if you need to have several different configurations.
+- *
+- **********************************************************************/
++MathJax.Hub.Config({
++  imageFont: null,
++  tex2jax: {
++    inlineMath: [['$','$'],['\\(','\\)']],
++    processEscapes: true,
++  },
++  styles: {
++    ".MathJax .mo, .MathJax .mi": {
++      color: "inherit ! important"
++    }
++  },
++  TeX: {
++    Macros: {
++     {{ theme_mathjax_macros|join(',\n') }}
++    }
++  }
++});
+ 
+-    if (!window.jsMath) {window.jsMath = {}}
+-
+-//  Move the jsMath button 20 pixels from the right edge (apparently
+-//  in some browsers, it covers up the scroll bar)
+-jsMath.styles = {
+-    '#jsMath_button' : 'position:fixed; bottom:1px; right:20px; '
+-	+ 'background-color:white; border: solid 1px #959595; margin:0px; '
+-	+ 'padding: 0px 3px 1px 3px; z-index:102; color:black; '
+-	+ 'text-decoration:none; font-size:x-small; width:auto; cursor:hand;'
+-}
+-
+-jsMath.Easy = {
+-    //
+-    //  The URL of the root jsMath directory on your server
+-    //  (it must be in the same domain as the HTML page).
+-    //  It should include "http://yoursite.com/", or should
+-    //  be relative to the root of your server.  It is possible
+-    //  to be a relative URL, but it will be relative to the
+-    //  HTML page loading this file.
+-    //
+-    //  If you leave this blank, jsMath will try to look it up from
+-    //  the URL where it loaded this file, but that may not work.
+-    //
+-    root: "",
+-
+-    //
+-    //  The default scaling factor for mathematics compared to the
+-    //  surrounding text.
+-    //
+-    scale: 115,
+-
+-    //
+-    //  1 means use the autoload plug-in to decide if jsMath should be loaded
+-    //  0 means always load jsMath
+-    //
+-    autoload: 1,
+-
+-    //
+-    //  Setting any of these will cause the tex2math plugin to be used
+-    //  to add the <DIV> and <SPAN> tags that jsMath needs.  See the
+-    //  documentation for the tex2math plugin for more information.
+-    //
+-    processSlashParens: 0,       // process \(...\) in text?
+-    processSlashBrackets: 0,     // process \[...\] in text?
+-    processDoubleDollars: 0,     // process $$...$$ in text?
+-    processSingleDollars: 0,     // process $...$ in text?
+-    processLaTeXenvironments: 0, // process \begin{xxx}...\end{xxx} outside math mode?
+-    fixEscapedDollars: 0,        // convert \$ to $ outside of math mode?
+-    doubleDollarsAreInLine: 0,   // make $$...$$ be in-line math?
+-    allowDisableTag: 0,          // allow ID="tex2math_off" to disable tex2math?
+-    //
+-    //  If you want to use your own custom delimiters for math instead
+-    //  of the usual ones, then uncomment the following four lines and
+-    //  insert your own delimiters within the quotes.  You may want to
+-    //  turn off processing of the dollars and other delimiters above
+-    //  as well, though you can use them in combination with the
+-    //  custom delimiters if you wish.  See the tex2math documentation
+-    //  for more details.
+-    //
+-    //customDelimiters: [
+-    //  '[math]','[/math]',        // to begin and end in-line math
+-    //  '[display]','[/display]'   // to begin and end display math
+-    //],
+-
+-    //
+-    //  Disallow the use of the @(...) mechanism for including raw HTML
+-    //  in the contents of \hbox{}?  (If used in a content-management system
+-    //  where users are allowed to enter mathematics, setting this to 0
+-    //  would allow them to enter arbitrary HTML code within their
+-    //  math formulas, and that poses a security risk.)
+-    //
+-    safeHBoxes: 1,
+-
+-    //
+-    //  Show TeX source when mathematics is double-clicked?
+-    //
+-    allowDoubleClicks: 1,
+-
+-    //
+-    //  Show jsMath font warning messages?  (Disabling this prevents yours
+-    //  users from finding out that they can have a better experience on your
+-    //  site by installing some fonts, so don't disable this).
+-    //
+-    showFontWarnings: 0,
+-
+-    //
+-    //  Use "Process" or "ProcessBeforeShowing".  See the jsMath
+-    //  author's documentation for the difference between these
+-    //  two routines.
+-    //
+-    method: "Process",
+-
+-    //
+-    //  List of plug-ins and extensions that you want to be
+-    //  loaded automatically.  E.g.
+-    //      ["plugins/mimeTeX.js","extensions/AMSsymbols.js"]
+-    //
+-    loadFiles: [
+-	"extensions/verb.js",
+-	"extensions/moreArrows.js",
+-	"extensions/AMSmath.js",
+-	"extensions/AMSsymbols.js"
+-    ],
+-
+-    //
+-    //  List of fonts to load automatically.  E.g.
+-    //      ["cmmib10"]
+-    //
+-    loadFonts: [],
+-
+-    //
+-    //  List of macros to define.  These are of the form
+-    //      name: value
+-    //  where 'value' is the replacement text for the macro \name.
+-    //  The 'value' can also be [value,n] where 'value' is the replacement
+-    //  text and 'n' is the number of parameters for the macro.
+-    //  Note that backslashes must be doubled in the replacement string.
+-    //  E.g.,
+-    //      {
+-    //        RR: '{\\bf R}',
+-    //        bold: ['{\\bf #1}', 1]
+-    //      }
+-    //
+-    // Sage-specific jsMath macros.
+-    macros: {
+-    {{ theme_jsmath_macros|join(',\n') }}
+-    },
+-
+-    //
+-    //  Allow jsMath to enter global mode?
+-    //  (Uses frames, so may not always work with complex web sites)
+-    //
+-    allowGlobal: 1,
+-
+-    //
+-    //  Disable image fonts?  (In case you don't load them on your server.)
+-    //
+-    // If we set this to 1, we do not need to load plugins/noImageFonts.js
+-    {% if theme_jsmath_image_fonts %}
+-    noImageFonts: 0
+-    {% else %}
+-    noImageFonts: 1
+-    {% endif %}
+-};
+-
+-/****************************************************************/
+-/****************************************************************/
+-//
+-//            DO NOT MAKE CHANGES BELOW THIS
+-//
+-/****************************************************************/
+-/****************************************************************/
+-
+-jsMath.Easy.find_root = function () {
+-    if (jsMath.Easy.root == "") {
+-	jsMath.Easy.root = document.getElementsByTagName("script");
+-	for (var i = 0; i < jsMath.Easy.root.length; i++) {
+-	    if (jsMath.Easy.root[i].src.match(/doctools.js$/)) {
+-		jsMath.Easy.root = jsMath.Easy.root[i].src.replace(/doctools.js$/, "");
+-		return;
+-	    }
+-	}
+-	jsMath.Easy.root = jsMath.Easy.root[jsMath.Easy.root.length-1].src
+-	if (jsMath.Easy.root.match(/\/easy\/[^\/]*$/)) {
+-	    jsMath.Easy.root = jsMath.Easy.root.replace(/\/easy\/[^\/]*$/,"");
+-	} else {
+-	    jsMath.Easy.root = jsMath.Easy.root.replace(/\/(jsMath\/(easy\/)?)?[^\/]*$/,"/jsMath");
+-	}
+-    }
+-};
+-
+-jsMath.Easy.find_root();
+-
+-jsMath.Easy.root = jsMath.Easy.root.replace(/\/$/,""); // trim trailing "/" if any
+-
+-document.write('<SCRIPT SRC="'+jsMath.Easy.root+'/jsMath-easy-load.js"><'+'/SCRIPT>');
++// This path is a little funny because we have to load our local
++// config file as '../mathjax_sage' in the theme conf.py
++MathJax.Ajax.loadComplete("[MathJax]/config/../mathjax_sage.js")
+diff --git a/doc/common/themes/sage/theme.conf b/doc/common/themes/sage/theme.conf
+--- a/doc/common/themes/sage/theme.conf
++++ b/doc/common/themes/sage/theme.conf
+@@ -6,9 +6,8 @@
+ [options]
+ # Custom Sage theme options
+ 
+-# jsMath settings filled in by conf.py
+-jsmath_macros =
+-jsmath_image_fonts =
++# MathJax settings filled in by conf.py
++mathjax_macros =
+ 
+ # Sphinx default theme options
+ 
+diff --git a/doc/en/introspect/conf.py b/doc/en/introspect/conf.py
+--- a/doc/en/introspect/conf.py
++++ b/doc/en/introspect/conf.py
+@@ -6,7 +6,7 @@
+ sys.path.append(os.environ['SAGE_DOC'])
+ from common.conf import *
+ 
+-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.jsmath', 'sphinx.ext.todo']
++extensions = ['sphinx.ext.autodoc', 'sphinx.ext.mathjax', 'sphinx.ext.todo']
+ 
+ templates_path = ['templates']
+ html_static_path = ['static']
+diff --git a/doc/en/thematic_tutorials/conf.py b/doc/en/thematic_tutorials/conf.py
+--- a/doc/en/thematic_tutorials/conf.py
++++ b/doc/en/thematic_tutorials/conf.py
+@@ -28,15 +28,6 @@
+ # Output file base name for HTML help builder.
+ htmlhelp_basename = "thematic_tutorials"
+ 
+-# mathfrak isn't defined in jsMath, so using it gives errors.  The
+-# following line turns it into bold face only when using jsMath, thus
+-# avoiding the errors, while keeping the nice mathfrak fonts when not
+-# using jsMath.
+-try:
+-    html_theme_options['jsmath_macros'].append("mathfrak : ['\\\\mathbf{#1}', 1]")
+-except KeyError:
+-    html_theme_options['jsmath_macros'] = ["mathfrak : ['\\\\mathbf{#1}', 1]"]
+-
+ # Grouping the document tree into LaTeX files. List of tuples
+ # (source start file, target name, title, author,
+ # document class [howto/manual]).
+diff --git a/sage/all_notebook.py b/sage/all_notebook.py
+--- a/sage/all_notebook.py
++++ b/sage/all_notebook.py
+@@ -11,15 +11,13 @@
+ 
+ sage_mode = 'notebook'
+ 
+-from sage.misc.latex import Latex, pretty_print_default, JSMath
++from sage.misc.latex import Latex, pretty_print_default, MathJax
+ latex = Latex(density=130)
+ latex_debug = Latex(debug=True, density=130)
+ slide = Latex(slide=True, density=256)
+ slide_debug = Latex(slide=True, debug=True, density=256)
+ pdflatex = Latex(density=130, pdflatex=True)
+ pdflatex_debug = Latex(density=130, pdflatex=True, debug=True)
+-# we need a global instance of this in order to get %jsmath to work...
+-jsmath = JSMath()
+ 
+ from sage.misc.python import python
+ 
+diff --git a/sage/graphs/generic_graph.py b/sage/graphs/generic_graph.py
+--- a/sage/graphs/generic_graph.py
++++ b/sage/graphs/generic_graph.py
+@@ -336,7 +336,7 @@
+         here to ``None``.  Some options are added to the global
+         :data:`sage.misc.latex.latex` instance which will insure
+         that if `\mbox{\rm\LaTeX}` is used to render the graph,
+-        then the right packages are loaded and jsMath reacts
++        then the right packages are loaded and MathJax reacts
+         properly.
+ 
+         Most other initialization is done in the directed
+diff --git a/sage/graphs/graph_latex.py b/sage/graphs/graph_latex.py
+--- a/sage/graphs/graph_latex.py
++++ b/sage/graphs/graph_latex.py
+@@ -48,7 +48,8 @@
+ 
+ Customizing the output is accomplished in several ways.  Suppose ``g`` is a graph, then ``g.set_latex_options()`` can be used to efficiently set or modify various options.  Setting individual options, or querying options, can be accomplished by first using a command like ``opts = g.latex_options()`` to obtain a :class:`sage.graphs.graph_latex.GraphLatex` object which has several methods to set and retrieve options.
+ 
+-Here is a minimal session demonstrating how to use these features. The following setup should work in the notebook or at the command-line, though the call to :meth:`~sage.misc.latex.Latex.jsmath_avoid_list` is only needed in the notebook. ::
++Here is a minimal session demonstrating how to use these features. The following setup should work in the notebook or at the command-line, though the call to :meth:`~sage.misc.latex.Latex.mathjax_avoid_list` is only needed in the notebook. ::
++
+ 
+     sage: from sage.graphs.graph_latex import setup_latex_preamble
+     sage: setup_latex_preamble()
+@@ -58,7 +59,7 @@
+     \usepackage{tkz-berge}
+     \usetikzlibrary{arrows,shapes}
+     sage: latex.engine('pdflatex')
+-    sage: latex.jsmath_avoid_list('tikzpicture')
++    sage: latex.mathjax_avoid_list('tikzpicture')
+     sage: H=graphs.HeawoodGraph()
+     sage: H.set_latex_options(
+     ...   graphic_size=(5,5),
+diff --git a/sage/matrix/matrix0.pyx b/sage/matrix/matrix0.pyx
+--- a/sage/matrix/matrix0.pyx
++++ b/sage/matrix/matrix0.pyx
+@@ -1952,36 +1952,7 @@
+         
+         row_divs, col_divs = self.subdivisions()
+         
+-        from sage.server.support import EMBEDDED_MODE
+-
+-        # jsmath doesn't know the command \hline, so have to do things
+-        # differently (and not as attractively) in embedded mode:
+-        # construct an array with a subarray for each block.
+-        if len(row_divs) + len(col_divs) > 0 and EMBEDDED_MODE:
+-            for r in range(len(row_divs)+1):
+-                s = ""
+-                for c in range(len(col_divs)+1):
+-                    if c == len(col_divs):
+-                        sep=""
+-                    else:
+-                        sep=" & "
+-                    sub = self.subdivision(r,c)
+-                    if sub.nrows() > 0 and sub.ncols() > 0:
+-                        entry = latex(self.subdivision(r,c))
+-                        s = s + entry + sep
+-                rows.append(s)
+-                
+-            # Put brackets around in a single string
+-            tmp = []
+-            for row in rows:
+-                tmp.append(str(row))
+-
+-            s = " \\\\\n".join(tmp)
+-            format = 'r'*len(row_divs)
+-            return "\\left" + matrix_delimiters[0] + "\\begin{array}{%s}\n"%format + s + "\n\\end{array}\\right" + matrix_delimiters[1]
+-
+-        # not in EMBEDDED_MODE, or in EMBEDDED_MODE with just a single
+-        # block: construct one large array, using \hline and vertical
++        # construct one large array, using \hline and vertical
+         # bars | in the array descriptor to indicate subdivisions.
+         for r from 0 <= r < nr:
+             if r in row_divs:
+diff --git a/sage/misc/html.py b/sage/misc/html.py
+--- a/sage/misc/html.py
++++ b/sage/misc/html.py
+@@ -30,43 +30,44 @@
+     Do the following:
+ 
+     * Replace all ``\$ text \$``\'s by
+-      ``<span class='math'> text </span>``
++      ``<script type="math/tex"> text </script>``
+     * Replace all ``\$\$ text \$\$``\'s by
+-      ``<div class='math'> text </div>``
++      ``<script type="math/tex; mode=display"> text </script>``
+     * Replace all ``\ \$``\'s by ``\$``\'s.  Note that in
+       the above two cases nothing is done if the ``\$``
+       is preceeded by a backslash.
+     * Replace all ``\[ text \]``\'s by
+-      ``<div class='math'> text </div>``
++      ``<script type="math/tex; mode=display"> text </script>``
+ 
+     EXAMPLES::
+ 
+         sage: sage.misc.html.math_parse('This is $2+2$.')
+-        'This is <span class="math">2+2</span>.'
++        'This is <script type="math/tex">2+2</script>.'
+         sage: sage.misc.html.math_parse('This is $$2+2$$.')
+-        'This is <div class="math">2+2</div>.'
++        'This is <script type="math/tex; mode=display">2+2</script>.'
+         sage: sage.misc.html.math_parse('This is \\[2+2\\].')
+-        'This is <div class="math">2+2</div>.'
++        'This is <script type="math/tex; mode=display">2+2</script>.'
+         sage: sage.misc.html.math_parse(r'This is \[2+2\].')
+-        'This is <div class="math">2+2</div>.'
++        'This is <script type="math/tex; mode=display">2+2</script>.'
+ 
+     TESTS::
+ 
+         sage: sage.misc.html.math_parse(r'This \$\$is $2+2$.')
+-        'This $$is <span class="math">2+2</span>.'
++        'This $$is <script type="math/tex">2+2</script>.'
+     """
+-    # first replace \\[ and \\] by <div class="math"> and </div>, respectively.
++    # first replace \\[ and \\] by <script type="math/tex; mode=display">
++    # and </script>, respectively.
+     while True:
+         i = s.find('\\[')
+         if i == -1:
+             break
+         else:
+-            s = s[:i] + '<div class="math">' + s[i+2:]
++            s = s[:i] + '<script type="math/tex; mode=display">' + s[i+2:]
+             j = s.find('\\]')
+             if j == -1:  # missing right-hand delimiter, so add one
+-                s = s + '</div>'
++                s = s + '</script>'
+             else:
+-                s = s[:j] + '</div>' + s[j+2:]
++                s = s[:j] + '</script>' + s[j+2:]
+     
+     # Below t always has the "parsed so far" version of s, and s is
+     # just the part of the original input s that hasn't been parsed.
+@@ -84,29 +85,35 @@
+             s = s[i+1:]
+             continue
+         elif i+1 < len(s) and s[i+1] == '$':
+-            # Found a math environment. Double dollar sign so div mode.
+-            typ = 'div'
++            # Found a math environment. Double dollar sign so display mode.
++            disp = '; mode=display'
+         else:
+-            # Found math environment. Single dollar sign so span mode.
+-            typ = 'span'
++            # Found math environment. Single dollar sign so default mode.
++            disp = ''
+ 
+-        # Now find the matching $ sign and form the span or div.
+-        j = s[i+2:].find('$')
+-        if j == -1:
+-            j = len(s)
+-            s += '$'
+-            if typ == 'div':
++        # Now find the matching $ sign and form the html string.
++
++        if len(disp) > 0:
++            j = s[i+2:].find('$$')
++            if j == -1:
++                j = len(s)
+                 s += '$$'
+-        else:
+-            j += i + 2
+-        if typ == 'div':
++            else:
++                j += i + 2
+             txt = s[i+2:j]
+         else:
++            j = s[i+2:].find('$')
++            if j == -1:
++                j = len(s)
++                s += '$'
++            else:
++                j += i + 2
+             txt = s[i+1:j]
+-        t += s[:i] + '<%s class="math">%s</%s>'%(typ,
+-                      ' '.join(txt.splitlines()), typ)
++
++        t += s[:i] + '<script type="math/tex%s">%s</script>'%(disp,
++                      ' '.join(txt.splitlines()))
+         s = s[j+1:]
+-        if typ == 'div':
++        if len(disp) > 0:
+             s = s[1:]
+     return t
+ 
+@@ -168,7 +175,7 @@
+             if j == -1:
+                  t += s
+                  break
+-            t += s[:i] + '<span class="math">%s</span>'%\
++            t += s[:i] + '<script type="math/tex">%s</script>'%\
+                      latex(sage_eval(s[6+i:j], locals=locals))
+             s = s[j+7:] 
+         print "<html><font color='black'>%s</font></html>"%t
+@@ -196,24 +203,24 @@
+             <table class="table_form">
+             <tbody>
+             <tr class ="row-a">
+-            <td><span class="math">0</span></td>
+-            <td><span class="math">0</span></td>
+-            <td><span class="math">\mathrm{True}</span></td>
++            <td><script type="math/tex">0</script></td>
++            <td><script type="math/tex">0</script></td>
++            <td><script type="math/tex">\mathrm{True}</script></td>
+             </tr>
+             <tr class ="row-b">
+-            <td><span class="math">0</span></td>
+-            <td><span class="math">1</span></td>
+-            <td><span class="math">\mathrm{False}</span></td>
++            <td><script type="math/tex">0</script></td>
++            <td><script type="math/tex">1</script></td>
++            <td><script type="math/tex">\mathrm{False}</script></td>
+             </tr>
+             <tr class ="row-a">
+-            <td><span class="math">1</span></td>
+-            <td><span class="math">0</span></td>
+-            <td><span class="math">\mathrm{False}</span></td>
++            <td><script type="math/tex">1</script></td>
++            <td><script type="math/tex">0</script></td>
++            <td><script type="math/tex">\mathrm{False}</script></td>
+             </tr>
+             <tr class ="row-b">
+-            <td><span class="math">1</span></td>
+-            <td><span class="math">1</span></td>
+-            <td><span class="math">\mathrm{True}</span></td>
++            <td><script type="math/tex">1</script></td>
++            <td><script type="math/tex">1</script></td>
++            <td><script type="math/tex">\mathrm{True}</script></td>
+             </tr>
+             </tbody>
+             </table>
+@@ -226,13 +233,13 @@
+             <table class="table_form">
+             <tbody>
+             <tr>
+-            <th>Functions <span class="math">f(x)</span></th>
++            <th>Functions <script type="math/tex">f(x)</script></th>
+             </tr>
+             <tr class ="row-a">
+-            <td><span class="math">\sin\left(x\right)</span></td>
++            <td><script type="math/tex">\sin\left(x\right)</script></td>
+             </tr>
+             <tr class ="row-b">
+-            <td><span class="math">\cos\left(x\right)</span></td>
++            <td><script type="math/tex">\cos\left(x\right)</script></td>
+             </tr>
+             </tbody>
+             </table>
+@@ -245,24 +252,24 @@
+             <table class="table_form">
+             <tbody>
+             <tr>
+-            <th><span class="math">x</span></th>
+-            <th><span class="math">\sin(x)</span></th>
++            <th><script type="math/tex">x</script></th>
++            <th><script type="math/tex">\sin(x)</script></th>
+             </tr>
+             <tr class ="row-a">
+-            <td><span class="math">0</span></td>
+-            <td><span class="math">0.00</span></td>
++            <td><script type="math/tex">0</script></td>
++            <td><script type="math/tex">0.00</script></td>
+             </tr>
+             <tr class ="row-b">
+-            <td><span class="math">1</span></td>
+-            <td><span class="math">0.84</span></td>
++            <td><script type="math/tex">1</script></td>
++            <td><script type="math/tex">0.84</script></td>
+             </tr>
+             <tr class ="row-a">
+-            <td><span class="math">2</span></td>
+-            <td><span class="math">0.91</span></td>
++            <td><script type="math/tex">2</script></td>
++            <td><script type="math/tex">0.91</script></td>
+             </tr>
+             <tr class ="row-b">
+-            <td><span class="math">3</span></td>
+-            <td><span class="math">0.14</span></td>
++            <td><script type="math/tex">3</script></td>
++            <td><script type="math/tex">0.14</script></td>
+             </tr>
+             </tbody>
+             </table>
+@@ -306,9 +313,9 @@
+         TESTS::
+         
+             sage: html._table_columns(["a $x^2$",1, sin(x)])
+-            <td>a <span class="math">x^2</span></td>
+-            <td><span class="math">1</span></td>
+-            <td><span class="math">\sin\left(x\right)</span></td>
++            <td>a <script type="math/tex">x^2</script></td>
++            <td><script type="math/tex">1</script></td>
++            <td><script type="math/tex">\sin\left(x\right)</script></td>
+             sage: html._table_columns("a", header=True)
+             <th>a</th>
+         """        
+@@ -326,7 +333,7 @@
+             elif isinstance(row[column], str):
+                 print column_tag % math_parse(row[column])
+             else:
+-                print column_tag % ('<span class="math">%s</span>' % latex(row[column]))
++                print column_tag % ('<script type="math/tex">%s</script>' % latex(row[column]))
+ 
+     def iframe(self, url, height=400, width=800):
+         r"""
+diff --git a/sage/misc/latex.py b/sage/misc/latex.py
+--- a/sage/misc/latex.py
++++ b/sage/misc/latex.py
+@@ -310,11 +310,7 @@
+     # 2) wrap each line into \verb;
+     # 3) assemble lines into a left-justified array.
+     
+-    # There is a bug in verb-space treatment in jsMath...
+-    spacer = "\\phantom{%s}"
+-    # \phantom{\verb!%s!} is more accurate and it works, but it is not a valid
+-    # LaTeX and may cause problems, so let's live with the above variant until
+-    # spaces are properly treated in jsMath/MathJax and we don't need to worry.
++    spacer = r"\phantom{\verb!%s!}"
+     lines = []
+     for line in x.split("\n"):
+         parts = []
+@@ -570,7 +566,7 @@
+         self._option["preamble"] = ""
+         self._option["engine"] = "latex"
+         self._option["engine_name"] = "LaTeX"
+-        self._option["jsmath_avoid"] = []
++        self._option["mathjax_avoid"] = []
+ 
+ _Latex_prefs = _Latex_prefs_object()
+ 
+@@ -1065,9 +1061,9 @@
+         """
+         if t is None:
+             return _Latex_prefs._option["blackboard_bold"]
+-        from latex_macros import sage_latex_macros, sage_jsmath_macros, sage_configurable_latex_macros, convert_latex_macro_to_jsmath
++        from latex_macros import sage_latex_macros, sage_mathjax_macros, sage_configurable_latex_macros, convert_latex_macro_to_mathjax
+         global sage_latex_macros
+-        global sage_jsmath_macros
++        global sage_mathjax_macros
+         old = _Latex_prefs._option["blackboard_bold"]
+         _Latex_prefs._option["blackboard_bold"] = bool(t)
+         if bool(old) != bool(t):
+@@ -1083,8 +1079,8 @@
+             sage_configurable_latex_macros.remove(old_macro)
+             sage_latex_macros.append(macro)
+             sage_configurable_latex_macros.append(macro)
+-            sage_jsmath_macros.remove(convert_latex_macro_to_jsmath(old_macro))
+-            sage_jsmath_macros.append(convert_latex_macro_to_jsmath(macro))
++            sage_mathjax_macros.remove(convert_latex_macro_to_mathjax(old_macro))
++            sage_mathjax_macros.append(convert_latex_macro_to_mathjax(macro))
+ 
+     def matrix_delimiters(self, left=None, right=None):
+         r"""nodetex
+@@ -1262,7 +1258,7 @@
+     def extra_macros(self, macros=None):
+         r"""nodetex
+         String containing extra LaTeX macros to use with %latex,
+-        %html, and %jsmath.
++        %html, and %mathjax.
+ 
+         INPUT: ``macros`` - string
+ 
+@@ -1287,7 +1283,7 @@
+     def add_macro(self, macro):
+         r"""nodetex
+         Append to the string of extra LaTeX macros, for use with
+-        %latex, %html, and %jsmath.
++        %latex, %html, and %mathjax.
+ 
+         INPUT: ``macro`` - string
+ 
+@@ -1307,7 +1303,7 @@
+     def extra_preamble(self, s=None):
+         r"""nodetex
+         String containing extra preamble to be used with %latex.
+-        Anything in this string won't be processed by %jsmath.
++        Anything in this string won't be processed by %mathjax.
+ 
+         INPUT: ``s`` - string or ``None``
+ 
+@@ -1341,7 +1337,7 @@
+         r"""nodetex
+         Append to the string of extra LaTeX macros, for use with
+         %latex.  Anything in this string won't be processed by
+-        %jsmath.
++        %mathjax.
+ 
+         EXAMPLES::
+ 
+@@ -1407,9 +1403,9 @@
+         if self.has_file(package_name+".sty"):
+             self.add_to_preamble("\\usepackage{%s}\n"%package_name)
+ 
+-    def jsmath_avoid_list(self, L=None):
++    def mathjax_avoid_list(self, L=None):
+         r"""nodetex
+-        List of strings which signal that jsMath should not
++        List of strings which signal that MathJax should not
+         be used when 'view'ing.
+ 
+         INPUT: ``L`` - list or ``None``
+@@ -1417,47 +1413,47 @@
+         If ``L`` is ``None``, then return the current list.
+         Otherwise, set it to ``L``.  If you want to *append* to the
+         current list instead of replacing it, use
+-        :meth:`latex.add_to_jsmath_avoid_list <Latex.add_to_jsmath_avoid_list>`.
++        :meth:`latex.add_to_mathjax_avoid_list <Latex.add_to_mathjax_avoid_list>`.
+ 
+         EXAMPLES::
+ 
+-            sage: latex.jsmath_avoid_list(["\\mathsf", "pspicture"])
+-            sage: latex.jsmath_avoid_list()  # display current setting
++            sage: latex.mathjax_avoid_list(["\\mathsf", "pspicture"])
++            sage: latex.mathjax_avoid_list()  # display current setting
+             ['\\mathsf', 'pspicture']
+-            sage: latex.jsmath_avoid_list([])  # reset to default
+-            sage: latex.jsmath_avoid_list()
++            sage: latex.mathjax_avoid_list([])  # reset to default
++            sage: latex.mathjax_avoid_list()
+             []
+         """
+         if L is None:
+-            return _Latex_prefs._option['jsmath_avoid']
++            return _Latex_prefs._option['mathjax_avoid']
+         else:
+-            _Latex_prefs._option['jsmath_avoid'] = L
+-
+-    def add_to_jsmath_avoid_list(self, s):
++            _Latex_prefs._option['mathjax_avoid'] = L
++
++    def add_to_mathjax_avoid_list(self, s):
+         r"""nodetex
+-        Add to the list of strings which signal that jsMath should not
++        Add to the list of strings which signal that MathJax should not
+         be used when 'view'ing.
+ 
+-        INPUT: ``s`` - string -- add ``s`` to the list of 'jsMath avoid' strings
++        INPUT: ``s`` - string -- add ``s`` to the list of 'MathJax avoid' strings
+ 
+         If you want to replace the current list instead of adding to
+-        it, use :meth:`latex.jsmath_avoid_list <Latex.jsmath_avoid_list>`.
++        it, use :meth:`latex.mathjax_avoid_list <Latex.mathjax_avoid_list>`.
+ 
+         EXAMPLES::
+ 
+-            sage: latex.add_to_jsmath_avoid_list("\\mathsf")
+-            sage: latex.jsmath_avoid_list()  # display current setting
++            sage: latex.add_to_mathjax_avoid_list("\\mathsf")
++            sage: latex.mathjax_avoid_list()  # display current setting
+             ['\\mathsf']
+-            sage: latex.add_to_jsmath_avoid_list("tkz-graph")
+-            sage: latex.jsmath_avoid_list()  # display current setting
++            sage: latex.add_to_mathjax_avoid_list("tkz-graph")
++            sage: latex.mathjax_avoid_list()  # display current setting
+             ['\\mathsf', 'tkz-graph']
+-            sage: latex.jsmath_avoid_list([])  # reset to default
+-            sage: latex.jsmath_avoid_list()
++            sage: latex.mathjax_avoid_list([])  # reset to default
++            sage: latex.mathjax_avoid_list()
+             []
+         """
+-        current = latex.jsmath_avoid_list()
++        current = latex.mathjax_avoid_list()
+         if s not in current:
+-            _Latex_prefs._option['jsmath_avoid'].append(s)
++            _Latex_prefs._option['mathjax_avoid'].append(s)
+ 
+     def pdflatex(self, t = None):  # this is deprecated since 4.3.3
+         """
+@@ -1674,19 +1670,19 @@
+ 
+     return s
+ 
+-class JSMathExpr:
++class MathJaxExpr:
+     """
+-    An arbitrary JSMath expression that can be nicely concatenated.
++    An arbitrary MathJax expression that can be nicely concatenated.
+ 
+     EXAMPLES::
+ 
+-        sage: from sage.misc.latex import JSMathExpr
+-        sage: JSMathExpr("a^{2}") + JSMathExpr("x^{-1}")
++        sage: from sage.misc.latex import MathJaxExpr
++        sage: MathJaxExpr("a^{2}") + MathJaxExpr("x^{-1}")
+         a^{2}x^{-1}
+     """
+     def __init__(self, y):
+         """
+-        Initialize a JSMath expression.
++        Initialize a MathJax expression.
+ 
+         INPUT:
+ 
+@@ -1696,8 +1692,8 @@
+ 
+         EXAMPLES::
+ 
+-            sage: from sage.misc.latex import JSMathExpr
+-            sage: js = JSMathExpr(3); js  # indirect doctest
++            sage: from sage.misc.latex import MathJaxExpr
++            sage: jax = MathJaxExpr(3); jax  # indirect doctest
+             3
+         """
+         self.__y = y
+@@ -1708,79 +1704,79 @@
+ 
+         EXAMPLES::
+ 
+-            sage: from sage.misc.latex import JSMathExpr
+-            sage: js = JSMathExpr('3')
+-            sage: js.__repr__()
++            sage: from sage.misc.latex import MathJaxExpr
++            sage: jax = MathJaxExpr('3')
++            sage: jax.__repr__()
+             '3'
+         """
+         return str(self.__y)
+ 
+     def __add__(self, y):
+         """
+-        'Add' JSMathExpr ``self`` to ``y``.  This concatenates them
++        'Add' MathJaxExpr ``self`` to ``y``.  This concatenates them
+         (assuming that they're strings).
+ 
+         EXAMPLES::
+ 
+-            sage: from sage.misc.latex import JSMathExpr
+-            sage: j3 = JSMathExpr('3')
+-            sage: jx = JSMathExpr('x')
++            sage: from sage.misc.latex import MathJaxExpr
++            sage: j3 = MathJaxExpr('3')
++            sage: jx = MathJaxExpr('x')
+             sage: j3 + jx
+             3x
+         """
+-        return JSMathExpr(self.__y + y)
++        return MathJaxExpr(self.__y + y)
+ 
+     def __radd__(self, y):
+         """
+-        'Add' JSMathExpr ``y`` to ``self``.  This concatenates them
++        'Add' MathJaxExpr ``y`` to ``self``.  This concatenates them
+         (assuming that they're strings).
+ 
+         EXAMPLES::
+ 
+-            sage: from sage.misc.latex import JSMathExpr
+-            sage: j3 = JSMathExpr('3')
+-            sage: jx = JSMathExpr('x')
++            sage: from sage.misc.latex import MathJaxExpr
++            sage: j3 = MathJaxExpr('3')
++            sage: jx = MathJaxExpr('x')
+             sage: j3.__radd__(jx)
+             x3
+         """
+-        return JSMathExpr(y + self.__y)
+-
+-class JSMath:
++        return MathJaxExpr(y + self.__y)
++
++class MathJax:
+     r"""
+-    Render LaTeX input using JSMath.  This returns a :class:`JSMathExpr`.
++    Render LaTeX input using MathJax.  This returns a :class:`MathJaxExpr`.
+ 
+     EXAMPLES::
+ 
+-        sage: from sage.misc.latex import JSMath
+-        sage: JSMath()(3)
+-        <html><div class="math">\newcommand{\Bold}[1]{\mathbf{#1}}3</div></html>
+-        sage: JSMath()(ZZ)
+-        <html><div class="math">\newcommand{\Bold}[1]{\mathbf{#1}}\Bold{Z}</div></html>
++        sage: from sage.misc.latex import MathJax
++        sage: MathJax()(3)
++        <html><script type="math/tex; mode=display">\newcommand{\Bold}[1]{\mathbf{#1}}3</script></html>
++        sage: MathJax()(ZZ)
++        <html><script type="math/tex; mode=display">\newcommand{\Bold}[1]{\mathbf{#1}}\Bold{Z}</script></html>
+     """
+ 
+     def __call__(self, x):
+         r"""
+-        Render LaTeX input using JSMath.  This returns a :class:`JSMathExpr`.
++        Render LaTeX input using MathJax.  This returns a :class:`MathJaxExpr`.
+ 
+         INPUT:
+ 
+         - ``x`` - a Sage object
+ 
+-        OUTPUT: a JSMathExpr
++        OUTPUT: a MathJaxExpr
+ 
+         EXAMPLES::
+ 
+-            sage: from sage.misc.latex import JSMath
+-            sage: JSMath()(3)
+-            <html><div class="math">\newcommand{\Bold}[1]{\mathbf{#1}}3</div></html>
+-            sage: str(JSMath().eval(ZZ[x], mode='display')) == str(JSMath()(ZZ[x]))
++            sage: from sage.misc.latex import MathJax
++            sage: MathJax()(3)
++            <html><script type="math/tex; mode=display">\newcommand{\Bold}[1]{\mathbf{#1}}3</script></html>
++            sage: str(MathJax().eval(ZZ[x], mode='display')) == str(MathJax()(ZZ[x]))
+             True
+         """
+         return self.eval(x)
+ 
+     def eval(self, x, globals=None, locals=None, mode='display'):
+         r"""
+-        Render LaTeX input using JSMath.  This returns a :class:`JSMathExpr`.
++        Render LaTeX input using MathJax.  This returns a :class:`MathJaxExpr`.
+ 
+         INPUT:
+ 
+@@ -1794,96 +1790,38 @@
+         -  ``mode`` - string (optional, default 'display): 'display'
+            for displaymath or 'inline' for inline math
+ 
+-        OUTPUT: a JSMathExpr
++        OUTPUT: a MathJaxExpr
+ 
+         EXAMPLES::
+ 
+-            sage: from sage.misc.latex import JSMath
+-            sage: JSMath().eval(3, mode='display')
+-            <html><div class="math">\newcommand{\Bold}[1]{\mathbf{#1}}3</div></html>
+-            sage: JSMath().eval(3, mode='inline')
+-            <html><span class="math">\newcommand{\Bold}[1]{\mathbf{#1}}3</span></html>
+-            sage: JSMath().eval(type(3), mode='inline')
+-            <html>...\verb|&lt;type|\phantom{x}\verb|'sage.rings.integer.Integer'&gt;|</span></html>
++            sage: from sage.misc.latex import MathJax
++            sage: MathJax().eval(3, mode='display')
++            <html><script type="math/tex; mode=display">\newcommand{\Bold}[1]{\mathbf{#1}}3</script></html>
++            sage: MathJax().eval(3, mode='inline')
++            <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}3</script></html>
++            sage: MathJax().eval(type(3), mode='inline')
++            <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}\verb|&lt;type|\phantom{\verb!x!}\verb|'sage.rings.integer.Integer'&gt;|</script></html>
+         """
+         # Get a regular LaTeX representation of x...
+         x = latex(x)
+-        # ... and make it suitable for jsMath, which has issues with < and >.
++        # ... and make it suitable for MathJax and html
+         x = x.replace('<', '&lt;').replace('>', '&gt;')
+-        # In jsMath:
+-        #   inline math: <span class="math">...</span>
+-        #   displaymath: <div class="math">...</div>
++        # In MathJax:
++        #   inline math: <script type="math/tex">...</script>
++        #   displaymath: <script type="math/tex; mode=display">...</script>
+         from sage.misc.latex_macros import sage_configurable_latex_macros
+-        if 'display' == mode:
+-            return JSMathExpr('<html><div class="math">'
+-                              + ''.join(sage_configurable_latex_macros)
+-                              + _Latex_prefs._option['macros']
+-                              + '%s</div></html>'%x)
+-        elif 'inline' == mode:
+-            return JSMathExpr('<html><span class="math">'
+-                              + ''.join(sage_configurable_latex_macros)
+-                              + _Latex_prefs._option['macros']
+-                              + '%s</span></html>'%x)
++        if mode == 'display':
++            modecode = '; mode=display'
++        elif mode == 'inline':
++            modecode = ''
+         else:
+             # what happened here?
+-            raise ValueError, "mode must be either 'display' or 'inline'"
+-
+-def jsmath(x, mode='display'):
+-    r"""
+-    Attempt to nicely render an arbitrary Sage object with jsMath typesetting.
+-    Tries to call ._latex_() on x. If that fails, it will render a string
+-    representation of x.
+-
+-    .. warning::
+-
+-        2009-04: This function is deprecated; use :func:`~.html.html`
+-        instead: replace ``jsmath('MATH', mode='display')`` with
+-        ``html('$$MATH$$')``, and replace ``jsmath('MATH',
+-        mode='inline')`` with ``html('$MATH$')``.
+-
+-    INPUT:
+-        x -- the object to render
+-        mode -- 'display' for displaymath or 'inline' for inline math
+-
+-    OUTPUT:
+-        A string of html that contains the LaTeX representation of x. In the
+-        notebook this gets embedded into the cell.
+-
+-    EXAMPLES::
+-
+-        sage: from sage.misc.latex import jsmath
+-        sage: f = maxima('1/(x^2+1)')
+-        sage: g = f.integrate()
+-        sage: jsmath(f)
+-        doctest:1: DeprecationWarning: The jsmath function is deprecated.  Use html('$math$') for inline mode or html('$$math$$') for display mode.
+-        <html><font color='black'><div class="math">{{1}\over{x^2+1}}</div></font></html>
+-        sage: jsmath(g, 'inline')
+-        <html><font color='black'><span class="math">\tan^{-1} x</span></font></html>
+-        sage: jsmath('\int' + latex(f) + '\ dx=' + latex(g))
+-        <html><font color='black'><div class="math">\int {{1}\over{x^2+1}} \ dx= \tan^{-1} x</div></font></html>
+-
+-    AUTHORS:
+-
+-    - William Stein (2006-10): general layout (2006-10)
+-
+-    - Bobby Moretti (2006-10): improvements, comments, documentation
+-    """
+-    from sage.misc.misc import deprecation
+-    from sage.misc.html import html
+-    deprecation("The jsmath function is deprecated.  Use html('$math$') for inline mode or html('$$math$$') for display mode.")
+-    if mode == 'display':
+-        delimiter = '$$'
+-    elif mode == 'inline':
+-        delimiter = '$'
+-    else:
+-        raise ValueError, "mode must be either 'display' or 'inline'"
+-    try:
+-        # try to get a latex representation of the object
+-        x = x._latex_()
+-    except AttributeError:
+-        # otherwise just get the string representation
+-        x = str(x)
+-    return html(delimiter + x + delimiter)
++            raise ValueError("mode must be either 'display' or 'inline'")
++
++        return MathJaxExpr('<html><script type="math/tex{0}">'.format(modecode)
++                         + ''.join(sage_configurable_latex_macros)
++                         + _Latex_prefs._option['macros']
++                         + '{0}</script></html>'.format(x))
+ 
+ def view(objects, title='SAGE', debug=False, sep='', tiny=False, pdflatex=None, engine=None, viewer = None, tightpage = None, mode='inline', **kwds):
+     r"""nodetex
+@@ -1968,23 +1906,23 @@
+     each object by ``\\begin{page}$`` and ``$\\end{page}``.
+ 
+     If in notebook mode with ``viewer`` equal to ``None``, this
+-    usually uses jsMath -- see the next paragraph for the exception --
++    usually uses MathJax -- see the next paragraph for the exception --
+     to display the output in the notebook. Only the first argument,
+     ``objects``, is relevant; the others are ignored. If ``objects``
+     is a list, each object is printed on its own line.
+ 
+-    In the notebook, this *does* *not* use jsMath if the LaTeX code
++    In the notebook, this *does* *not* use MathJax if the LaTeX code
+     for ``objects`` contains a string in
+-    :meth:`latex.jsmath_avoid_list() <Latex.jsmath_avoid_list>`.  In
++    :meth:`latex.mathjax_avoid_list() <Latex.mathjax_avoid_list>`.  In
+     this case, it creates and displays a png file.
+ 
+     EXAMPLES::
+ 
+         sage: sage.misc.latex.EMBEDDED_MODE = True
+         sage: view(3)
+-        <html><span class="math">\newcommand{\Bold}[1]{\mathbf{#1}}3</span></html>
++        <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}3</script></html>
+         sage: view(3, mode='display')
+-        <html><div class="math">\newcommand{\Bold}[1]{\mathbf{#1}}3</div></html>
++        <html><script type="math/tex; mode=display">\newcommand{\Bold}[1]{\mathbf{#1}}3</script></html>
+         sage: sage.misc.latex.EMBEDDED_MODE = False
+ 
+     TESTS::
+@@ -2006,14 +1944,14 @@
+     s = _latex_file_(objects, title=title, sep=sep, tiny=tiny, debug=debug, **latex_options)
+     # notebook
+     if EMBEDDED_MODE and viewer is None:
+-        jsMath_okay = True
+-        for t in latex.jsmath_avoid_list():
++        MathJax_okay = True
++        for t in latex.mathjax_avoid_list():
+             if s.find(t) != -1:
+-                jsMath_okay = False
+-            if not jsMath_okay:
++                MathJax_okay = False
++            if not MathJax_okay:
+                 break
+-        if jsMath_okay:
+-            print JSMath().eval(objects, mode=mode)  # put comma at end of line?
++        if MathJax_okay:
++            print MathJax().eval(objects, mode=mode)  # put comma at end of line?
+         else:
+             if pdflatex is True:
+                 engine = "pdflatex"
+@@ -2230,7 +2168,7 @@
+         sage: TEMP = sys.displayhook
+         sage: sys.displayhook = sage.misc.latex.pretty_print
+         sage: sage.misc.latex.print_or_typeset(3)
+-        <html><span class="math">\newcommand{\Bold}[1]{\mathbf{#1}}3</span></html>
++        <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}3</script></html>
+         sage: sage.misc.latex.EMBEDDED_MODE=False
+         sage: sys.displayhook = TEMP
+     """
+@@ -2246,7 +2184,7 @@
+     objects, this returns their default representation.  For other
+     objects, in the notebook, this calls the :func:`view` command,
+     while from the command line, this produces an html string suitable
+-    for processing by jsMath.
++    for processing by MathJax.
+ 
+     INPUT:
+ 
+@@ -2258,12 +2196,12 @@
+     EXAMPLES::
+ 
+         sage: pretty_print(ZZ)  # indirect doctest
+-        <html><span class="math">\newcommand{\Bold}[1]{\mathbf{#1}}\Bold{Z}</span></html>
++        <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}\Bold{Z}</script></html>
+ 
+     To typeset LaTeX code as-is, use :class:`LatexExpr`::
+ 
+         sage: pretty_print(LatexExpr(r"\frac{x^2 + 1}{x - 2}"))
+-        <html><span class="math">\newcommand{\Bold}[1]{\mathbf{#1}}\frac{x^2 + 1}{x - 2}</span></html>
++        <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}\frac{x^2 + 1}{x - 2}</script></html>
+     """
+     if object is None:
+         return
+@@ -2279,13 +2217,13 @@
+         if EMBEDDED_MODE:
+             view(object)
+         else:
+-            print JSMath().eval(object, mode='inline')
++            print MathJax().eval(object, mode='inline')
+         return
+ 
+ def pretty_print_default(enable=True):
+     r"""
+     Enable or disable default pretty printing. Pretty printing means
+-    rendering things so that jsMath or some other latex-aware front end
++    rendering things so that MathJax or some other latex-aware front end
+     can render real math.
+ 
+     INPUT:
+@@ -2297,7 +2235,7 @@
+ 
+         sage: pretty_print_default(True)
+         sage: sys.displayhook
+-        <html>...\verb|&lt;function|\phantom{x}\verb|pretty_print|...</html>
++        <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}\verb|&lt;function|\phantom{\verb!x!}\verb|pretty_print|\phantom{\verb!x!}\verb|at|\phantom{\verb!x!}\verb|...|</script></html>
+         sage: pretty_print_default(False)
+         sage: sys.displayhook == sys.__displayhook__
+         True
+@@ -2523,8 +2461,8 @@
+ the TeX package pgf installed, along with the LaTeX package tkz-graph.
+ Run 'latex.add_to_preamble("\\usepackage{tkz-graph}")', and try viewing
+ it again.  From the command line, this should pop open a nice window
+-with a picture of a graph.  In the notebook, you should get a jsMath
+-error.  Finally, run 'latex.add_to_jsmath_avoid_list("tikzpicture")'
++with a picture of a graph.  In the notebook, you should get a MathJax
++error.  Finally, run 'latex.add_to_mathjax_avoid_list("tikzpicture")'
+ and try again from the notebook -- you should get a nice picture.
+ 
+ (LaTeX code taken from http://altermundus.com/pages/graph.html)
+@@ -2606,7 +2544,7 @@
+ open a nice window with a picture of forces acting on a mass
+ on a pendulum. In the notebook, you should get an error.
+ Finally, run
+-'latex.add_to_jsmath_avoid_list("pspicture")' and try again
++'latex.add_to_mathjax_avoid_list("pspicture")' and try again
+ -- you should get a nice picture."""
+ 
+         def _latex_(self):
+@@ -2673,7 +2611,7 @@
+ 'latex.add_to_preamble("\\usepackage[graph,knot,poly,curve]{xypic}")',
+ and try viewing again -- it should work in the command line but not
+ from the notebook.  In the notebook, run
+-'latex.add_to_jsmath_avoid_list("xygraph")' and try again -- you
++'latex.add_to_mathjax_avoid_list("xygraph")' and try again -- you
+ should get a nice picture.
+ 
+ (LaTeX code taken from the xypic manual)
+@@ -2737,7 +2675,7 @@
+ 'latex.add_to_preamble("\\usepackage[matrix,arrow,curve,cmtip]{xy}")',
+ and try viewing again -- it should work in the command line but not
+ from the notebook.  In the notebook, run
+-'latex.add_to_jsmath_avoid_list("xymatrix")' and try again -- you
++'latex.add_to_mathjax_avoid_list("xymatrix")' and try again -- you
+ should get a picture (a part of the diagram arising from a filtered
+ chain complex)."""
+ 
+diff --git a/sage/misc/latex_macros.py b/sage/misc/latex_macros.py
+--- a/sage/misc/latex_macros.py
++++ b/sage/misc/latex_macros.py
+@@ -9,15 +9,16 @@
+ documentation. To add a macro, modify the list ``macros``, near the
+ end of this file, and then run 'sage -b'. The entries in this list are
+ used to produce ``sage_latex_macros``, a list of strings of the form
+-'\\newcommand...', and ``sage_js_macros``, a list of strings of the
+-form 'jsMath.Macro...'.  The LaTeX macros are produced using the
+-``_latex_`` method for each Sage object listed in ``macros``, and the
+-jsMath macros are produced from the LaTeX macros.  The list of LaTeX
+-macros is used in the file ``SAGE_ROOT/devel/sage/doc/common/conf.py``
+-to add to the preambles of both the LaTeX file used to build the PDF
+-version of the documentation and the LaTeX file used to build the HTML
+-version.  The list of jsMath macros is used in the file
+-``sage/server/notebook/notebook.py`` to define jsMath macros for use
++'\\newcommand...', and ``sage_mathjax_macros``, a list of strings
++suitable for parsing by MathJax.  The LaTeX macros are produced using
++the ``_latex_`` method for each Sage object listed in ``macros``, and
++the MathJax macros are produced from the LaTeX macros.  The list of
++LaTeX macros is used in the file
++``SAGE_ROOT/devel/sage/doc/common/conf.py`` to add to the preambles of
++both the LaTeX file used to build the PDF version of the documentation
++and the LaTeX file used to build the HTML version.  The list of
++MathJax macros is used in the file
++``sage/server/notebook/notebook.py`` to define MathJax macros for use
+ in the live documentation (and also in the notebook).
+ 
+ Any macro defined here may be used in docstrings or in the tutorial
+@@ -101,26 +102,26 @@
+         defn = defn.replace(str(x), "#" + str(count))
+     return newcommand + defn
+ 
+-def convert_latex_macro_to_jsmath(macro):
++def convert_latex_macro_to_mathjax(macro):
+     r"""
+     This converts a LaTeX macro definition (\newcommand...) to a
+-    jsMath macro definition (jsMath.Macro...).
++    MathJax macro definition (MathJax.Macro...).
+ 
+     INPUT:
+ 
+     -  ``macro`` - LaTeX macro definition
+ 
+     See the web page
+-    http://www.math.union.edu/~dpvc/jsMath/authors/macros.html for a
+-    description of the format for jsMath macros.
++    http://www.mathjax.org/docs/1.1/options/TeX.html for a
++    description of the format for MathJax macros.
+ 
+     EXAMPLES::
+ 
+-        sage: from sage.misc.latex_macros import convert_latex_macro_to_jsmath
+-        sage: convert_latex_macro_to_jsmath('\\newcommand{\\ZZ}{\\Bold{Z}}')
+-        "jsMath.Macro('ZZ','\\\\Bold{Z}');"
+-        sage: convert_latex_macro_to_jsmath('\\newcommand{\\GF}[1]{\\Bold{F}_{#1}}')
+-        "jsMath.Macro('GF','\\\\Bold{F}_{#1}',1);"
++        sage: from sage.misc.latex_macros import convert_latex_macro_to_mathjax
++        sage: convert_latex_macro_to_mathjax('\\newcommand{\\ZZ}{\\Bold{Z}}')
++        'ZZ: "\\\\Bold{Z}"'
++        sage: convert_latex_macro_to_mathjax('\\newcommand{\\GF}[1]{\\Bold{F}_{#1}}')
++        'GF: ["\\\\Bold{F}_{#1}",1]'
+     """
+     left_bracket = macro.find('[')
+     right_bracket = macro.find('[')
+@@ -135,47 +136,10 @@
+     start_defn = macro.find('{', end_name)
+     end_defn = macro.rfind('}')
+     defn = macro[start_defn+1: end_defn].replace('\\', '\\\\')
+-    if num_args > 0:
+-        args_str = "," + str(num_args)
++    if num_args == 0:
++        return name + ': "' + defn + '"'
+     else:
+-        args_str = ""
+-    return "jsMath.Macro('" + name + "','" + defn + "'" + args_str + ");"
+-
+-def convert_latex_macro_to_jsmath_easy(macro):
+-    r"""
+-    This converts a LaTeX macro definition (\newcommand...) to a
+-    definition for jsMath's easy/load.js macro array.
+-
+-    INPUT:
+-
+-    -  ``macro`` - LaTeX macro definition
+-
+-    EXAMPLES::
+-
+-        sage: from sage.misc.latex_macros import convert_latex_macro_to_jsmath_easy
+-        sage: convert_latex_macro_to_jsmath_easy('\\newcommand{\\ZZ}{\\Bold{Z}}')
+-        "ZZ : '{\\\\Bold{Z}}'"
+-        sage: convert_latex_macro_to_jsmath_easy('\\newcommand{\\GF}[1]{\\Bold{F}_{#1}}')
+-        "GF : ['{\\\\Bold{F}_{#1}}', 1]"
+-    """
+-    left_bracket = macro.find('[')
+-    right_bracket = macro.find('[')
+-    if left_bracket >= 0:
+-        right_bracket = macro.find(']')
+-        num_args = macro[left_bracket+1:right_bracket]
+-    else:
+-        num_args = 0
+-    start_name = macro.find('{') + 1  # add one to go past the backslash
+-    end_name = macro.find('}')
+-    name = macro[start_name+1:end_name]
+-    start_defn = macro.find('{', end_name)
+-    end_defn = macro.rfind('}')
+-    defn = macro[start_defn+1: end_defn].replace('\\', '\\\\')
+-    if num_args > 0:
+-        args_str = "," + str(num_args)
+-        return name + " : ['{" + defn + "}', " + str(num_args) + ']'
+-    else:
+-        return name + " : '{" + defn + "}'"
++        return name + ': ["' + defn + '",' + str(num_args) + ']'
+ 
+ # To add a new macro for use in the Sage documentation, add a list or
+ # tuple to the following list.  Each list (or tuple) should have the
+@@ -213,9 +177,6 @@
+ 
+ sage_latex_macros += sage_configurable_latex_macros
+ 
+-# jsMath macro definitions as JavaScript, e.g., to include in HTML
++# MathJax macro definitions as JavaScript, e.g., to include in HTML
+ # script elements.
+-sage_jsmath_macros = [convert_latex_macro_to_jsmath(m) for m in sage_latex_macros]
+-
+-# jsMath macro definitions for an easy/load.js file's "macros" array.
+-sage_jsmath_macros_easy = [convert_latex_macro_to_jsmath_easy(m) for m in sage_latex_macros]
++sage_mathjax_macros = [convert_latex_macro_to_mathjax(m) for m in sage_latex_macros]
+diff --git a/sage/misc/sagedoc.py b/sage/misc/sagedoc.py
+--- a/sage/misc/sagedoc.py
++++ b/sage/misc/sagedoc.py
+@@ -42,7 +42,7 @@
+ 
+ # two kinds of substitutions: math, which should only be done on the
+ # command line -- in the notebook, these should instead by taken care
+-# of by jsMath -- and nonmath, which should be done always.
++# of by MathJax -- and nonmath, which should be done always.
+ math_substitutes = [ # don't forget leading backslash '\\'
+     ('\\to', '-->'),
+     ('\\leq', '<='),
+@@ -296,40 +296,28 @@
+             s = s[:m.start()] + "$" + s[m.end():]
+     return s
+ 
+-def process_mathtt(s, embedded=False):
++def process_mathtt(s):
+     r"""nodetex
+-    Replace \\mathtt{BLAH} with either \\verb|BLAH| (in the notebook) or
+-    BLAH (from the command line).
++    Replace \\mathtt{BLAH} with BLAH in the command line.
+ 
+     INPUT:
+ 
+     - ``s`` - string, in practice a docstring
+-    - ``embedded`` - boolean (optional, default False)
+ 
+-    This function is called by :func:`format`, and if in the notebook,
+-    it sets ``embedded`` to be ``True``, otherwise ``False``.
++    This function is called by :func:`format`.
+ 
+     EXAMPLES::
+ 
+         sage: from sage.misc.sagedoc import process_mathtt
+         sage: process_mathtt(r'e^\mathtt{self}')
+         'e^self'
+-        sage: process_mathtt(r'e^\mathtt{self}', embedded=True)
+-        'e^{\\verb|self|}'
+     """
+-    replaced = False
+     while True:
+         start = s.find("\\mathtt{")
+         end = s.find("}", start)
+         if start == -1 or end == -1:
+             break
+-        if embedded:
+-            left = "{\\verb|"
+-            right = "|}"
+-        else:
+-            left = ""
+-            right = ""
+-        s = s[:start] + left + s[start+8:end] + right + s[end+1:]
++        s = s[:start] + s[start+8:end] + s[end+1:]
+     return s
+ 
+ def format(s, embedded=False):
+@@ -518,7 +506,8 @@
+ 
+     if 'nodetex' not in directives:
+         s = process_dollars(s)
+-        s = process_mathtt(s, embedded=embedded)
++        if not embedded:
++            s = process_mathtt(s)
+         s = detex(s, embedded=embedded)
+     return embedding_info+s
+ 
+@@ -1279,7 +1268,7 @@
+     </script>
+     <script type="text/javascript" src="%(static_path)s/jquery.js"></script>
+     <script type="text/javascript" src="%(static_path)s/doctools.js"></script>
+-    <script type="text/javascript" src="%(static_path)s/jsmath_sage.js"></script>
++    <script type="text/javascript" src="%(static_path)s/mathjax_sage.js"></script>
+     <link rel="shortcut icon" href="%(static_path)s/favicon.ico" />
+     <link rel="icon" href="%(static_path)s/sageicon.png" type="image/x-icon" />
+   </head>
+@@ -1337,7 +1326,7 @@
+         path = os.path.join(self._base_path, name, "index.html")
+         if not os.path.exists(path):
+             raise OSError, """The document '%s' does not exist.  Please build it
+-with 'sage -docbuild %s html --jsmath' and try again.""" %(name, name)
++with 'sage -docbuild %s html --mathjax' and try again.""" %(name, name)
+ 
+         if testing:
+             return (url, path)
+diff --git a/sage/modules/vector_callable_symbolic_dense.py b/sage/modules/vector_callable_symbolic_dense.py
+--- a/sage/modules/vector_callable_symbolic_dense.py
++++ b/sage/modules/vector_callable_symbolic_dense.py
+@@ -104,5 +104,4 @@
+             return r"%s \ {\mapsto}\ %s" % (args[0], latex_x)
+         else:
+             vars = ", ".join(args)
+-            # the weird TeX is to workaround an apparent JsMath bug
+             return r"\left( %s \right) \ {\mapsto} \ %s" % (vars, latex_x)
+diff --git a/sage/symbolic/callable.py b/sage/symbolic/callable.py
+--- a/sage/symbolic/callable.py
++++ b/sage/symbolic/callable.py
+@@ -435,7 +435,6 @@
+             return r"%s \ {\mapsto}\ %s" % (args[0], latex_x)
+         else:
+             vars = ", ".join(args)
+-            # the weird TeX is to workaround an apparent JsMath bug
+             return r"\left( %s \right) \ {\mapsto} \ %s" % (vars, latex_x)
+ 
+     def _call_element_(self, _the_element, *args, **kwds):

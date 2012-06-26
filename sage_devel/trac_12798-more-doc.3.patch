@@ -1,0 +1,100 @@
+# HG changeset patch
+# User Karl-Dieter Crisman <kcrisman@gmail.com>
+# Date 1338072076 14400
+# Node ID b745d7140150d9d8555a91c5a05af65804b091ac
+# Parent  56de00219f38e25be1394861549a5afe95241367
+Trac 12798 - fix and improve documentation for list_plot3d
+
+Clarify exactly how the matrix/array intput works
+Clarify problem pointed out on Trac 12798 about plotting tuples in certain cases
+
+diff --git a/sage/plot/plot3d/list_plot3d.py b/sage/plot/plot3d/list_plot3d.py
+--- a/sage/plot/plot3d/list_plot3d.py
++++ b/sage/plot/plot3d/list_plot3d.py
+@@ -9,20 +9,22 @@
+     r"""
+     A 3-dimensional plot of a surface defined by the list `v`
+     of points in 3-dimensional space.
+-    
++
+     INPUT:
+     
+-    
+-    - ``v`` - something that defines a set of points in 3
+-      space, for example:
++    - ``v`` - something that defines a set of points in three dimensions:
+ 
+-      - a matrix
++      - a matrix - this is treated as the height (z) values of an array
++        of equally-spaced points.  An `m \times n` matrix will have its
++        ``i``th row plotted at ``x=i-1`` and its ``j``th column plotted
++        at ``y=j-1``, covering the rectangle `[0,m-1]\times [0,n-1]`.
+ 
+-      - a list of 3-tuples
+-    
++      - a list of 3-tuples - these are treated as (x,y,z) coordinates
++        for a list of points.
++
+       - a list of lists (all of the same length) - this is treated the same as
+         a matrix.
+-    
++
+     - ``texture`` - (default: "automatic", a solid light blue) this can be
+ 
+       - a named color, ex. 'blue', 'black', 'red'
+@@ -70,8 +72,9 @@
+     NOTES:
+ 
+     - If a list of 3-tuples is provided and the number of tuples provided
+-      is small, then also provide a high value of ``num_points``, such as
+-      'num_points=300' in order to get an accurate interpolated plot.
++      is small, the plot may not appear or be inaccurate (see below for examples).
++      In this case, also provide a high value of ``num_points``, such as
++      'num_points=300', in order to get an accurate interpolated plot.
+ 
+     - Only one of ``texture``, ``color`` or ``rgbcolor`` should be used. In
+       case two or more of these options are present, the order of
+@@ -133,9 +136,10 @@
+     
+         sage: show(list_plot3d([[1, 1, 1, 1], [1, 2, 1, 2], [1, 1, 3, 1], [1, 2, 1, 4]]))
+     
+-    We plot a list of points.  As a first example we can extract the
+-    (x,y,z) coordinates from the above example and make a list plot
+-    out of it. By default we do linear interpolation.
++    We plot a list of points; notice that we are using tuples here.
++    As a first example we can extract the (x,y,z) coordinates from the above
++    example and make a list plot out of it. By default we do linear
++    interpolation.
+     
+     ::
+     
+@@ -145,7 +149,8 @@
+         ...         l.append((float(i*pi/5),float(j*pi/5),m[i,j]))
+         sage: list_plot3d(l,texture='yellow')
+     
+-    Note that the points do not have to be regularly sampled. For example::
++    Note that for plotting lists of actual points (instead of arrays of heights),
++    the points do not have to be regularly sampled. For example::
+     
+         sage: l=[]
+         sage: for i in range(-5,5):
+@@ -153,6 +158,19 @@
+         ...      l.append((normalvariate(0,1),normalvariate(0,1),normalvariate(0,1)))
+         sage: list_plot3d(l,interpolation_type='nn',texture='yellow',num_points=100)
+ 
++
++    If the points do not cover very much of the xy-plane rectangle defined
++    by their max and min x and y values, the plot may be very inaccurate or
++    not visible::
++
++        sage: list_plot3d([(0,0,1), (2,3,4), (-1,-1,-1)]) # no plot, just frame
++
++    This can be fixed by using a high number of points.  Here, we should get
++    a thin triangle. An even more accurate plot can be obtained by
++    increasing the parameter ``num_points=100`` to ``num_points=400``.::
++
++        sage: list_plot3d([(0,0,1), (2,3,4), (-1,-1,-1)],num_points=100) # long time
++
+     TESTS:
+ 
+     We plot 0, 1, and 2 points::

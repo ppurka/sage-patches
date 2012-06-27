@@ -1,0 +1,46 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1340731733 -28800
+# Node ID 9067f4bbe139b8348089221bdd2fc425d05d64ec
+# Parent  c67766229e3344317e9e97184423973efc1b1c18
+don't pass nan to ParametricSurface since it induces massive slowdown in Solaris Sparc
+
+diff --git a/sage/plot/plot3d/list_plot3d.py b/sage/plot/plot3d/list_plot3d.py
+--- a/sage/plot/plot3d/list_plot3d.py
++++ b/sage/plot/plot3d/list_plot3d.py
+@@ -486,8 +486,16 @@
+             z=vals[int(j),int(i)]
+             return (x,y,z)
+ 
++        # By default f.default_value has the value of nan. We need to
++        # remove all those points whose z values are nan. This is needed to
++        # avoid slowdowns in ParametricSurface
++        import math
++        xyvals = zip(list(numpy.r_[xmin:xmax:num_points*j]),
++                     list(numpy.r_[ymin:ymax:num_points*j]))
++        xvals, yvals = zip(*((xi, yi) for xi, yi in xyvals if not
++                             math.isnan(g(xi, yi)[-1])))
+ 
+-        G = ParametricSurface(g, (list(numpy.r_[xmin:xmax:num_points*j]), list(numpy.r_[ymin:ymax:num_points*j])), texture=texture, **kwds)
++        G = ParametricSurface(g, (xvals, yvals), texture=texture, **kwds)
+         G._set_extra_kwds(kwds)
+         return G
+ 
+@@ -505,7 +513,16 @@
+             z=vals[int(j),int(i)]
+             return (x,y,z)
+ 
+-        G = ParametricSurface(g, (list(numpy.r_[xmin:xmax:num_points*j]), list(numpy.r_[ymin:ymax:num_points*j])), texture=texture, **kwds)
++        # By default f.default_value has the value of nan. We need to
++        # remove all those points whose z values are nan. This is needed to
++        # avoid slowdowns in ParametricSurface
++        import math
++        xyvals = zip(list(numpy.r_[xmin:xmax:num_points*j]),
++                     list(numpy.r_[ymin:ymax:num_points*j]))
++        xvals, yvals = zip(*((xi, yi) for xi, yi in xyvals if not
++                             math.isnan(g(xi, yi)[-1])))
++
++        G = ParametricSurface(g, (xvals, yvals), texture=texture, **kwds)
+         G._set_extra_kwds(kwds)
+         return G
+ 

@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1342681885 -28800
-# Node ID 5e12eeaa0c66d52a881c731dde2ec1e620f12ba4
+# Date 1342682017 -28800
+# Node ID fd578fa7def6ee7ecc736cf0e22a30b31ffc5f0f
 # Parent  79d0af78e6acaae1431cea49b21f1befbc45cd42
 add custom tick labeling and position
 
@@ -98,7 +98,7 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
  
 +You can even have custom tick labels along with custom positioning. ::
 +
-+    sage: plot(x**2, (x,0,3), ticks=[[1,2.5],[0.5,1,2]], tick_formatter=[["$x_1$","$x_2$"],["$y_1$","$y_2$","$y_3$"]])
++    sage: plot(x**2, (x,0,3), ticks=[[1,2.5],pi/2], tick_formatter=[["$x_1$","$x_2$"],pi])
 +
  We construct a plot involving several graphics objects::
  

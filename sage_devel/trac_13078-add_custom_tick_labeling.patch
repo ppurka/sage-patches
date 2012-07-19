@@ -1,31 +1,32 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1342681336 -28800
-# Node ID f09bc88a5d0df1edcc3e19da69871f069970318a
+# Date 1342681702 -28800
+# Node ID 8b8293dba8fd41359b7a6020ea67800d5c747b7c
 # Parent  79d0af78e6acaae1431cea49b21f1befbc45cd42
 add custom tick labeling and position
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 --- a/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py
-@@ -1387,6 +1387,16 @@
+@@ -1387,6 +1387,17 @@
              intended to be used when the tick locator for at least one of
              the axes is a list including some symbolic elements.  See examples.
  
-+          - If the first entry is a list of strings, then the formatting for
-+            the horizontal axis will be typeset with the strings present in the
-+            list. Each entry of the list of strings must be provided with
-+            a corresponding entry in the first entry of ``ticks`` where it will
-+            be positioned. To typeset the strings with ``"latex"`` enclose them
-+            within ``"$"`` symbols. To have similar custom formatting of the
-+            labels along the vertical axis, the second entry must be a list of
-+            strings and the second entry of ``ticks`` must also be a list of
-+            numbers which give the positions of the labels.
++          - If the first entry is a list of strings (or numbers), then the
++            formatting for the horizontal axis will be typeset with the strings
++            present in the list. Each entry of the list of strings must be
++            provided with a corresponding number in the first entry of
++            ``ticks`` to indicate its position on the axis. To typeset the
++            strings with ``"latex"`` enclose them within ``"$"`` symbols. To
++            have similar custom formatting of the labels along the vertical
++            axis, the second entry must be a list of strings and the second
++            entry of ``ticks`` must also be a list of numbers which give the
++            positions of the labels. See the examples below.
 +
          - ``show_legend`` - (default: None) If True, show the legend
  
          - ``legend_*`` - all the options valid for :meth:`set_legend_options` prefixed with ``legend_``
-@@ -1689,6 +1699,25 @@
+@@ -1689,6 +1700,25 @@
  
              sage: plot(arcsin(x),(x,-1,1),ticks=[None,pi/6],tick_formatter=[None,pi]) # Not so nice-looking
  
@@ -51,7 +52,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          When using logarithmic scale along the axis, make sure to have
          enough room for two ticks so that the user can tell what the scale
          is. This can be effected by increasing the range of the independent
-@@ -1915,7 +1944,7 @@
+@@ -1915,7 +1945,7 @@
                  '(option `ticks`).')
  
          x_formatter, y_formatter = tick_formatter
@@ -60,7 +61,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          from sage.misc.latex import latex
          from sage.symbolic.ring import SR
          #---------------------- Formatting x-ticks ----------------------#
-@@ -1937,6 +1966,13 @@
+@@ -1937,6 +1967,13 @@
                                                          "\\mathdefault",""))
              else:
                  x_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
@@ -74,7 +75,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          #---------------------- Formatting y-ticks ----------------------#
          if y_formatter is None:
              if scale[1] == 'log':
-@@ -1956,6 +1992,13 @@
+@@ -1956,6 +1993,13 @@
                                                          "\\mathdefault",""))
              else:
                  y_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))

@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1342681702 -28800
-# Node ID 8b8293dba8fd41359b7a6020ea67800d5c747b7c
+# Date 1342681885 -28800
+# Node ID 5e12eeaa0c66d52a881c731dde2ec1e620f12ba4
 # Parent  79d0af78e6acaae1431cea49b21f1befbc45cd42
 add custom tick labeling and position
 
@@ -103,3 +103,14 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
  We construct a plot involving several graphics objects::
  
      sage: G = plot(cos(x), (x, -5, 5), thickness=5, color='green')
+@@ -978,6 +982,10 @@
+ 
+         sage: plot(sin(x),(x,0,2*pi),ticks=pi/3,tick_formatter=pi)
+ 
++    You can even have custom tick labels along with custom positioning. ::
++
++        sage: plot(x**2, (x,0,3), ticks=[[1,2.5],[0.5,1,2]], tick_formatter=[["$x_1$","$x_2$"],["$y_1$","$y_2$","$y_3$"]])
++
+     A example with excluded values::
+ 
+         sage: plot(floor(x), (x, 1, 10), exclude = [1..10])

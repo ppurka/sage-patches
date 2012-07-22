@@ -1,15 +1,65 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1342359642 -28800
-# Node ID bb9199b13a7f15fc205ae3f3b1d4466583667cc2
+# Date 1342965391 -28800
+# Node ID 018a0eb74c1b574af16e53a906fd810b08b6e768
 # Parent  69194615bd63053dcd9fee984f5a3e402c916656
  1. automatically exclude invalid points from a plot
  2. fix excluded regions in case more than one exclude point was in an invalid region
+Thanks to kcrisman and ddrake for the idea how to do this auto exclusion
 
 diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 --- a/sage/plot/plot.py
 +++ b/sage/plot/plot.py
-@@ -1266,6 +1266,25 @@
+@@ -729,14 +729,20 @@
+     - ``fillalpha`` - (default: 0.5) How transparent the fill is.
+       A number between 0 and 1.
+ 
+-    Note that this function does NOT simply sample equally spaced
+-    points between xmin and xmax. Instead it computes equally spaced
+-    points and add small perturbations to them. This reduces the
+-    possibility of, e.g., sampling sin only at multiples of
+-    `2\pi`, which would yield a very misleading graph.
+-    
++    .. note::
++
++        - this function does NOT simply sample equally spaced points
++          between xmin and xmax. Instead it computes equally spaced points
++          and adds small perturbations to them. This reduces the possibility
++          of, e.g., sampling sin only at multiples of `2\pi`, which would
++          yield a very misleading graph.
++
++        - if there is a range of consecutive points where the function has
++          no value, then those points will be excluded from the plot. See
++          the example below on automatic exclusion of points.
++
+     EXAMPLES: We plot the sin function::
+-    
++ 
+         sage: P = plot(sin, (0,10)); print P
+         Graphics object consisting of 1 graphics primitive
+         sage: len(P)     # number of graphics primitives
+@@ -997,10 +1003,18 @@
+         sage: f(x) = (floor(x)+0.5) / (1-(x-0.5)^2)
+         sage: plot(f, (x, -3.5, 3.5), detect_poles = 'show', exclude = [-3..3], ymin = -5, ymax = 5)
+ 
++    Regions in which the plot has no values are automatically excluded. The
++    regions thus excluded are in addition to the exclusion points present
++    in the ``exclude`` keyword argument.::
++
++        sage: plot(arcsec, (x, -2, 2))  # [-1, 1] is excluded automatically
++
++        sage: plot(arcsec, (x, -2, 2), exclude=[1.5])  # x=1.5 is also excluded
++
+     TESTS:
+-    
++
+     We do not randomize the endpoints::
+-    
++
+         sage: p = plot(x, (x,-1,1))
+         sage: p[0].xdata[0] == -1
+         True
+@@ -1266,6 +1280,24 @@
      else:
          data = generate_plot_points(f, xrange, plot_points, adaptive_tolerance, adaptive_recursion, randomize)
  
@@ -20,10 +70,9 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 +
 +    for i in range(len(data)-1):
 +        # If the difference between consecutive x-values is more than
-+        # 3 times the difference between two consecutive plot points, then
-+        # add an exclusion point. We assume that the data points are in
-+        # increasing order of x-values.
-+        if data[i+1][0] - data[i][0] > 3*(xmax - xmin)/plot_points:
++        # 2 times the difference between two consecutive plot points, then
++        # add an exclusion point.
++        if abs(data[i+1][0] - data[i][0]) > 2*abs(xmax - xmin)/plot_points:
 +            exclude.append((data[i][0] + data[i+1][0])/2)
 +
 +    # We set exclude back to None if there are no points to be excluded
@@ -35,7 +84,7 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
      if parametric:
          # We need the original x-values to be able to exclude points in parametric plots
          exclude_data = data
-@@ -1375,11 +1394,13 @@
+@@ -1375,11 +1407,13 @@
              if exclude is not None and (x0 <= exclusion_point <= x1):
                  G += line(data[start_index:i], **options)
                  start_index = i + 2

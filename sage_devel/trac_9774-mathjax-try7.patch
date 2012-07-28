@@ -1,7 +1,7 @@
 # HG changeset patch
 # User J. H. Palmieri <palmieri@math.washington.edu>
 # Date 1326533960 -28800
-# Node ID 00093f0166f06ad0535f9c593fcc15d21ad997fe
+# Node ID 6da4a2b5230eec08f312292b7431f9f693507558
 # Parent  89de4e65b0417eb28126efabc01a7f294df3ec67
 #9774: switch Sage library from jsMath to MathJax.
 
@@ -1804,7 +1804,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
 +        <html><script type="math/tex; mode=display">\newcommand{\Bold}[1]{\mathbf{#1}}3</script></html>
          sage: view((x,2), combine_all=True) # trac 11775
 -        <html><span class="math">\newcommand{\Bold}[1]{\mathbf{#1}}x 2</span></html>
-+        <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}\left(x, 2\right)</script></html>
++        <html><script type="math/tex">\newcommand{\Bold}[1]{\mathbf{#1}}x 2</script></html>
          sage: sage.misc.latex.EMBEDDED_MODE = False
  
      TESTS::

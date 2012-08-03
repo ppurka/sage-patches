@@ -1,8 +1,8 @@
 # HG changeset patch
 # User J. H. Palmieri <palmieri@math.washington.edu>
 # Date 1326533960 -28800
-# Node ID 6da4a2b5230eec08f312292b7431f9f693507558
-# Parent  89de4e65b0417eb28126efabc01a7f294df3ec67
+# Node ID 27ba38d1c17663716d08fcd837b3402ab8bdcad3
+# Parent  90cdc6a8ad4e4bed83142b4ca0e6c551acd73204
 #9774: switch Sage library from jsMath to MathJax.
 
 Many people helped in this patch, including: Rob Beezer, Davide Cervone,
@@ -1046,7 +1046,7 @@ diff --git a/sage/graphs/graph_latex.py b/sage/graphs/graph_latex.py
 diff --git a/sage/matrix/matrix0.pyx b/sage/matrix/matrix0.pyx
 --- a/sage/matrix/matrix0.pyx
 +++ b/sage/matrix/matrix0.pyx
-@@ -1917,27 +1917,6 @@
+@@ -1918,27 +1918,6 @@
              \hline\hline
              0 & 0 & 0 & 0
              \end{array}\right)
@@ -1074,7 +1074,7 @@ diff --git a/sage/matrix/matrix0.pyx b/sage/matrix/matrix0.pyx
          """
          latex = sage.misc.latex.latex
          matrix_delimiters = latex.matrix_delimiters()
-@@ -1952,36 +1931,7 @@
+@@ -1953,36 +1932,7 @@
          
          row_divs, col_divs = self.subdivisions()
          
@@ -1508,7 +1508,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  
      def pdflatex(self, t = None):  # this is deprecated since 4.3.3
          """
-@@ -1700,19 +1696,19 @@
+@@ -1703,19 +1699,19 @@
  
      return s
  
@@ -1533,7 +1533,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  
          INPUT:
  
-@@ -1722,8 +1718,8 @@
+@@ -1725,8 +1721,8 @@
  
          EXAMPLES::
  
@@ -1544,7 +1544,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
              3
          """
          self.__y = y
-@@ -1734,59 +1730,59 @@
+@@ -1737,59 +1733,59 @@
  
          EXAMPLES::
  
@@ -1626,7 +1626,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  
          INPUT:
  
-@@ -1797,14 +1793,14 @@
+@@ -1800,14 +1796,14 @@
            and instead returns a string with all the elements separated by
            a single space.
  
@@ -1646,7 +1646,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
              True
          """
          return self.eval(x, combine_all=combine_all)
-@@ -1812,7 +1808,7 @@
+@@ -1815,7 +1811,7 @@
      def eval(self, x, globals=None, locals=None, mode='display',
              combine_all=False):
          r"""
@@ -1655,7 +1655,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  
          INPUT:
  
-@@ -1831,98 +1827,38 @@
+@@ -1834,100 +1830,38 @@
            and instead returns a string with all the elements separated by
            a single space.
  
@@ -1739,7 +1739,9 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
 -        sage: g = f.integrate()
 -        sage: jsmath(f)
 -        doctest:1: DeprecationWarning: The jsmath function is deprecated.  Use html('$math$') for inline mode or html('$$math$$') for display mode.
+-        See http://trac.sagemath.org/8552 for details.
 -        <html><font color='black'><div class="math">{{1}\over{x^2+1}}</div></font></html>
+-        <BLANKLINE>
 -        sage: jsmath(g, 'inline')
 -        <html><font color='black'><span class="math">\tan^{-1} x</span></font></html>
 -        sage: jsmath('\int' + latex(f) + '\ dx=' + latex(g))
@@ -1751,9 +1753,9 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
 -
 -    - Bobby Moretti (2006-10): improvements, comments, documentation
 -    """
--    from sage.misc.misc import deprecation
+-    from sage.misc.superseded import deprecation
 -    from sage.misc.html import html
--    deprecation("The jsmath function is deprecated.  Use html('$math$') for inline mode or html('$$math$$') for display mode.")
+-    deprecation(8552, "The jsmath function is deprecated.  Use html('$math$') for inline mode or html('$$math$$') for display mode.")
 -    if mode == 'display':
 -        delimiter = '$$'
 -    elif mode == 'inline':
@@ -1776,7 +1778,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  
  def view(objects, title='SAGE', debug=False, sep='', tiny=False,
          pdflatex=None, engine=None, viewer = None, tightpage = None,
-@@ -2013,25 +1949,25 @@
+@@ -2018,25 +1952,25 @@
      each object by ``\\begin{page}$`` and ``$\\end{page}``.
  
      If in notebook mode with ``viewer`` equal to ``None``, this
@@ -1808,7 +1810,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
          sage: sage.misc.latex.EMBEDDED_MODE = False
  
      TESTS::
-@@ -2069,14 +2005,14 @@
+@@ -2074,14 +2008,14 @@
          engine = "pdflatex"
      # notebook
      if EMBEDDED_MODE and viewer is None:
@@ -1829,7 +1831,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
          else:
              base_dir = os.path.abspath("")
              png_file = graphics_filename(ext='png')
-@@ -2283,7 +2219,7 @@
+@@ -2288,7 +2222,7 @@
          sage: TEMP = sys.displayhook
          sage: sys.displayhook = sage.misc.latex.pretty_print
          sage: sage.misc.latex.print_or_typeset(3)
@@ -1838,7 +1840,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
          sage: sage.misc.latex.EMBEDDED_MODE=False
          sage: sys.displayhook = TEMP
      """
-@@ -2299,7 +2235,7 @@
+@@ -2304,7 +2238,7 @@
      objects, this returns their default representation.  For other
      objects, in the notebook, this calls the :func:`view` command,
      while from the command line, this produces an html string suitable
@@ -1847,7 +1849,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  
      INPUT:
  
-@@ -2312,14 +2248,14 @@
+@@ -2317,14 +2251,14 @@
      EXAMPLES::
  
          sage: pretty_print(ZZ)  # indirect doctest
@@ -1865,7 +1867,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
      """
      # view s if it is not empty. Used twice.
      def _show_s(s):
-@@ -2327,7 +2263,7 @@
+@@ -2332,7 +2266,7 @@
              if EMBEDDED_MODE:
                  view(tuple(s), combine_all=True)
              else:
@@ -1874,7 +1876,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
                          combine_all=True)
  
      s = []
-@@ -2353,7 +2289,7 @@
+@@ -2358,7 +2292,7 @@
  def pretty_print_default(enable=True):
      r"""
      Enable or disable default pretty printing. Pretty printing means
@@ -1883,7 +1885,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
      can render real math.
  
      INPUT:
-@@ -2365,7 +2301,7 @@
+@@ -2370,7 +2304,7 @@
  
          sage: pretty_print_default(True)
          sage: sys.displayhook
@@ -1892,7 +1894,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
          sage: pretty_print_default(False)
          sage: sys.displayhook == sys.__displayhook__
          True
-@@ -2591,8 +2527,8 @@
+@@ -2596,8 +2530,8 @@
  the TeX package pgf installed, along with the LaTeX package tkz-graph.
  Run 'latex.add_to_preamble("\\usepackage{tkz-graph}")', and try viewing
  it again.  From the command line, this should pop open a nice window
@@ -1903,7 +1905,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  and try again from the notebook -- you should get a nice picture.
  
  (LaTeX code taken from http://altermundus.com/pages/graph.html)
-@@ -2674,7 +2610,7 @@
+@@ -2679,7 +2613,7 @@
  open a nice window with a picture of forces acting on a mass
  on a pendulum. In the notebook, you should get an error.
  Finally, run
@@ -1912,7 +1914,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  -- you should get a nice picture."""
  
          def _latex_(self):
-@@ -2741,7 +2677,7 @@
+@@ -2746,7 +2680,7 @@
  'latex.add_to_preamble("\\usepackage[graph,knot,poly,curve]{xypic}")',
  and try viewing again -- it should work in the command line but not
  from the notebook.  In the notebook, run
@@ -1921,7 +1923,7 @@ diff --git a/sage/misc/latex.py b/sage/misc/latex.py
  should get a nice picture.
  
  (LaTeX code taken from the xypic manual)
-@@ -2805,7 +2741,7 @@
+@@ -2810,7 +2744,7 @@
  'latex.add_to_preamble("\\usepackage[matrix,arrow,curve,cmtip]{xy}")',
  and try viewing again -- it should work in the command line but not
  from the notebook.  In the notebook, run

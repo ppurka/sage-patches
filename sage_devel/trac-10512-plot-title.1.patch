@@ -1,0 +1,124 @@
+# HG changeset patch
+# User Jason Grout <jason.grout@drake.edu>
+# Date 1299598970 21600
+# Node ID 6a710c63f1e9db5da68df125b8f1ae8a48839324
+# Parent  0666a97bdec902aca2d5b2d0551dfc8f60449575
+#10512: wrap matplotlib's title functionality
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1228,7 +1228,7 @@
+                         # Figure options
+                         aspect_ratio=None, dpi=DEFAULT_DPI, fig_tight=True,
+                         figsize=None, fontsize=None, frame=False,
+-                        transparent=False,
++                        title=None, transparent=False,
+                         # Grid options
+                         gridlines=None, gridlinesstyle=None,
+                         hgridlinesstyle=None, vgridlinesstyle=None,
+@@ -1387,6 +1387,8 @@
+             intended to be used when the tick locator for at least one of
+             the axes is a list including some symbolic elements.  See examples.
+ 
++        - ``title'' - (default: None) The title for the plot
++
+         - ``show_legend`` - (default: None) If True, show the legend
+ 
+         - ``legend_*`` - all the options valid for :meth:`set_legend_options` prefixed with ``legend_``
+@@ -1430,20 +1432,24 @@
+         You could also just make the picture larger by changing ``figsize``::
+ 
+             sage: c.show(figsize=8, xmin=-1, xmax=3, ymin=-1, ymax=3)
+-        
++
+         You can turn off the drawing of the axes::
+-        
++
+             sage: show(plot(sin,-4,4), axes=False)
+-        
++
+         You can also label the axes.  Putting something in dollar
+         signs formats it as a mathematical expression::
+-        
++
+             sage: show(plot(sin,-4,4), axes_labels=('$x$','$y$'))
+-        
++
++        You can add a title to a plot::
++
++            sage: show(plot(sin,-4,4), title='A plot of $\sin(x)$')
++
+         You can turn on the drawing of a frame around the plots::
+-        
++
+             sage: show(plot(sin,-4,4), frame=True)
+-        
++
+         You can make the background transparent::
+ 
+             sage: plot(sin(x), (x, -4, 4), transparent=True)
+@@ -1997,7 +2003,7 @@
+                    vgridlinesstyle=None, hgridlinesstyle=None,
+                    show_legend=None, legend_options={},
+                    axes_pad=0.02, ticks_integer=None,
+-                   tick_formatter=None, ticks=None,
++                   tick_formatter=None, ticks=None, title=None,
+                    base=None, scale=None):
+         r"""
+         Return a matplotlib figure object representing the graphic
+@@ -2437,8 +2443,14 @@
+         # todo: figure out which limits were specified, and let the
+         # free limits autoscale
+         #subplot.autoscale_view(tight=True)
++        if title is not None:
++            if (frame) or (axes_labels is None):
++                subplot.set_title(title, fontsize=fontsize)
++            else: # frame is false axes is not None, and neither is axes_labels
++                subplot.set_title(title, fontsize=fontsize, position=(0.5,1.05))
++
+         return figure
+-        
++
+     # ALLOWED_EXTENSIONS is the list of recognized formats.
+     # filename argument is written explicitly so that it can be used as a
+     # positional one, which is a very likely usage for this function.
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -135,7 +135,7 @@
+ 
+ We construct a plot involving several graphics objects::
+ 
+-    sage: G = plot(cos(x), (x, -5, 5), thickness=5, color='green')
++    sage: G = plot(cos(x), (x, -5, 5), thickness=5, color='green', title='A plot')
+     sage: P = polygon([[1,2], [5,6], [5,0]], color='red')
+     sage: G + P
+ 
+@@ -171,6 +171,11 @@
+     sage: g = p+t+x+y
+     sage: g.show(xmin=-1.5, xmax=2, ymin=-1, ymax=1)
+ 
++We can add a title to a graph::
++
++    sage: x = var('x')
++    sage: plot(x^2, (x,-2,2), title='A plot of $x^2$')
++
+ We plot the Riemann zeta function along the critical line and see
+ the first few zeros::
+ 
+@@ -953,11 +958,11 @@
+         sage: def b(n): return lambda x: bessel_J(n, x) + 0.5*(n-1)
+         sage: plot([b(c) for c in [1..5]], 0, 40, fill = dict([(i, [i+1]) for i in [0..3]]))
+         sage: plot([b(c) for c in [1..5]], 0, 40, fill = dict([(i, i+1) for i in [0..3]]))
+-    
++
+     Extra options will get passed on to show(), as long as they are valid::
+ 
+-        sage: plot(sin(x^2), (x, -3, 3), axes_labels=['$x$','$y$']) # These labels will be nicely typeset
+-        sage: plot(sin(x^2), (x, -3, 3), axes_labels=['x','y']) # These will not
++        sage: plot(sin(x^2), (x, -3, 3), title='Plot of $\sin(x)$', axes_labels=['$x$','$y$']) # These labels will be nicely typeset
++        sage: plot(sin(x^2), (x, -3, 3), title='Plot of sin(x)', axes_labels=['x','y']) # These will not
+ 
+     ::
+ 

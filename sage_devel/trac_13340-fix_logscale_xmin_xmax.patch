@@ -1,0 +1,42 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1344155185 -28800
+# Node ID 0666a97bdec902aca2d5b2d0551dfc8f60449575
+# Parent  01345c3511f9956b2c2f471192dbb1f341e635f4
+fix the log scale plot when xmin > xmax
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1701,6 +1701,10 @@
+             ValueError: Either expand the range of the dependent variable to allow two different integer powers of your `base`, or change your `base` to a smaller number.
+             sage: p.show(scale='loglog', base=8) # this works.
+ 
++        Check that :trac:`13340` is fixed.::
++
++            sage: plot(x, 1, 10).show(scale='loglog', xmin=10, xmax=1)
++
+         """
+ 
+         # This option should not be passed on to save().
+@@ -1967,16 +1971,16 @@
+         if scale[0] == 'log' and xmin > 0:
+             import math
+             base0 = base[0]
+-            if (math.floor(math.log(xmax)/math.log(base0)) -
+-                    math.ceil(math.log(xmin)/math.log(base0)) < 1):
++            if (abs(math.floor(math.log(xmax)/math.log(base0)) -
++                    math.ceil(math.log(xmin)/math.log(base0))) < 1):
+                 raise ValueError('Either expand the range of the independent '
+                 'variable to allow two different integer powers of your `base`, '
+                 'or change your `base` to a smaller number.')
+         if scale[1] == 'log' and ymin > 0:
+             import math
+             base1 = base[1]
+-            if (math.floor(math.log(ymax)/math.log(base1)) -
+-                    math.ceil(math.log(ymin)/math.log(base1)) < 1):
++            if (abs(math.floor(math.log(ymax)/math.log(base1)) -
++                    math.ceil(math.log(ymin)/math.log(base1))) < 1):
+                 raise ValueError('Either expand the range of the dependent '
+                 'variable to allow two different integer powers of your `base`, '
+                 'or change your `base` to a smaller number.')

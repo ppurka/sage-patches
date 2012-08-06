@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Jason Grout <jason.grout@drake.edu>
 # Date 1299598970 21600
-# Node ID 6a710c63f1e9db5da68df125b8f1ae8a48839324
-# Parent  0666a97bdec902aca2d5b2d0551dfc8f60449575
+# Node ID 1062f232b3750377b778cb2e41f1633ae13dff01
+# Parent  90cdc6a8ad4e4bed83142b4ca0e6c551acd73204
 #10512: wrap matplotlib's title functionality
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
@@ -21,7 +21,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
              intended to be used when the tick locator for at least one of
              the axes is a list including some symbolic elements.  See examples.
  
-+        - ``title'' - (default: None) The title for the plot
++        - ``title`` - (default: None) The title for the plot
 +
          - ``show_legend`` - (default: None) If True, show the legend
  
@@ -58,7 +58,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          You can make the background transparent::
  
              sage: plot(sin(x), (x, -4, 4), transparent=True)
-@@ -1997,7 +2003,7 @@
+@@ -1993,7 +1999,7 @@
                     vgridlinesstyle=None, hgridlinesstyle=None,
                     show_legend=None, legend_options={},
                     axes_pad=0.02, ticks_integer=None,
@@ -67,7 +67,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
                     base=None, scale=None):
          r"""
          Return a matplotlib figure object representing the graphic
-@@ -2437,8 +2443,14 @@
+@@ -2433,8 +2439,14 @@
          # todo: figure out which limits were specified, and let the
          # free limits autoscale
          #subplot.autoscale_view(tight=True)

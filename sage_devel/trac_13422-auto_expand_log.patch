@@ -1,0 +1,136 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1346607357 -28800
+# Node ID 22db57956a4d3d200846ee44b37293d491bd4457
+# Parent  01345c3511f9956b2c2f471192dbb1f341e635f4
+preliminary patch
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1964,22 +1964,37 @@
+ 
+         # Check for whether there will be too few ticks in the log scale case
+         # If part of the data is nonpositive, we assume there are enough ticks
+-        if scale[0] == 'log' and xmin > 0:
+-            import math
+-            base0 = base[0]
+-            if (math.floor(math.log(xmax)/math.log(base0)) -
+-                    math.ceil(math.log(xmin)/math.log(base0)) < 1):
+-                raise ValueError('Either expand the range of the independent '
+-                'variable to allow two different integer powers of your `base`, '
+-                'or change your `base` to a smaller number.')
+-        if scale[1] == 'log' and ymin > 0:
+-            import math
+-            base1 = base[1]
+-            if (math.floor(math.log(ymax)/math.log(base1)) -
+-                    math.ceil(math.log(ymin)/math.log(base1)) < 1):
+-                raise ValueError('Either expand the range of the dependent '
+-                'variable to allow two different integer powers of your `base`, '
+-                'or change your `base` to a smaller number.')
++        if scale[0] == 'log' and len(subplot.xaxis.get_ticklocs()) < 2:
++            raise ValueError('Either expand the range of the independent '
++            'variable to allow two different integer powers of your `base`, '
++            'or change your `base` to a smaller number.')
++
++        if scale[1] == 'log' and len(subplot.yaxis.get_ticklocs()) < 2:
++            raise ValueError('Either expand the range of the dependent '
++            'variable to allow two different integer powers of your `base`, '
++            'or change your `base` to a smaller number.')
++
++#        This code is now redundant since we auto-expand the x and y ranges
++#        if scale[0] == 'log' and min(xmin, xmax) > 0:
++#            import math
++#            base0 = base[0]
++#            logxmin = math.log(xmin)/math.log(base0)
++#            logxmax = math.log(xmax)/math.log(base0)
++#            if   ((xmin < xmax and math.floor(logxmax)-math.ceil(logxmin) < 1)
++#               or (xmin > xmax and math.floor(logxmin)-math.ceil(logxmax) < 1)):
++#                raise ValueError('Either expand the range of the independent '
++#                'variable to allow two different integer powers of your `base`, '
++#                'or change your `base` to a smaller number.')
++#        if scale[1] == 'log' and min(ymin, ymax) > 0:
++#            import math
++#            base1 = base[1]
++#            logymin = math.log(ymin)/math.log(base1)
++#            logymax = math.log(ymax)/math.log(base1)
++#            if   ((ymin < ymax and math.floor(logymax)-math.ceil(logymin) < 1)
++#               or (ymin > ymax and math.floor(logymin)-math.ceil(logymax) < 1)):
++#                raise ValueError('Either expand the range of the dependent '
++#                'variable to allow two different integer powers of your `base`, '
++#                'or change your `base` to a smaller number.')
+ 
+         return (subplot, x_locator, y_locator, x_formatter, y_formatter)
+ 
+@@ -2047,14 +2062,14 @@
+                 tick_formatter = (tick_formatter, "latex")
+             else:
+                 tick_formatter = (tick_formatter, None)
+-            
++
+         self.set_axes_range(xmin, xmax, ymin, ymax)
+         d = self.get_axes_range()
+         xmin = d['xmin']
+         xmax = d['xmax']
+         ymin = d['ymin']
+         ymax = d['ymax']
+-        
++
+         x_pad=(xmax-xmin)*float(axes_pad)
+         y_pad=(ymax-ymin)*float(axes_pad)
+ 
+@@ -2062,7 +2077,7 @@
+         xmax+=x_pad
+         ymin-=y_pad
+         ymax+=y_pad
+-                
++
+         global do_verify
+         do_verify = verify
+ 
+@@ -2101,6 +2116,45 @@
+         xscale, yscale, basex, basey = self._set_scale(figure, scale=scale,
+                                                        base=base)
+ 
++        # Check for whether there will be too few ticks in the log scale case
++        # If part of the data is nonpositive, we assume there are enough ticks
++        if xscale == 'log' and min(xmin, xmax) > 0:
++            import math
++            logxmin = math.log(xmin)/math.log(basex)
++            logxmax = math.log(xmax)/math.log(basex)
++            if xmin < xmax and math.floor(logxmax) - math.ceil(logxmin) < 1:
++                # Hopefully both logxmax and logxmin won't be within x_pad
++                # away from the closest integers
++                if logxmax - math.floor(logxmax) > x_pad:
++                    xmax = basex**math.ceil(logxmax)
++                else:
++                    xmin = basex**math.floor(logxmin)
++            if xmin > xmax and math.floor(logxmin) - math.ceil(logxmax) < 1:
++                # Hopefully both logxmax and logxmin won't be within x_pad
++                # away from the closest integers
++                if logxmin - math.floor(logxmin) > x_pad:
++                    xmin = basex**math.ceil(logxmin)
++                else:
++                    xmax = basex**math.floor(logxmax)
++        if yscale == 'log' and min(ymin, ymax) > 0:
++            import math
++            logymin = math.log(ymin)/math.log(basey)
++            logymax = math.log(ymax)/math.log(basey)
++            if ymin < ymax and math.floor(logymax) - math.ceil(logymin) < 1:
++                # Hopefully both logymax and logymin won't be within y_pad
++                # away from the closest integers
++                if logymax - math.floor(logymax) > y_pad:
++                    ymax = basex**math.ceil(logymax)
++                else:
++                    ymin = basex**math.floor(logymin)
++            if ymin > ymax and math.floor(logymin) - math.ceil(logymax) < 1:
++                # Hopefully both logymax and logymin won't be within y_pad
++                # away from the closest integers
++                if logymin - math.floor(logymin) > y_pad:
++                    ymin = basex**math.ceil(logymin)
++                else:
++                    ymax = basex**math.floor(logymax)
++
+         #-------------------------- Set the legend -----------------------#
+         if show_legend is None:
+             show_legend = self._show_legend

@@ -1,17 +1,82 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1346607357 -28800
-# Node ID 22db57956a4d3d200846ee44b37293d491bd4457
+# Date 1346846906 -28800
+# Node ID cad181af95ae7d9a0d7b4082b440149f3ef9b28b
 # Parent  01345c3511f9956b2c2f471192dbb1f341e635f4
-preliminary patch
+auto expand log scale to include at least two major ticks
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 --- a/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py
-@@ -1964,22 +1964,37 @@
+@@ -1500,28 +1500,19 @@
+             sage: G =  plot_vector_field((2^x,y^2),(x,1,10),(y,1,100))
+             sage: G.show(scale='semilogx',base=2)
+ 
+-        But be sure to only plot things that will have a wide enough range
+-        for the logarithmic scale to be interpretable::
+-
+-            sage: G = arc((2,3), 2, 1, angle=pi/2, sector=(0,pi/2))
+-            sage: G.show(scale=('loglog', 2))
+-            Traceback (most recent call last):
+-            ...
+-            ValueError: Either expand the range of the dependent variable to allow two different integer powers of your `base`, or change your `base` to a smaller number.
+-
+         Add grid lines at the major ticks of the axes.
+-        
++
+         ::
+-        
++
+             sage: c = circle((0,0), 1)
+             sage: c.show(gridlines=True)
+             sage: c.show(gridlines="automatic")
+             sage: c.show(gridlines="major")
+-        
++
+         Add grid lines at the major and minor ticks of the axes.
+-        
++
+         ::
+-        
++
+             sage: u,v = var('u v')
+             sage: f = exp(-(u^2+v^2))
+             sage: p = plot_vector_field(f.gradient(), (u,-2,2), (v,-2,2))
+@@ -1692,14 +1683,23 @@
+         When using logarithmic scale along the axis, make sure to have
+         enough room for two ticks so that the user can tell what the scale
+         is. This can be effected by increasing the range of the independent
+-        variable, or by changing the ``base``.::
+-
+-            sage: p = list_plot(range(1, 10), plotjoined=True)
+-            sage: p.show(scale='loglog')
++        variable, or by changing the ``base``, or by providing enough tick
++        locations by using the ``ticks`` parameter.::
++
++            sage: list_plot_loglog([(1,2),(2,3)], plotjoined=True, ticks=[None,[1]])
+             Traceback (most recent call last):
+             ...
+-            ValueError: Either expand the range of the dependent variable to allow two different integer powers of your `base`, or change your `base` to a smaller number.
+-            sage: p.show(scale='loglog', base=8) # this works.
++            ValueError: Either expand the range of the dependent variable to allow two different integer powers of your `base`, or change your `base` to a smaller number, or provide sufficent number of ticks by using the `ticks` parameter.
++
++        This one works, since the horizontal axis is automatically expanded
++        to contain two ticks and the vertical axis is provided with two ticks::
++
++            sage: list_plot_loglog([(1,2),(2,3)], plotjoined=True, ticks=[None,[1,10]])
++
++        Another example in the log scale where both the axes are automatically
++        expanded to show two major ticks::
++
++            sage: list_plot_loglog([(2,0.5), (3, 4)], plotjoined=True)
+ 
+         """
+ 
+@@ -1963,23 +1963,21 @@
+         subplot.yaxis.set_major_formatter(y_formatter)
  
          # Check for whether there will be too few ticks in the log scale case
-         # If part of the data is nonpositive, we assume there are enough ticks
+-        # If part of the data is nonpositive, we assume there are enough ticks
 -        if scale[0] == 'log' and xmin > 0:
 -            import math
 -            base0 = base[0]
@@ -28,41 +93,34 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 -                raise ValueError('Either expand the range of the dependent '
 -                'variable to allow two different integer powers of your `base`, '
 -                'or change your `base` to a smaller number.')
-+        if scale[0] == 'log' and len(subplot.xaxis.get_ticklocs()) < 2:
++        # We want to exclude the case where the user explicitly chose no
++        # ticks by passing ticks=[[],[]] for instance.
++        if (scale[0] == 'log' and not isinstance(x_locator, NullLocator)
++                and len(subplot.xaxis.get_ticklocs()) < 2):
 +            raise ValueError('Either expand the range of the independent '
 +            'variable to allow two different integer powers of your `base`, '
-+            'or change your `base` to a smaller number.')
++            'or change your `base` to a smaller number, or provide sufficent'
++            ' number of ticks by using the `ticks` parameter.')
 +
-+        if scale[1] == 'log' and len(subplot.yaxis.get_ticklocs()) < 2:
++        if (scale[1] == 'log' and not isinstance(y_locator, NullLocator)
++                and len(subplot.yaxis.get_ticklocs()) < 2):
 +            raise ValueError('Either expand the range of the dependent '
 +            'variable to allow two different integer powers of your `base`, '
-+            'or change your `base` to a smaller number.')
-+
-+#        This code is now redundant since we auto-expand the x and y ranges
-+#        if scale[0] == 'log' and min(xmin, xmax) > 0:
-+#            import math
-+#            base0 = base[0]
-+#            logxmin = math.log(xmin)/math.log(base0)
-+#            logxmax = math.log(xmax)/math.log(base0)
-+#            if   ((xmin < xmax and math.floor(logxmax)-math.ceil(logxmin) < 1)
-+#               or (xmin > xmax and math.floor(logxmin)-math.ceil(logxmax) < 1)):
-+#                raise ValueError('Either expand the range of the independent '
-+#                'variable to allow two different integer powers of your `base`, '
-+#                'or change your `base` to a smaller number.')
-+#        if scale[1] == 'log' and min(ymin, ymax) > 0:
-+#            import math
-+#            base1 = base[1]
-+#            logymin = math.log(ymin)/math.log(base1)
-+#            logymax = math.log(ymax)/math.log(base1)
-+#            if   ((ymin < ymax and math.floor(logymax)-math.ceil(logymin) < 1)
-+#               or (ymin > ymax and math.floor(logymin)-math.ceil(logymax) < 1)):
-+#                raise ValueError('Either expand the range of the dependent '
-+#                'variable to allow two different integer powers of your `base`, '
-+#                'or change your `base` to a smaller number.')
++            'or change your `base` to a smaller number, or provide sufficent'
++            ' number of ticks by using the `ticks` parameter.')
  
          return (subplot, x_locator, y_locator, x_formatter, y_formatter)
  
-@@ -2047,14 +2062,14 @@
+@@ -1999,7 +1997,7 @@
+         Return a matplotlib figure object representing the graphic
+ 
+         EXAMPLES::
+-        
++
+             sage: c = circle((1,1),1)
+             sage: print c.matplotlib()
+             Figure(640x480)
+@@ -2047,14 +2045,14 @@
                  tick_formatter = (tick_formatter, "latex")
              else:
                  tick_formatter = (tick_formatter, None)
@@ -79,7 +137,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          x_pad=(xmax-xmin)*float(axes_pad)
          y_pad=(ymax-ymin)*float(axes_pad)
  
-@@ -2062,7 +2077,7 @@
+@@ -2062,7 +2060,7 @@
          xmax+=x_pad
          ymin-=y_pad
          ymax+=y_pad
@@ -88,48 +146,75 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          global do_verify
          do_verify = verify
  
-@@ -2101,6 +2116,45 @@
+@@ -2080,7 +2078,7 @@
+ 
+         if figure is None:
+             figure=Figure(figsize=figsize)
+-        
++
+         #the incoming subplot instance
+         subplot = sub
+         if not subplot:
+@@ -2101,6 +2099,63 @@
          xscale, yscale, basex, basey = self._set_scale(figure, scale=scale,
                                                         base=base)
  
 +        # Check for whether there will be too few ticks in the log scale case
-+        # If part of the data is nonpositive, we assume there are enough ticks
++        # * If part of the data is negative, we assume there are enough ticks
++        # * If the user has entered custom ticks but there are too few of
++        #   them, an error will be raised later.
++        # * We check if this case occurs (for e.g. assuming xmin < xmax):
++        #   floor(logxmin)              ceil(logxmax)
++        #   ----|---------+----------+----------|----------------------|--
++        #              logxmin     logxmax
++        #   or if this case occurs (assuming xmin < xmax):
++        #   floor(logxmin)             floor(logxmax)         ceil(logxmax)
++        #   ----|---------+---------------------|-----+----------------|--
++        #              logxmin                     logxmax
 +        if xscale == 'log' and min(xmin, xmax) > 0:
 +            import math
 +            logxmin = math.log(xmin)/math.log(basex)
 +            logxmax = math.log(xmax)/math.log(basex)
-+            if xmin < xmax and math.floor(logxmax) - math.ceil(logxmin) < 1:
-+                # Hopefully both logxmax and logxmin won't be within x_pad
-+                # away from the closest integers
-+                if logxmax - math.floor(logxmax) > x_pad:
-+                    xmax = basex**math.ceil(logxmax)
-+                else:
-+                    xmin = basex**math.floor(logxmin)
-+            if xmin > xmax and math.floor(logxmin) - math.ceil(logxmax) < 1:
-+                # Hopefully both logxmax and logxmin won't be within x_pad
-+                # away from the closest integers
-+                if logxmin - math.floor(logxmin) > x_pad:
-+                    xmin = basex**math.ceil(logxmin)
-+                else:
-+                    xmax = basex**math.floor(logxmax)
++            if xmin < xmax:
++                if math.floor(logxmax) - math.ceil(logxmin) < 0:
++                        xmax = basex**math.ceil(logxmax)
++                        xmin = basex**math.floor(logxmin)
++                elif math.floor(logxmax) - math.ceil(logxmin) < 1:
++                    if logxmax-math.floor(logxmax) > math.ceil(logxmin)-logxmin:
++                        xmax = basex**math.ceil(logxmax)
++                    else:
++                        xmin = basex**math.floor(logxmin)
++            if xmin > xmax:
++                if math.floor(logxmin) - math.ceil(logxmax) < 0:
++                        xmin = basex**math.ceil(logxmin)
++                        xmax = basex**math.floor(logxmax)
++                elif math.floor(logxmin) - math.ceil(logxmax) < 1:
++                    if logxmin-math.floor(logxmin) > math.ceil(logxmax)-logxmax:
++                        xmin = basex**math.ceil(logxmin)
++                    else:
++                        xmax = basex**math.floor(logxmax)
 +        if yscale == 'log' and min(ymin, ymax) > 0:
 +            import math
 +            logymin = math.log(ymin)/math.log(basey)
 +            logymax = math.log(ymax)/math.log(basey)
-+            if ymin < ymax and math.floor(logymax) - math.ceil(logymin) < 1:
-+                # Hopefully both logymax and logymin won't be within y_pad
-+                # away from the closest integers
-+                if logymax - math.floor(logymax) > y_pad:
++            if ymin < ymax:
++                if math.floor(logymax) - math.ceil(logymin) < 0:
 +                    ymax = basex**math.ceil(logymax)
-+                else:
 +                    ymin = basex**math.floor(logymin)
-+            if ymin > ymax and math.floor(logymin) - math.ceil(logymax) < 1:
-+                # Hopefully both logymax and logymin won't be within y_pad
-+                # away from the closest integers
-+                if logymin - math.floor(logymin) > y_pad:
++                elif math.floor(logymax) - math.ceil(logymin) < 1:
++                    if logymax-math.floor(logymax) > math.ceil(logymin)-logymin:
++                        ymax = basex**math.ceil(logymax)
++                    else:
++                        ymin = basex**math.floor(logymin)
++            if ymin > ymax:
++                if math.floor(logymin) - math.ceil(logymax) < 0:
 +                    ymin = basex**math.ceil(logymin)
-+                else:
 +                    ymax = basex**math.floor(logymax)
++                elif math.floor(logymin) - math.ceil(logymax) < 1:
++                    if logymin-math.floor(logymin) > math.ceil(logymax)-logymax:
++                        ymin = basex**math.ceil(logymin)
++                    else:
++                        ymax = basex**math.floor(logymax)
 +
          #-------------------------- Set the legend -----------------------#
          if show_legend is None:

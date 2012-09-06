@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1346846906 -28800
-# Node ID cad181af95ae7d9a0d7b4082b440149f3ef9b28b
+# Date 1346849231 -28800
+# Node ID 07a0ff8efec8ad3f0ecc16db75ea87fe7aea22e3
 # Parent  01345c3511f9956b2c2f471192dbb1f341e635f4
 auto expand log scale to include at least two major ticks
 
@@ -155,7 +155,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          #the incoming subplot instance
          subplot = sub
          if not subplot:
-@@ -2101,6 +2099,63 @@
+@@ -2101,6 +2099,44 @@
          xscale, yscale, basex, basey = self._set_scale(figure, scale=scale,
                                                         base=base)
  
@@ -171,50 +171,31 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +        #   floor(logxmin)             floor(logxmax)         ceil(logxmax)
 +        #   ----|---------+---------------------|-----+----------------|--
 +        #              logxmin                     logxmax
++        def get_vmin_vmax(vmin, vmax, basev):
++            # It is a must to have vmin < vmax
++            import math
++            logvmin = math.log(vmin)/math.log(basev)
++            logvmax = math.log(vmax)/math.log(basev)
++            if math.floor(logvmax) - math.ceil(logvmin) < 0:
++                    vmax = basev**math.ceil(logvmax)
++                    vmin = basev**math.floor(logvmin)
++            elif math.floor(logvmax) - math.ceil(logvmin) < 1:
++                if logvmax-math.floor(logvmax) > math.ceil(logvmin)-logvmin:
++                    vmax = basev**math.ceil(logvmax)
++                else:
++                    vmin = basev**math.floor(logvmin)
++            return vmin,vmax
++
 +        if xscale == 'log' and min(xmin, xmax) > 0:
-+            import math
-+            logxmin = math.log(xmin)/math.log(basex)
-+            logxmax = math.log(xmax)/math.log(basex)
 +            if xmin < xmax:
-+                if math.floor(logxmax) - math.ceil(logxmin) < 0:
-+                        xmax = basex**math.ceil(logxmax)
-+                        xmin = basex**math.floor(logxmin)
-+                elif math.floor(logxmax) - math.ceil(logxmin) < 1:
-+                    if logxmax-math.floor(logxmax) > math.ceil(logxmin)-logxmin:
-+                        xmax = basex**math.ceil(logxmax)
-+                    else:
-+                        xmin = basex**math.floor(logxmin)
-+            if xmin > xmax:
-+                if math.floor(logxmin) - math.ceil(logxmax) < 0:
-+                        xmin = basex**math.ceil(logxmin)
-+                        xmax = basex**math.floor(logxmax)
-+                elif math.floor(logxmin) - math.ceil(logxmax) < 1:
-+                    if logxmin-math.floor(logxmin) > math.ceil(logxmax)-logxmax:
-+                        xmin = basex**math.ceil(logxmin)
-+                    else:
-+                        xmax = basex**math.floor(logxmax)
++                xmin, xmax = get_vmin_vmax(xmin, xmax, basex)
++            else:
++                xmax, xmin = get_vmin_vmax(xmax, xmin, basex)
 +        if yscale == 'log' and min(ymin, ymax) > 0:
-+            import math
-+            logymin = math.log(ymin)/math.log(basey)
-+            logymax = math.log(ymax)/math.log(basey)
 +            if ymin < ymax:
-+                if math.floor(logymax) - math.ceil(logymin) < 0:
-+                    ymax = basex**math.ceil(logymax)
-+                    ymin = basex**math.floor(logymin)
-+                elif math.floor(logymax) - math.ceil(logymin) < 1:
-+                    if logymax-math.floor(logymax) > math.ceil(logymin)-logymin:
-+                        ymax = basex**math.ceil(logymax)
-+                    else:
-+                        ymin = basex**math.floor(logymin)
-+            if ymin > ymax:
-+                if math.floor(logymin) - math.ceil(logymax) < 0:
-+                    ymin = basex**math.ceil(logymin)
-+                    ymax = basex**math.floor(logymax)
-+                elif math.floor(logymin) - math.ceil(logymax) < 1:
-+                    if logymin-math.floor(logymin) > math.ceil(logymax)-logymax:
-+                        ymin = basex**math.ceil(logymin)
-+                    else:
-+                        ymax = basex**math.floor(logymax)
++                ymin, ymax = get_vmin_vmax(ymin, ymax, basey)
++            else:
++                ymax, ymin = get_vmin_vmax(ymax, ymin, basey)
 +
          #-------------------------- Set the legend -----------------------#
          if show_legend is None:

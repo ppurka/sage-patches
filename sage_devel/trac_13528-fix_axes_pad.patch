@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1349542331 -28800
-# Node ID 78efb80530a5a2e4a8025890ef7fb660ed7e424b
+# Date 1349620887 -28800
+# Node ID 33ce27d2ceee3e6e3a3d4912b012a7960412cfb8
 # Parent  a4efb160195f7f8516b0630df8e5a82d2cf7463a
 Use a different axes_pad parameter for log scale.
 This fixes problems with user-specified minimum values that
@@ -19,7 +19,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
                          base=None, scale=None,
                          xmin=None, xmax=None, ymin=None, ymax=None,
                          # Figure options
-@@ -1337,11 +1337,20 @@
+@@ -1337,11 +1337,21 @@
  
          - ``transparent`` - (default: False) If True, make the background transparent.
  
@@ -38,14 +38,15 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +            ``axes_pad`` to zero.
 +
 +          - On the ``"log"`` scale, it determines the exponent of the
-+            fraction of the minimum (resp. maximum) that is added to the
-+            minimum (resp.  maximum) value of the axis. For instance if the
-+            minimum is `m` and the base of the axis is `b` then the new
-+            minimum after padding the axis will be `m - m*b^{axes_pad}`.
++            fraction of the minimum (resp. maximum) that is subtracted from
++            the minimum (resp. added to the maximum) value of the axis. For
++            instance if the minimum is `m` and the base of the axis is `b`
++            then the new minimum after padding the axis will be
++            `m - m/b^{axes_pad}`.
  
          - ``ticks_integer`` - (default: False) guarantee that the ticks
            are integers (the ``ticks`` option, if specified, will
-@@ -1636,10 +1645,23 @@
+@@ -1636,10 +1646,23 @@
          ``axes_pad`` to zero.  Compare the following two examples
  
          ::
@@ -57,7 +58,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +
 +        The behavior of the ``axes_pad`` parameter is different if the axis
 +        is in the ``"log"`` scale. If `b` is the base of the axis, the
-+        minimum value of the axis, is decreased by a factor
++        minimum value of the axis, is decreased by the factor
 +        `1/b^{axes_pad}` of the minimum and the maximum value of the axis
 +        is increased by the same factor of the maximum value.  Compare the
 +        axes in the following two plots to see the difference.
@@ -71,7 +72,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          Via matplotlib, Sage allows setting of custom ticks.  See above
          for more details.
  
-@@ -2011,7 +2033,7 @@
+@@ -2011,7 +2034,7 @@
                     gridlines=None, gridlinesstyle=None,
                     vgridlinesstyle=None, hgridlinesstyle=None,
                     show_legend=None, legend_options={},
@@ -80,7 +81,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
                     tick_formatter=None, ticks=None, title=None,
                     base=None, scale=None):
          r"""
-@@ -2072,21 +2094,6 @@
+@@ -2072,21 +2095,6 @@
              else:
                  tick_formatter = (tick_formatter, None)
  
@@ -102,7 +103,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          global do_verify
          do_verify = verify
  
-@@ -2121,7 +2128,14 @@
+@@ -2121,7 +2129,14 @@
              if hasattr(g, '_bbox_extra_artists'):
                  self._bbox_extra_artists.extend(g._bbox_extra_artists)
  
@@ -118,7 +119,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          xscale, yscale, basex, basey = self._set_scale(figure, scale=scale,
                                                         base=base)
  
-@@ -2137,11 +2151,16 @@
+@@ -2137,31 +2152,54 @@
          #   floor(logxmin)             floor(logxmax)         ceil(logxmax)
          #   ----|---------+---------------------|-----+----------------|--
          #              logxmin                     logxmax
@@ -138,10 +139,15 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
              if math.floor(logvmax) - math.ceil(logvmin) < 0:
                      vmax = basev**math.ceil(logvmax)
                      vmin = basev**math.floor(logvmin)
-@@ -2150,18 +2169,32 @@
+             elif math.floor(logvmax) - math.ceil(logvmin) < 1:
+                 if logvmax-math.floor(logvmax) > math.ceil(logvmin)-logvmin:
                      vmax = basev**math.ceil(logvmax)
++                    if axes_pad > 0:
++                        vmin -= vmin * basev**(-axes_pad)
                  else:
                      vmin = basev**math.floor(logvmin)
++                    if axes_pad > 0:
++                        vmax += vmax * basev**(-axes_pad)
 +            elif axes_pad > 0:
 +                # pad the axes if we haven't expanded the axes earlier.
 +                vmin -= vmin * basev**(-axes_pad)

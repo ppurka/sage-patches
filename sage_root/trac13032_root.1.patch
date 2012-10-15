@@ -1,0 +1,71 @@
+# HG changeset patch
+# User R. Andrew Ohana <andrew.ohana@gmail.com>
+# Date 1338148660 25200
+# Node ID e42f06ec64487e3b06038f9d6021b0d20a7bb841
+# Parent  ed32c8e659a161ced81eb96285120b9e9d41bf29
+setup ccache in build scripts
+
+diff --git a/spkg/bin/sage-env b/spkg/bin/sage-env
+--- a/spkg/bin/sage-env
++++ b/spkg/bin/sage-env
+@@ -481,6 +481,21 @@
+     done
+ fi
+ 
++# Setup env varariables if ccache is installed
++if [ -d "$SAGE_LOCAL/libexec/ccache" ]; then
++    PATH="$SAGE_LOCAL/libexec/ccache:$PATH"; export PATH
++fi
++if [ -z "$CCACHE_DIR" ]; then
++    CCACHE_DIR="$DOT_SAGE/ccache"
++fi
++if [ -z "$CYCACHE_DIR" ]; then
++    CYCACHE_DIR="$DOT_SAGE/cycache"
++fi
++if [ -z "$CCACHE_BASEDIR" ]; then
++    CCACHE_BASEDIR="$SAGE_ROOT"
++fi
++export CCACHE_DIR CYCACHE_DIR
++export CCACHE_BASEDIR
+ 
+ if [ "$LD" = "" ]; then
+     LD="ld"  && export LD
+diff --git a/spkg/install b/spkg/install
+--- a/spkg/install
++++ b/spkg/install
+@@ -428,14 +428,17 @@
+ EOF
+ 
+ # $(TOOLCHAIN) variable containing prerequisites for the build
+-if [ "$need_to_install_gcc" = yes ]; then
+-    echo >&3 'TOOLCHAIN=$(INST)/$(GCC)'
++echo >&3 -n 'TOOLCHAIN ='
++if [ "$SAGE_INSTALL_CCACHE" == yes ]; then
++    echo >&3 -n ' $(INST)/ccache'
++fi
++if [ "$need_to_install_gcc" == yes ]; then
++    echo >&3 -n ' $(INST)/$(GCC)'
+     # Use this option for the prereq configure script, such that it
+     # will skip all compiler checks.
+     export PREREQ_OPTIONS="--disable-compiler-checks $PREREQ_OPTIONS"
+-else
+-    echo >&3 'TOOLCHAIN='
+ fi
++echo >&3
+ 
+ # Copy spkg/standard/deps
+ cat >&3 <<EOF
+diff --git a/spkg/standard/deps b/spkg/standard/deps
+--- a/spkg/standard/deps
++++ b/spkg/standard/deps
+@@ -497,6 +497,10 @@
+ $(INST)/$(SAGE_SCRIPTS): $(INST)/$(SAGE_ROOT_REPO)
+ 	+$(PIPE) "$(SAGE_SPKG) $(SAGE_SCRIPTS) 2>&1" "tee -a $(SAGE_LOGS)/$(SAGE_SCRIPTS).log"
+ 
++$(INST)/ccache: $(BASE) $(INST)/$(ZLIB)
++	+$(PIPE) "$(SAGE_SPKG) ccache 2>&1" "tee -a $(SAGE_LOGS)/ccache.log"
++	touch $(INST)/ccache
++
+ $(INST)/$(GCC): $(INST)/$(MPIR) $(INST)/$(MPFR) $(INST)/$(MPC) \
+                 $(INST)/$(ZLIB)
+ 	+$(PIPE) "$(SAGE_SPKG) $(GCC) 2>&1" "tee -a $(SAGE_LOGS)/$(GCC).log"

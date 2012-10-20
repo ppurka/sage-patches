@@ -1,0 +1,54 @@
+# HG changeset patch
+# Parent 49577faa29ea819cc5bf16e282ab65b13ed300dc
+
+diff --git a/sage/modules/finite_submodule_iter.pxd b/sage/modules/finite_submodule_iter.pxd
+--- a/sage/modules/finite_submodule_iter.pxd
++++ b/sage/modules/finite_submodule_iter.pxd
+@@ -21,21 +21,6 @@
+         self._cnext = self._iteration # in the next step we will start the iteration
+         return self._cw #return the zero word
+ 
+-    cdef inline ModuleElement _iteration(FiniteZZsubmodule_iterator self):
+-        self._pos = 0
+-        self._s = self._direction[0] + self._Zp_position[0]
+-        while self._s<0 or self._s>=self._order[self._pos]: # we can not add/subtract the vector at self._pos
+-            self._direction[self._pos] *= -1 # opposite direction
+-            self._pos += 1 #next vector in the basis
+-            if self._pos == self._basis_length:
+-                raise StopIteration #todo: should I prepare this object for a second run?
+-            self._s = self._direction[self._pos] + self._Zp_position[self._pos]
+-
+-        self._Zp_position[self._pos] = self._s
+-        if self._direction[self._pos] == 1:
+-            self._cw += <ModuleElement> self._plus[self._pos]
+-        else:
+-            self._cw += <ModuleElement> self._minus[self._pos]
+-
++    cdef ModuleElement _iteration(FiniteZZsubmodule_iterator self)
+ cdef class FiniteFieldsubspace_iterator(FiniteZZsubmodule_iterator):
+     pass
+diff --git a/sage/modules/finite_submodule_iter.pyx b/sage/modules/finite_submodule_iter.pyx
+--- a/sage/modules/finite_submodule_iter.pyx
++++ b/sage/modules/finite_submodule_iter.pyx
+@@ -186,6 +186,21 @@
+         """
+         return self
+ 
++    cdef ModuleElement _iteration(FiniteZZsubmodule_iterator self):
++        self._pos = 0
++        self._s = self._direction[0] + self._Zp_position[0]
++        while self._s<0 or self._s>=self._order[self._pos]: # we can not add/subtract the vector at self._pos
++            self._direction[self._pos] *= -1 # opposite direction
++            self._pos += 1 #next vector in the basis
++            if self._pos == self._basis_length:
++                raise StopIteration #todo: should I prepare this object for a second run?
++            self._s = self._direction[self._pos] + self._Zp_position[self._pos]
++
++        self._Zp_position[self._pos] = self._s
++        if self._direction[self._pos] == 1:
++            self._cw += <ModuleElement> self._plus[self._pos]
++        else:
++            self._cw += <ModuleElement> self._minus[self._pos]
+ 
+ cdef class FiniteFieldsubspace_iterator(FiniteZZsubmodule_iterator):
+     """

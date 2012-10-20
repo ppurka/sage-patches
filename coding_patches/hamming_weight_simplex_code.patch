@@ -1,0 +1,223 @@
+# HG changeset patch
+# Parent 631a396f03fadb912fbba2d9f791a6c2014e6f81
+
+diff --git a/sage/coding/all.py b/sage/coding/all.py
+--- a/sage/coding/all.py
++++ b/sage/coding/all.py
+@@ -19,6 +19,7 @@
+                    QuadraticResidueCodeOddPair, 
+                    RandomLinearCode,
+                    ReedSolomonCode,
++                   SimplexCode,
+                    TernaryGolayCode,
+                    ToricCode, 
+                    TrivialCode,
+diff --git a/sage/coding/binary_code.pyx b/sage/coding/binary_code.pyx
+--- a/sage/coding/binary_code.pyx
++++ b/sage/coding/binary_code.pyx
+@@ -143,6 +143,28 @@
+     sage_free(basis)
+     return L
+ 
++
++from sage.modules.finite_submodule_iter cimport FiniteZZsubmodule_iterator
++cpdef weight_dist_new(M):
++    """
++    Computes the weight distribution of the row space of M.
++    """
++    cdef int i, dim=M.nrows(), deg=M.ncols()
++    cdef list L
++    cdef int *LL = <int *> sage_malloc((deg+1) * sizeof(int))
++    for i from 0 <= i < deg+1: LL[i] = 0
++
++    iter = FiniteZZsubmodule_iterator(M)    
++    for w in iter:
++         LL[w.hamming_weight()] += 1
++    L = [int(LL[i]) for i from 0 <= i < deg+1]
++    sage_free(LL)
++    return L
++
++
++
++
++
+ def test_word_perms(t_limit=5.0):
+     """
+     Tests the WordPermutation structs for at least t_limit seconds.
+diff --git a/sage/coding/code_constructions.py b/sage/coding/code_constructions.py
+--- a/sage/coding/code_constructions.py
++++ b/sage/coding/code_constructions.py
+@@ -926,6 +926,50 @@
+     # C = TernaryGolayCode()
+     # return C.extended_code()
+ 
++def SimplexCode(r,F):
++     r"""
++     Implements the Simplex codes.
++
++     The `r^{th}` Simplex code over `F=GF(q)` is an
++     `[n,k,d]` code with length `n=(q^r-1)/(q-1)`,
++     dimension `k=r`. The generator matrix of a Simplex code has rows
++     consisting of all nonzero vectors of length r in its columns,
++     modulo a scalar factor so no parallel columns arise. The dual code of
++     a Simplex code is a Hamming code, which
++     is a single error-correcting code.
++
++     INPUT:
++
++
++     -  ``r`` - an integer
++
++     -  ``F`` - a finite field.
++
++
++     OUTPUT: Returns the r-th q-ary Simplex code.
++
++     EXAMPLES::
++
++         sage: SimplexCode(3,GF(2))
++         sage: C = SimplexCode(3,GF(3)); C
++         sage: C = SimplexCode(3,GF(4,'a')); C
++     """
++     from sage.matrix.constructor  import Matrix
++
++     q = F.order()
++     n =  (q**r-1)/(q-1)
++
++     if r==1:
++         H = Matrix([F.one()])
++     else:
++         S = SimplexCode(r-1, F).gen_mat()
++         H = Matrix(F,r, n)
++         for i in range(len(F)):
++             H.set_block(0,i*S.ncols(), S)
++         H.set_block(r - 1, 0, Matrix([f for f in F for i in range(S.ncols())]))
++         H[r - 1, n - 1] = F.one()
++     return LinearCode(H, d=q**(r-1))
++
+ def HammingCode(r,F):
+     r"""
+     Implements the Hamming codes.
+@@ -961,14 +1005,7 @@
+         sage: C = HammingCode(3,GF(4,'a')); C
+         Linear code of length 21, dimension 18 over Finite Field in a of size 2^2
+     """
+-    q = F.order()
+-    n =  (q**r-1)/(q-1)
+-    k = n-r
+-    MS = MatrixSpace(F,n,r)
+-    X = ProjectiveSpace(r-1,F)
+-    PFn = [list(p) for p in X.point_set(F).points(F)]
+-    H = MS(PFn).transpose()
+-    Cd = LinearCode(H)
++    Cd = SimplexCode(r, F)
+     # Hamming code always has distance 3, so we provide the distance.
+     return LinearCode(Cd.dual_code().gen_mat(), d=3)
+ 
+diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
+--- a/sage/coding/linear_code.py
++++ b/sage/coding/linear_code.py
+@@ -835,8 +835,9 @@
+         V = VectorSpace(F,k)
+         MS = MatrixSpace(F,n,n)
+         perm_mat = MS(p.matrix().rows())**(-1)
++        SGM = Gs*perm_mat
+         for v in V:
+-            yield (v*Gs)*perm_mat
++            yield v*SGM
+ 
+     def ambient_space(self):
+         r"""
+@@ -2552,6 +2553,9 @@
+         elif algorithm=="binary":
+             from sage.coding.binary_code import weight_dist
+             return weight_dist(self.gen_mat())
++        elif algorithm=="binary_new":
++            from sage.coding.binary_code import weight_dist_new
++            return weight_dist_new(self.gen_mat())            
+         elif algorithm=="leon":
+             if not(F.order() in [2,3,5,7]):
+                 raise NotImplementedError("The algorithm 'leon' is only implemented for q = 2,3,5,7.")
+diff --git a/sage/modules/free_module_element.pxd b/sage/modules/free_module_element.pxd
+--- a/sage/modules/free_module_element.pxd
++++ b/sage/modules/free_module_element.pxd
+@@ -3,6 +3,7 @@
+ cdef class FreeModuleElement(Vector):
+     cdef bint _is_mutable
+     cdef int _cmp_same_ambient_c(left, FreeModuleElement right)
++    cpdef unsigned int hamming_weight(self)
+ 
+ cdef class FreeModuleElement_generic_dense(FreeModuleElement):
+     # data
+diff --git a/sage/modules/free_module_element.pyx b/sage/modules/free_module_element.pyx
+--- a/sage/modules/free_module_element.pyx
++++ b/sage/modules/free_module_element.pyx
+@@ -3017,6 +3017,21 @@
+         """
+         return self.nonzero_positions()
+ 
++    cpdef unsigned int hamming_weight(self):
++        """
++        Return the number of positions i such that self[i] != 0.
++
++        EXAMPLES::
++
++            sage: vector([-1,0,3,0,0,0,0.01]).hamming_weight()
++            3
++        """
++        cdef unsigned int res=0
++        for x in iter(self.list()):
++            if not x.is_zero():
++                res += 1
++        return res
++
+     def _latex_(self):
+         r"""
+         Return a latex representation of the vector ``self``.
+@@ -4401,6 +4416,20 @@
+         K.sort()
+         return K
+ 
++    cpdef unsigned int hamming_weight(self):
++        """
++        Returns the number of positions i such that self[i] != 0.
++
++        EXAMPLES::
++
++            sage: v = vector({1: 1, 3: -2})
++            sage: w = vector({1: 4, 3: 2})
++            sage: v+w
++            (0, 5, 0, 0)
++            sage: (v+w).hamming_weight()
++            1
++        """
++        return len(self._entries)
+ 
+     def _numerical_approx(self, prec=None, digits=None):
+         """
+diff --git a/sage/modules/vector_mod2_dense.pyx b/sage/modules/vector_mod2_dense.pyx
+--- a/sage/modules/vector_mod2_dense.pyx
++++ b/sage/modules/vector_mod2_dense.pyx
+@@ -352,6 +352,22 @@
+             mzd_add(z._entries, self._entries, (<Vector_mod2_dense>right)._entries)
+         return z
+ 
++    cpdef unsigned int hamming_weight(self):
++        """
++        Return the number of positions i such that self[i] != 0.
++
++        EXAMPLES::
++
++            sage: vector(GF(2), [1,1,0]).hamming_weight()
++            3
++        """
++        cdef int i
++        cdef unsigned int res=0
++        for i from 0 <= i < self._entries.width:
++            res += Integer(self._entries.rows[0][i]).popcount()
++        return res
++
++
+     cpdef Element _dot_product_(self, Vector right):
+         """
+         EXAMPLES::

@@ -1,0 +1,168 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1321087218 -28800
+# Node ID c26aeb64b77e00ba38533058460e1ec541404aef
+# Parent 1707d9a5348f24cc7c3fd0640cb86bf999afb758
+make __iter__() and list() faster and fix inconsistent output between iter(code) and code.list()
+
+diff --git a/sage/coding/binary_code.pyx b/sage/coding/binary_code.pyx
+--- a/sage/coding/binary_code.pyx
++++ b/sage/coding/binary_code.pyx
+@@ -144,7 +144,7 @@
+     return L
+ 
+ 
+-from sage.modules.finite_submodule_iter cimport FiniteZZsubmodule_iterator
++from sage.modules.finite_submodule_iter cimport FiniteFieldsubspace_iterator
+ cpdef weight_dist2(M):
+     """
+     Computes the weight distribution of the row space of M.
+@@ -154,14 +154,14 @@
+     cdef int *LL = <int *> sage_malloc((deg+1) * sizeof(int))
+     for i from 0 <= i < deg+1: LL[i] = 0
+ 
+-    iter = FiniteZZsubmodule_iterator(M)    
++    iter = FiniteFieldsubspace_iterator(M)    
+     for w in iter:
+          LL[w.hamming_weight()] += 1
+     L = [int(LL[i]) for i from 0 <= i < deg+1]
+     sage_free(LL)
+     return L
+ 
+-from sage.modules.finite_submodule_iter cimport FiniteZZsubmodule_iterator
++from sage.modules.finite_submodule_iter cimport FiniteFieldsubspace_iterator
+ cpdef weight_dist3(M):
+     """
+     Computes the weight distribution of the row space of M.
+@@ -172,14 +172,28 @@
+     cdef int *LL = <int *> sage_malloc((deg+1) * sizeof(int))
+     for i from 0 <= i < deg+1: LL[i] = 0
+ 
+-    iter = FiniteZZsubmodule_iterator(M)    
++    iter = FiniteFieldsubspace_iterator(M)    
+     for w in iter:
+          LL[hamming_weight(w)] += 1
+     L = [int(LL[i]) for i from 0 <= i < deg+1]
+     sage_free(LL)
+     return L
+ 
+-
++cpdef weight_dist4(C):
++    """
++    Computes the weight distribution of the row space of M.
++    """
++
++    cdef int i, dim=C.dimension(), deg=C.length()
++    cdef list L
++    cdef int *LL = <int *> sage_malloc((deg+1) * sizeof(int))
++    for i from 0 <= i < deg+1: LL[i] = 0
++
++    for w in C:
++         LL[w.hamming_weight()] += 1
++    L = [int(LL[i]) for i from 0 <= i < deg+1]
++    sage_free(LL)
++    return L
+ 
+ def test_word_perms(t_limit=5.0):
+     """
+diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
+--- a/sage/coding/linear_code.py
++++ b/sage/coding/linear_code.py
+@@ -827,17 +827,22 @@
+             sage: [list(c) for c in C if hamming_weight(c) < 4]
+              [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1], [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0], [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
+         """
+-        n = self.length()
+-        k = self.dimension()
+         F = self.base_ring()
+-        Cs,p = self.standard_form()
+-        Gs = Cs.gen_mat()
+-        V = VectorSpace(F,k)
+-        MS = MatrixSpace(F,n,n)
+-        perm_mat = MS(p.matrix().rows())**(-1)
+-        SGM = Gs*perm_mat
+-        for v in V:
+-            yield v*SGM
++        G = self.gen_mat()
++        def _iterate(G, F):
++            # if G is a matrix and v is a vector, then we do v*G and make
++            # sure that the multiplication v[i]*G[i] happens only once for
++            # a fixed value of v[i]
++            g = G[0]
++            if G.nrows() == 1:
++                for b in F:
++                    yield b*g
++            else:
++                for rest in _iterate(G[1:], F):
++                    for b in F:
++                        yield rest + b*g
++
++        return _iterate(G, F)
+ 
+     def ambient_space(self):
+         r"""
+@@ -1832,7 +1837,7 @@
+             (1, 0, 1, 0, 1, 0, 1)
+             True
+         """
+-        return self.gen_mat().row_space().list()
++        return list(self.__iter__())
+ 
+     def _magma_init_(self, magma):
+         r"""
+@@ -2553,12 +2558,15 @@
+         elif algorithm=="binary":
+             from sage.coding.binary_code import weight_dist
+             return weight_dist(self.gen_mat())
+-        elif algorithm=="binary2":
++        elif algorithm=="sage2":
+             from sage.coding.binary_code import weight_dist2
+             return weight_dist2(self.gen_mat())
+-        elif algorithm=="binary3":
++        elif algorithm=="sage3":
+             from sage.coding.binary_code import weight_dist3
+-            return weight_dist3(self.gen_mat())         
++            return weight_dist3(self.gen_mat())
++        elif algorithm=="sage4":
++            from sage.coding.binary_code import weight_dist4
++            return weight_dist4(self)    
+         elif algorithm=="leon":
+             if not(F.order() in [2,3,5,7]):
+                 raise NotImplementedError("The algorithm 'leon' is only implemented for q = 2,3,5,7.")
+diff --git a/sage/modules/finite_submodule_iter.pxd b/sage/modules/finite_submodule_iter.pxd
+--- a/sage/modules/finite_submodule_iter.pxd
++++ b/sage/modules/finite_submodule_iter.pxd
+@@ -1,4 +1,4 @@
+-# cython: profile=False
++# cython: profile=True
+ from sage.structure.element cimport ModuleElement
+ 
+ cdef class FiniteZZsubmodule_iterator:
+@@ -35,4 +35,7 @@
+         if self._direction[self._pos] == 1:
+             self._cw += <ModuleElement> self._plus[self._pos]
+         else:
+-            self._cw += <ModuleElement> self._minus[self._pos]
+\ No newline at end of file
++            self._cw += <ModuleElement> self._minus[self._pos]
++
++cdef class FiniteFieldsubspace_iterator(FiniteZZsubmodule_iterator):
++    pass
+diff --git a/sage/modules/finite_submodule_iter.pyx b/sage/modules/finite_submodule_iter.pyx
+--- a/sage/modules/finite_submodule_iter.pyx
++++ b/sage/modules/finite_submodule_iter.pyx
+@@ -218,11 +218,12 @@
+         """
+         F = basis[0].base_ring()
+         P = F.prime_subfield()
+-        
++        cdef int p_size = len(P)
++
+         cdef Py_ssize_t i
+         pows = [F.primitive_element()**i for i in range(F.degree())]
+         basis = [p*x for p in pows for x in basis] # a ZZ_p-basis for the vectorspace 
+-        order = [len(P) for _ in range(len(basis))]
++        order = [p_size for _ in range(len(basis))]
+         
+         FiniteZZsubmodule_iterator.__init__(self, basis, order)
+ 

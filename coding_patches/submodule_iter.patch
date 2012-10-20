@@ -1,0 +1,351 @@
+# HG changeset patch
+# Parent 497b5690c9a2f51fa63af2a5c4b01e6086a1fff2
+Trac 13417: Iterators for finite ZZ-submodules and subspaces over finite fields
+
+diff --git a/module_list.py b/module_list.py
+--- a/module_list.py
++++ b/module_list.py
+@@ -1176,6 +1176,9 @@
+     ##
+     ################################
+ 
++    Extension('sage.modules.finite_submodule_iter',
++              sources = ['sage/modules/finite_submodule_iter.pyx']),
++
+     Extension('sage.modules.free_module_element',
+               sources = ['sage/modules/free_module_element.pyx'],
+               depends = numpy_depends),
+diff --git a/sage/coding/binary_code.pyx b/sage/coding/binary_code.pyx
+--- a/sage/coding/binary_code.pyx
++++ b/sage/coding/binary_code.pyx
+@@ -145,7 +145,7 @@
+ 
+ 
+ from sage.modules.finite_submodule_iter cimport FiniteZZsubmodule_iterator
+-cpdef weight_dist_new(M):
++cpdef weight_dist2(M):
+     """
+     Computes the weight distribution of the row space of M.
+     """
+@@ -161,7 +161,23 @@
+     sage_free(LL)
+     return L
+ 
+-
++from sage.modules.finite_submodule_iter cimport FiniteZZsubmodule_iterator
++cpdef weight_dist3(M):
++    """
++    Computes the weight distribution of the row space of M.
++    """
++    from sage.coding.linear_code import hamming_weight
++    cdef int i, dim=M.nrows(), deg=M.ncols()
++    cdef list L
++    cdef int *LL = <int *> sage_malloc((deg+1) * sizeof(int))
++    for i from 0 <= i < deg+1: LL[i] = 0
++
++    iter = FiniteZZsubmodule_iterator(M)    
++    for w in iter:
++         LL[hamming_weight(w)] += 1
++    L = [int(LL[i]) for i from 0 <= i < deg+1]
++    sage_free(LL)
++    return L
+ 
+ 
+ 
+diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
+--- a/sage/coding/linear_code.py
++++ b/sage/coding/linear_code.py
+@@ -2553,9 +2553,12 @@
+         elif algorithm=="binary":
+             from sage.coding.binary_code import weight_dist
+             return weight_dist(self.gen_mat())
+-        elif algorithm=="binary_new":
+-            from sage.coding.binary_code import weight_dist_new
+-            return weight_dist_new(self.gen_mat())            
++        elif algorithm=="binary2":
++            from sage.coding.binary_code import weight_dist2
++            return weight_dist2(self.gen_mat())
++        elif algorithm=="binary3":
++            from sage.coding.binary_code import weight_dist3
++            return weight_dist3(self.gen_mat())         
+         elif algorithm=="leon":
+             if not(F.order() in [2,3,5,7]):
+                 raise NotImplementedError("The algorithm 'leon' is only implemented for q = 2,3,5,7.")
+diff --git a/sage/modules/finite_submodule_iter.pxd b/sage/modules/finite_submodule_iter.pxd
+new file mode 100644
+--- /dev/null
++++ b/sage/modules/finite_submodule_iter.pxd
+@@ -0,0 +1,38 @@
++# cython: profile=False
++from sage.structure.element cimport ModuleElement
++
++cdef class FiniteZZsubmodule_iterator:
++    #### Global Data
++    cdef ModuleElement _cw
++    cdef list _plus
++    cdef list _minus
++    cdef int* _Zp_position
++    cdef int* _direction
++    cdef int* _order
++    cdef int _basis_length
++
++    ##### Data used in __iteration__
++    cdef unsigned int _pos
++    cdef int _s
++
++    cdef ModuleElement (*_cnext)(FiniteZZsubmodule_iterator)
++
++    cdef inline ModuleElement _iteration_start(FiniteZZsubmodule_iterator self):
++        self._cnext = self._iteration # in the next step we will start the iteration
++        return self._cw #return the zero word
++
++    cdef inline ModuleElement _iteration(FiniteZZsubmodule_iterator self):
++        self._pos = 0
++        self._s = self._direction[0] + self._Zp_position[0]
++        while self._s<0 or self._s>=self._order[self._pos]: # we can not add/subtract the vector at self._pos
++            self._direction[self._pos] *= -1 # opposite direction
++            self._pos += 1 #next vector in the basis
++            if self._pos == self._basis_length:
++                raise StopIteration #todo: should I prepare this object for a second run?
++            self._s = self._direction[self._pos] + self._Zp_position[self._pos]
++
++        self._Zp_position[self._pos] = self._s
++        if self._direction[self._pos] == 1:
++            self._cw += <ModuleElement> self._plus[self._pos]
++        else:
++            self._cw += <ModuleElement> self._minus[self._pos]
+\ No newline at end of file
+diff --git a/sage/modules/finite_submodule_iter.pyx b/sage/modules/finite_submodule_iter.pyx
+new file mode 100644
+--- /dev/null
++++ b/sage/modules/finite_submodule_iter.pyx
+@@ -0,0 +1,229 @@
++r"""
++Iterators over finite submodules of a `\ZZ`-module
++
++We iterate over the elements of a finite `\ZZ`-module. The action
++of `\ZZ` must be the natural one.
++
++This class is intended to provide optimizations for the
++:meth:`sage.free_module.FreeModule_generic:__iter__` method. 
++
++AUTHORS:
++
++- Thomas Feulner (2012-08-31): initial version
++
++EXAMPLES::
++
++    sage: from sage.modules.finite_submodule_iter import FiniteZZsubmodule_iterator
++    sage: F.<x,y,z> = FreeAlgebra(GF(3),3)
++    sage: iter = FiniteZZsubmodule_iterator([x,y], [3,3])
++    sage: list(iter)
++    [0, x, 2*x, 2*x + y, x + y, y, 2*y, x + 2*y, 2*x + 2*y]
++
++There is a specialization for subspaces over finite fields::
++    
++    sage: from sage.modules.finite_submodule_iter import FiniteFieldsubspace_iterator
++    sage: A = random_matrix(GF(4, 'a'), 5, 100)
++    sage: iter = FiniteFieldsubspace_iterator(A)
++    sage: len(list(iter))
++    1024
++
++TESTS::
++
++    sage: from sage.modules.finite_submodule_iter import FiniteFieldsubspace_iterator
++    sage: A = random_matrix(GF(4, 'a'), 5, 100)
++    sage: iter = FiniteFieldsubspace_iterator(A)
++    sage: TestSuite(iter).run(skip='_test_pickling')
++
++In a second step, we will replace all calls to ``__iter__`` for finite submodules. This
++will result in improved running times::
++
++    sage: A = random_matrix(GF(2), 15, 100)
++    sage: X = A.row_space()
++    sage: x = [0 for _ in X] #long time #takes 7.12 seconds
++    sage: y = [0 for _ in FiniteFieldsubspace_iterator(A)] # takes 0.05 seconds
++    sage: len(x) == len(y) #long time
++    True
++"""
++
++#*****************************************************************************
++#       Copyright (C) 2012 Thomas Feulner <thomas.feulner@uni-bayreuth.de>
++#
++#  Distributed under the terms of the GNU General Public License (GPL)
++#  as published by the Free Software Foundation; either version 2 of
++#  the License, or (at your option) any later version.
++#                  http://www.gnu.org/licenses/
++#*****************************************************************************
++
++include "../ext/stdsage.pxi"
++
++cdef class FiniteZZsubmodule_iterator:
++    r"""
++    Let G be an abelian group and suppose that `(g_0, \ldots, g_n)`
++    is a list of elements of G, whose additive orders are equal to `m_i` and
++    `\sum_{i=0}^n x_i g_i = 0` for `x_i \in \ZZ_{m_i}` for `i \in \{0, ..., n\}` implies `x_i=0` for 
++    all `i`.
++
++    This class implements an iterator over the `\ZZ`-submodule
++    `M = \{\sum_{i=0}^n x_i g_i\}`. If the independence condition from above is
++    not fulfilled, we can still use this iterator to run over the elements. In
++    this case the elements will occur multiple times.
++
++    Getting from one element of the submodule to another is performed by one single
++    addition in `G`.
++
++    INPUT:
++
++        - ``basis``  - the elements `(g_0, \ldots, g_n)`
++        - ``orders`` (optional) - the additive_orders `m_i` of `g_i`.
++
++    EXAMPLES::
++
++        sage: from sage.modules.finite_submodule_iter import FiniteZZsubmodule_iterator
++        sage: F.<x,y,z> = FreeAlgebra(GF(3),3)
++        sage: iter = FiniteZZsubmodule_iterator([x,y], [3,3])
++        sage: list(iter)
++        [0, x, 2*x, 2*x + y, x + y, y, 2*y, x + 2*y, 2*x + 2*y]
++    """
++    
++    def __init__(self, basis, order=None):
++        """
++        see :class:`FiniteZZsubmodule_iterator`
++
++        EXAMPLES::
++
++            sage: from sage.modules.finite_submodule_iter import FiniteZZsubmodule_iterator
++            sage: F.<x,y,z> = FreeAlgebra(GF(3),3)
++            sage: iter = FiniteZZsubmodule_iterator([x,y], [3,3])
++            sage: list(iter)
++            [0, x, 2*x, 2*x + y, x + y, y, 2*y, x + 2*y, 2*x + 2*y]
++        """
++        self._plus = list(basis)
++        self._minus = [-x for x in self._plus] # the negative basis vectors
++        self._cw = basis[0].parent().zero()
++        self._basis_length = len(self._plus)
++
++        # C mallocs
++        self._direction = <int *>sage_malloc(self._basis_length*sizeof(int))
++        if self._direction is NULL:
++            raise MemoryError, "Failed to allocate memory in LinearCode_iterator"
++        
++        self._Zp_position = <int *>sage_malloc(self._basis_length*sizeof(int))
++        if self._Zp_position is NULL:
++            sage_free(self._direction)
++            raise MemoryError, "Failed to allocate memory in LinearCode_iterator"
++
++        self._order = <int *>sage_malloc(self._basis_length*sizeof(int))
++        if self._Zp_position is NULL:
++            sage_free(self._direction)
++            sage_free(self._Zp_position)
++            raise MemoryError, "Failed to allocate memory in LinearCode_iterator"
++
++        for i in range(self._basis_length): #prepare the memory used
++            self._Zp_position[i] = 0
++            self._direction[i] = 1
++            if order is None:
++                try:
++                    self._order[i] = basis[i].additive_order()
++                except (AttributeError, NotImplementedError):
++                    raise ValueError, "Not able to determine the additive order of the %s-th basis element, use the optional parameter \'order\'"%i
++            else:
++                self._order[i] = order[i]
++
++        self._cnext = self._iteration_start # to ensure that the zero element will be constructed
++
++    def __dealloc__(self):
++        """
++        Free the memory.
++        
++        EXAMPLES::
++
++            sage: from sage.modules.finite_submodule_iter import FiniteZZsubmodule_iterator
++            sage: F.<x,y,z> = FreeAlgebra(GF(3),3)
++            sage: iter = FiniteZZsubmodule_iterator([x,y], [3,3])
++            sage: del iter
++        """
++        sage_free(self._direction)
++        sage_free(self._Zp_position)
++        sage_free(self._order)
++
++    def __next__(self):
++        """
++        Return the next submodule element. This will just add/subtract another element of the
++        ``basis``.
++
++        EXAMPLES::
++
++            sage: from sage.modules.finite_submodule_iter import FiniteZZsubmodule_iterator
++            sage: F.<x,y,z> = FreeAlgebra(GF(3),3)
++            sage: iter = FiniteZZsubmodule_iterator([x,y], [3,3])
++            sage: next(iter) #indirect doctest
++            0
++            sage: next(iter) #indirect doctest
++            x
++        """
++        self._cnext(self)
++        return self._cw
++
++    def __repr__(self):
++        """
++        EXAMPLES::
++
++            sage: from sage.modules.finite_submodule_iter import FiniteZZsubmodule_iterator
++            sage: F.<x,y,z> = FreeAlgebra(GF(3),3)
++            sage: repr(FiniteZZsubmodule_iterator([x,y], [3,3])) #indirect doctest
++            'Iterator over ZZ-submodule generated by [x, y]'
++        """
++        return "Iterator over ZZ-submodule generated by %s"%self._plus
++
++    def __iter__(self):
++        """
++        EXAMPLE::
++
++            sage: from sage.modules.finite_submodule_iter import FiniteZZsubmodule_iterator
++            sage: F.<x,y,z> = FreeAlgebra(GF(3),3)
++            sage: list(FiniteZZsubmodule_iterator([x,y], [3,3])) #indirect doctest
++            [0, x, 2*x, 2*x + y, x + y, y, 2*y, x + 2*y, 2*x + 2*y]
++        """
++        return self
++
++
++cdef class FiniteFieldsubspace_iterator(FiniteZZsubmodule_iterator):
++    """
++    This class implements an iterator over the subspace
++    generated by ``basis``.
++
++    EXAMPLES::
++
++        sage: from sage.modules.finite_submodule_iter import FiniteFieldsubspace_iterator
++        sage: A = random_matrix(GF(2), 10, 100)
++        sage: iter = FiniteFieldsubspace_iterator(A)
++        sage: len(list(iter))
++        1024
++        sage: X = random_matrix(GF(2), 13, 100).row_space()
++        sage: s = [0 for x in X] # takes 1.72 seconds 
++        sage: t = [0 for x in FiniteFieldsubspace_iterator(X.basis())] # takes 0.01 seconds 
++    """
++
++    def __init__(self, basis):
++        """
++        see :class:`FiniteFieldsubspace_iterator`
++
++        EXAMPLES::
++
++            sage: from sage.modules.finite_submodule_iter import FiniteFieldsubspace_iterator
++            sage: A = random_matrix(GF(2), 10, 100)
++            sage: iter = FiniteFieldsubspace_iterator(A)
++            sage: len(list(iter))
++            1024
++        """
++        F = basis[0].base_ring()
++        P = F.prime_subfield()
++        
++        cdef Py_ssize_t i
++        pows = [F.primitive_element()**i for i in range(F.degree())]
++        basis = [p*x for p in pows for x in basis] # a ZZ_p-basis for the vectorspace 
++        order = [len(P) for _ in range(len(basis))]
++        
++        FiniteZZsubmodule_iterator.__init__(self, basis, order)
++
++

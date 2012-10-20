@@ -1,0 +1,5 @@
+
+hamming_weight_simplex_code.patch
+submodule_iter.patch
+trac_12014-make_iter_and_list_faster.patch
+iteration_update.patch

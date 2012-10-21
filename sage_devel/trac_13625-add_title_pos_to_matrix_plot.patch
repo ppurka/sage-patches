@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1350784204 -28800
-# Node ID 4d5992f19ed1a93d6a9598462b3af60201ae003b
+# Date 1350787569 -28800
+# Node ID a73923b07f3f30408f8d1a8a02c8fc6347f0116e
 # Parent  874feda086d21141e8d8d80568a4d1d0560843b0
 add a custom title_pos to matrix_plots by default
 
@@ -24,12 +24,28 @@ diff --git a/sage/plot/matrix_plot.py b/sage/plot/matrix_plot.py
      If the matrix is dense, each matrix element is given a different
      color value depending on its relative size compared to the other
      elements in the matrix.  If the matrix is sparse, colors only
-@@ -488,6 +488,10 @@
+@@ -418,6 +418,15 @@
+         sage: import numpy
+         sage: matrix_plot(numpy.random.rand(10, 10))
+ 
++    A plot title can be added to the matrix plot.::
++
++        sage: matrix_plot(identity_matrix(50), origin='lower', title='not identity')
++
++    The title position is adjusted upwards if the ``origin`` keyword is set
++    to ``"upper"`` (this is the default).::
++
++        sage: matrix_plot(identity_matrix(50), title='identity')
++
+     TESTS::
+ 
+         sage: P.<t> = RR[]
+@@ -488,6 +497,10 @@
      if options['subdivisions'] and options['subdivision_options']['boundaries'] is None:
          options['subdivision_options']['boundaries']=orig_mat.get_subdivisions()
  
 +    # Custom position the title. Otherwise it overlaps with tick labels
-+    if options['origin'] == 'upper':
++    if options['origin'] == 'upper' and 'title_pos' not in options:
 +        options['title_pos'] = (0.5, 1.05)
 +
      g = Graphics()

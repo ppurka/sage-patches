@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1350753402 -28800
-# Node ID 03b712a9624bf4f111584ae8157d15d0adf66bd0
+# Date 1350784204 -28800
+# Node ID 4d5992f19ed1a93d6a9598462b3af60201ae003b
 # Parent  874feda086d21141e8d8d80568a4d1d0560843b0
 add a custom title_pos to matrix_plots by default
 
@@ -15,8 +15,7 @@ diff --git a/sage/plot/matrix_plot.py b/sage/plot/matrix_plot.py
 -@options(cmap='gray',marker='.',frame=True, axes=False, norm=None, 
 +@options(cmap='gray',marker='.',frame=True, axes=False, norm=None,
           vmin=None, vmax=None, origin='upper',ticks_integer=True,
--         subdivisions=False, colorbar=False)
-+         subdivisions=False, colorbar=False, title_pos=(0.5,1.05))
+          subdivisions=False, colorbar=False)
  def matrix_plot(mat, **options):
      r"""
      A plot of a given matrix or 2D array.
@@ -25,3 +24,14 @@ diff --git a/sage/plot/matrix_plot.py b/sage/plot/matrix_plot.py
      If the matrix is dense, each matrix element is given a different
      color value depending on its relative size compared to the other
      elements in the matrix.  If the matrix is sparse, colors only
+@@ -488,6 +488,10 @@
+     if options['subdivisions'] and options['subdivision_options']['boundaries'] is None:
+         options['subdivision_options']['boundaries']=orig_mat.get_subdivisions()
+ 
++    # Custom position the title. Otherwise it overlaps with tick labels
++    if options['origin'] == 'upper':
++        options['title_pos'] = (0.5, 1.05)
++
+     g = Graphics()
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options))
+     g.add_primitive(MatrixPlot(xy_data_array, xrange, yrange, options))

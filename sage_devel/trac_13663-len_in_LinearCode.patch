@@ -1,0 +1,29 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1351405865 -28800
+# Node ID 8f300ac4aaca5423007719b84fab2e4857e4723e
+# Parent  ab35d2fe15ce282154db5bfa198c10563fea45e5
+implement __len__ in LinearCode
+
+diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
+--- a/sage/coding/linear_code.py
++++ b/sage/coding/linear_code.py
+@@ -1807,6 +1807,18 @@
+                 return False
+         return True
+ 
++    def __len__(self):
++        r"""
++        Return the size of this code.
++
++        EXAMPLES::
++
++            sage: C = HammingCode(3, GF(2))
++            sage: len(C)
++            16
++        """
++        return self.base_ring().order()**self.dimension()
++
+     def length(self):
+         r"""
+         Returns the length of this code.

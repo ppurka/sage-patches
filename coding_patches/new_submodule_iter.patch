@@ -1,0 +1,173 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1351703417 -28800
+# Node ID 00edc0d368c2ed9aef1c5d713d8bf4b9718f36f7
+# Parent  88187618fbe08e1a60778a2a4e0caa663be8c745
+replace iteration with a recursive call
+
+diff --git a/sage/modules/finite_submodule_iter.pxd b/sage/modules/finite_submodule_iter.pxd
+--- a/sage/modules/finite_submodule_iter.pxd
++++ b/sage/modules/finite_submodule_iter.pxd
+@@ -3,36 +3,13 @@
+ 
+ cdef class FiniteZZsubmodule_iterator:
+     #### Global Data
++    cdef FiniteZZsubmodule_iterator _other_ZZ
++    cdef ModuleElement _basis
+     cdef ModuleElement _cw
+-    cdef list _plus
+-    cdef list _minus
+-    cdef int* _Zp_position
+-    cdef int* _direction
+-    cdef int* _order
++    cdef ModuleElement _other
++    cdef list _basis_all
+     cdef int _basis_length
++    cdef int _count
++    cdef int _order
+ 
+-    ##### Data used in __iteration__
+-    cdef unsigned int _pos
+-    cdef int _s
+-
+-    cdef ModuleElement (*_cnext)(FiniteZZsubmodule_iterator)
+-
+-    cdef inline ModuleElement _iteration_start(FiniteZZsubmodule_iterator self):
+-        self._cnext = self._iteration # in the next step we will start the iteration
+-        return self._cw #return the zero word
+-
+-    cdef inline ModuleElement _iteration(FiniteZZsubmodule_iterator self):
+-        self._pos = 0
+-        self._s = self._direction[0] + self._Zp_position[0]
+-        while self._s<0 or self._s>=self._order[self._pos]: # we can not add/subtract the vector at self._pos
+-            self._direction[self._pos] *= -1 # opposite direction
+-            self._pos += 1 #next vector in the basis
+-            if self._pos == self._basis_length:
+-                raise StopIteration #todo: should I prepare this object for a second run?
+-            self._s = self._direction[self._pos] + self._Zp_position[self._pos]
+-
+-        self._Zp_position[self._pos] = self._s
+-        if self._direction[self._pos] == 1:
+-            self._cw += <ModuleElement> self._plus[self._pos]
+-        else:
+-            self._cw += <ModuleElement> self._minus[self._pos]
+\ No newline at end of file
++    cdef ModuleElement _iteration(FiniteZZsubmodule_iterator self)
+diff --git a/sage/modules/finite_submodule_iter.pyx b/sage/modules/finite_submodule_iter.pyx
+--- a/sage/modules/finite_submodule_iter.pyx
++++ b/sage/modules/finite_submodule_iter.pyx
+@@ -97,54 +97,23 @@
+             sage: list(iter)
+             [0, x, 2*x, 2*x + y, x + y, y, 2*y, x + 2*y, 2*x + 2*y]
+         """
+-        self._plus = list(basis)
+-        self._minus = [-x for x in self._plus] # the negative basis vectors
+-        self._cw = basis[0].parent().zero()
+-        self._basis_length = len(self._plus)
++        if order is None:
++            try:
++                order = [b.additive_order() for b in basis]
++            except (AttributeError, NotImplementedError):
++                raise ValueError("Unable to determine the additive order "
++                                 "of a basis element. Use the optional "
++                                 "parameter `order`.")
+ 
+-        # C mallocs
+-        self._direction = <int *>sage_malloc(self._basis_length*sizeof(int))
+-        if self._direction is NULL:
+-            raise MemoryError, "Failed to allocate memory in LinearCode_iterator"
+-        
+-        self._Zp_position = <int *>sage_malloc(self._basis_length*sizeof(int))
+-        if self._Zp_position is NULL:
+-            sage_free(self._direction)
+-            raise MemoryError, "Failed to allocate memory in LinearCode_iterator"
+-
+-        self._order = <int *>sage_malloc(self._basis_length*sizeof(int))
+-        if self._Zp_position is NULL:
+-            sage_free(self._direction)
+-            sage_free(self._Zp_position)
+-            raise MemoryError, "Failed to allocate memory in LinearCode_iterator"
+-
+-        for i in range(self._basis_length): #prepare the memory used
+-            self._Zp_position[i] = 0
+-            self._direction[i] = 1
+-            if order is None:
+-                try:
+-                    self._order[i] = basis[i].additive_order()
+-                except (AttributeError, NotImplementedError):
+-                    raise ValueError, "Not able to determine the additive order of the %s-th basis element, use the optional parameter \'order\'"%i
+-            else:
+-                self._order[i] = order[i]
+-
+-        self._cnext = self._iteration_start # to ensure that the zero element will be constructed
+-
+-    def __dealloc__(self):
+-        """
+-        Free the memory.
+-        
+-        EXAMPLES::
+-
+-            sage: from sage.modules.finite_submodule_iter import FiniteZZsubmodule_iterator
+-            sage: F.<x,y,z> = FreeAlgebra(GF(3),3)
+-            sage: iter = FiniteZZsubmodule_iterator([x,y], [3,3])
+-            sage: del iter
+-        """
+-        sage_free(self._direction)
+-        sage_free(self._Zp_position)
+-        sage_free(self._order)
++        self._basis = basis[0]
++        self._basis_all = basis
++        self._basis_length = len(basis)
++        self._count = 0
++        self._cw = self._basis.parent().zero()
++        self._order = order[0]
++        self._other = self._basis.parent().zero() # dummy initialization
++        if self._basis_length > 1:
++            self._other_ZZ = FiniteZZsubmodule_iterator(basis[1:], order[1:])
+ 
+     def __next__(self):
+         """
+@@ -161,7 +130,7 @@
+             sage: next(iter) #indirect doctest
+             x
+         """
+-        self._cnext(self)
++        self._iteration()
+         return self._cw
+ 
+     def __repr__(self):
+@@ -173,7 +142,7 @@
+             sage: repr(FiniteZZsubmodule_iterator([x,y], [3,3])) #indirect doctest
+             'Iterator over ZZ-submodule generated by [x, y]'
+         """
+-        return "Iterator over ZZ-submodule generated by %s"%self._plus
++        return "Iterator over ZZ-submodule generated by {0}".format(self._basis_all)
+ 
+     def __iter__(self):
+         """
+@@ -186,6 +155,25 @@
+         """
+         return self
+ 
++    cdef ModuleElement _iteration(FiniteZZsubmodule_iterator self):
++        if self._basis_length == 1:
++            if self._count == 0:
++                self._cw = self._basis.parent().zero()
++                self._count += 1
++            elif self._count < self._order:
++                self._cw += <ModuleElement> self._basis
++                self._count += 1
++            else:
++                raise StopIteration
++        else:
++            if self._count == 0 or self._count == self._order:
++                self._other = self._other_ZZ.next()
++                self._cw = <ModuleElement> self._other
++                self._count = 1
++            else:
++                self._cw += <ModuleElement> self._basis
++                self._count += 1
++
+ 
+ cdef class FiniteFieldsubspace_iterator(FiniteZZsubmodule_iterator):
+     """

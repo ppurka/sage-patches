@@ -1,0 +1,29 @@
+# HG changeset patch
+# User Keshav Kini <keshav.kini@gmail.com>
+# Date 1349387617 25200
+# Node ID 737622fd6da40cf09ebbfad29e59a3d4c39e5e96
+# Parent  e42f06ec64487e3b06038f9d6021b0d20a7bb841
+$SAGE_ROOT/sage should fail gracefully if Sage is not compiled
+
+diff --git a/spkg/bin/sage b/spkg/bin/sage
+--- a/spkg/bin/sage
++++ b/spkg/bin/sage
+@@ -281,6 +281,18 @@
+ LOGOPT=""
+ 
+ sage_setup() {
++    # Here is as good a place as any to check that we're not in a source
++    # tarball which hasn't been built yet.
++
++    if [ ! -L "$SAGE_ROOT/local/lib/libcsage.so" ]; then
++        echo >&2 '************************************************************************'
++        echo >&2 'It seems that you are attempting to run Sage from an unpacked source'
++        echo >&2 'tarball, but you have not compiled it yet. Please run `make` in the Sage'
++        echo >&2 'root directory first. Read README.txt for more information.'
++        echo >&2 '************************************************************************'
++        exit 1
++    fi
++
+     # Display the startup banner
+     if [ "$SAGE_BANNER" != "no" ]; then
+         cat "$SAGE_LOCAL/bin/sage-banner"

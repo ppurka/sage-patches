@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1352456296 -28800
-# Node ID 85a856ed9a24055bf5de029cd72a69a54c12149c
+# Date 1352462711 -28800
+# Node ID 33dc5632331ffede44cb20a060a7f48a5719b240
 # Parent  ed53f7c418826dc082a1f8ed37d1747f124ec4b2
 Trac 13417: Iterators for finite ZZ-submodules and subspaces over finite fields
 * * *
@@ -287,7 +287,7 @@ new file mode 100644
 +        degree = F.degree()
 +
 +        pows = [alpha**i for i in range(degree)]
-+        basis = [_p*x for _p in pows for x in basis] # a ZZ_p-basis for the vectorspace
++        basis = [_p*x for x in basis for _p in pows] # a ZZ_p-basis for the vectorspace
 +        order = [p]*(len(basis))
 +
 +        FiniteZZsubmodule_iterator.__init__(self, basis, order)

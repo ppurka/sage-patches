@@ -1,20 +1,29 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1321087218 -28800
-# Node ID c26aeb64b77e00ba38533058460e1ec541404aef
-# Parent  58808b220c2a9fb6f0d83151c4f30d25779b4e35
-make __iter__() and list() faster and fix inconsistent output between iter(code) and code.list()
+# Node ID ef77f0cb480e5cabd5e3e8c555eaf3b9e60e24bd
+# Parent  85a856ed9a24055bf5de029cd72a69a54c12149c
+this patch makes the following changes/fixes
+ - make __iter__ and list faster by using #13417
+ - fix inconsistent output between __iter__ and list
+ - fix for the fact that list(some_code) may return codewords from a permuted generator matrix instead of the original generator matrix provided
 
 diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 --- a/sage/coding/linear_code.py
 +++ b/sage/coding/linear_code.py
-@@ -802,16 +802,22 @@
+@@ -825,18 +825,14 @@
+ 
+             sage: C = HammingCode(3,GF(2))
              sage: [list(c) for c in C if hamming_weight(c) < 4]
-              [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1], [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0], [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
+-             [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1], [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0], [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
++             [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1],
++              [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1, 0],
++              [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0],
++              [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
          """
 -        n = self.length()
 -        k = self.dimension()
-         F = self.base_ring()
+-        F = self.base_ring()
 -        Cs,p = self.standard_form()
 -        Gs = Cs.gen_mat()
 -        V = VectorSpace(F,k)
@@ -22,25 +31,13 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 -        perm_mat = MS(p.matrix().rows())**(-1)
 -        for v in V:
 -            yield (v*Gs)*perm_mat
-+        G = self.gen_mat()
-+        def _iterate(G, F):
-+            # if G is a matrix and v is a vector, then we do v*G and make
-+            # sure that the multiplication v[i]*G[i] happens only once for
-+            # a fixed value of v[i]
-+            g = G[0]
-+            if G.nrows() == 1:
-+                for b in F:
-+                    yield b*g
-+            else:
-+                for rest in _iterate(G[1:], F):
-+                    for b in F:
-+                        yield rest + b*g
-+
-+        return _iterate(G, F)
++        from sage.modules.finite_submodule_iter import \
++                                                FiniteFieldsubspace_iterator
++        return FiniteFieldsubspace_iterator(self.gen_mat())
  
      def ambient_space(self):
          r"""
-@@ -1806,7 +1812,7 @@
+@@ -1831,7 +1827,7 @@
              (1, 0, 1, 0, 1, 0, 1)
              True
          """

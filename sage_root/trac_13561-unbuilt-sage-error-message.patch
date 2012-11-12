@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Keshav Kini <keshav.kini@gmail.com>
 # Date 1349387617 25200
-# Node ID ae0310d45e2f3c792f7a85c78afd201c4c323781
-# Parent  e42f06ec64487e3b06038f9d6021b0d20a7bb841
+# Node ID 8abb5da528815e8cb17c4c9522db472d9fc77558
+# Parent  bb7e58190dc3132dfd1b3dfafe12513c5b251dbb
 $SAGE_ROOT/sage should fail gracefully if Sage is not compiled
 
 diff --git a/spkg/bin/sage b/spkg/bin/sage
@@ -15,7 +15,7 @@ diff --git a/spkg/bin/sage b/spkg/bin/sage
 +    # Here is as good a place as any to check that we're not in a source
 +    # tarball which hasn't been built yet.
 +
-+    if [ ! -L "$SAGE_LOCAL/lib/libcsage.so" ]; then
++    if [ ! -f "$SAGE_LOCAL/lib/libcsage.so" ]; then
 +        echo >&2 '************************************************************************'
 +        echo >&2 'It seems that you are attempting to run Sage from an unpacked source'
 +        echo >&2 'tarball, but you have not compiled it yet. Please run `make` in the Sage'

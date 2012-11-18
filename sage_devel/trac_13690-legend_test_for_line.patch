@@ -1,0 +1,24 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1352826173 -28800
+# Node ID 46c3bb5c21e3a4e67b215d4ef2b65ff407537f3d
+# Parent  d2602662db973fada81b46135f3df1b436f9ccfb
+add a test for legend label in line()
+
+diff --git a/sage/plot/line.py b/sage/plot/line.py
+--- a/sage/plot/line.py
++++ b/sage/plot/line.py
+@@ -436,6 +436,13 @@
+         sage: Q = polygon([(-x,y) for x,y in P[0]], rgbcolor=(0,0,1))
+         sage: G + P + Q   # show the plot
+ 
++    TESTS:
++
++    Check that :trac:`13690` is fixed. The legend label should have circles
++    as markers.::
++
++        sage: line(enumerate(range(2)), marker='o', legend_label='circle')
++
+     """
+     from sage.plot.all import Graphics
+     from sage.plot.plot import xydata_from_point_list

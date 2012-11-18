@@ -1,0 +1,30 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1352770340 -28800
+# Node ID d2602662db973fada81b46135f3df1b436f9ccfb
+# Parent  daa32b7e8f9ded22d4f1342cc633629f93934eae
+fix _div_ in multivariate rings
+
+diff --git a/sage/rings/polynomial/multi_polynomial_element.py b/sage/rings/polynomial/multi_polynomial_element.py
+--- a/sage/rings/polynomial/multi_polynomial_element.py
++++ b/sage/rings/polynomial/multi_polynomial_element.py
+@@ -278,9 +278,18 @@
+             sage: f.parent()
+             Multivariate Polynomial Ring in x, y over Complex Field with
+             53 bits of precision
++
++        TESTS:
++
++        Ensure that :trac:`13704` is fixed.::
++
++            sage: R.<t>=PolynomialRing(QQ)
++            sage: S.<x,y>=PolynomialRing(R)
++            sage: x/S(2)
++            1/2*x
+         """
+         if right in self.base_ring():
+-            inv = 1/self.base_ring()(right)
++            inv = self.base_ring().one()/self.base_ring()(right)
+             return inv*self
+         return self.parent().fraction_field()(self, right, coerce=False)
+ 

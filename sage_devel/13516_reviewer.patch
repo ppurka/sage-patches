@@ -1,0 +1,22 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1353563824 -28800
+# Node ID b2214a5a567d3a69e189587544790892e9443c7d
+# Parent  636cb9a86b966761d002eb3262570872a680cbd3
+small change to TypeError
+
+diff --git a/sage/rings/arith.py b/sage/rings/arith.py
+--- a/sage/rings/arith.py
++++ b/sage/rings/arith.py
+@@ -770,9 +770,9 @@
+     from sage.rings.integer import Integer
+     # check to ensure that both inputs are positive integers
+     if not isinstance(start, (int, Integer)):
+-        raise TypeError("start must be an integer, %s is not an integer")%start
++        raise TypeError("start must be an integer, %s is not an integer"%start)
+     if not (isinstance(stop, (int, Integer)) or stop is None):
+-        raise TypeError("stop must be an integer, %s is not an integer")%stop
++        raise TypeError("stop must be an integer, %s is not an integer"%stop)
+ 
+     # coerce inputs that are ints into Integers for efficiency
+     start = Integer(start)

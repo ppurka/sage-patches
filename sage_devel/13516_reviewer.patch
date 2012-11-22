@@ -1,14 +1,57 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1353563824 -28800
-# Node ID b2214a5a567d3a69e189587544790892e9443c7d
+# Date 1353564327 -28800
+# Node ID 1864a6bcae48c1831b4c8d0cf179f46e866896ae
 # Parent  636cb9a86b966761d002eb3262570872a680cbd3
 small change to TypeError
 
 diff --git a/sage/rings/arith.py b/sage/rings/arith.py
 --- a/sage/rings/arith.py
 +++ b/sage/rings/arith.py
-@@ -770,9 +770,9 @@
+@@ -709,7 +709,7 @@
+     the prime powers up to the first argument.
+ 
+     INPUT:
+-    
++
+     - ``start`` - an integer If two inputs are given, a lower bound 
+       for the returned set of prime powers. If this is the only input,
+       then it is an upper bound.
+@@ -724,9 +724,9 @@
+     and ``start``. Note that we will here say that the number `n` is a
+     prime power if `n=p^k`, where `p` is a prime number and `k` is a
+     nonnegative integer. Thus, `1` is a prime power, as `1 = 2^0`.
+-    
++
+     EXAMPLES::
+-    
++
+         sage: prime_powers(20)
+         [1, 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 17, 19]
+         sage: len(prime_powers(1000))
+@@ -749,10 +749,12 @@
+         []
+         sage: prime_powers(-5)
+         []
+-    
++        sage: prime_powers(-1,2)
++        [1]
++
+     TESTS::
+-    
+-        sage: v = prime_powers(10) 
++
++        sage: v = prime_powers(10)
+         sage: type(v[0])      # trac #922
+         <type 'sage.rings.integer.Integer'>
+ 
+@@ -765,14 +767,14 @@
+         Traceback (most recent call last):
+         ...
+         TypeError: stop must be an integer, bar is not an integer
+-        
++
+     """
      from sage.rings.integer import Integer
      # check to ensure that both inputs are positive integers
      if not isinstance(start, (int, Integer)):
@@ -20,3 +63,30 @@ diff --git a/sage/rings/arith.py b/sage/rings/arith.py
  
      # coerce inputs that are ints into Integers for efficiency
      start = Integer(start)
+@@ -791,10 +793,10 @@
+     from fast_arith import prime_range
+     temp = prime_range(stop)
+     output = [p for p in temp if p>=start]
+-    
+-    if start == 1:
++
++    if start <= 1:
+         output.append(Integer(1))
+-    
++
+     s = stop.sqrt()
+     for p in temp:
+         # if p > the square root of stop, p^2 will be outside the given
+@@ -804,10 +806,10 @@
+         q = p*p
+         # check if each power of p falls within the given range
+         while q < stop:
+-            if start <= q:            
++            if start <= q:
+                 output.append(q)
+             q *= p
+-    
++
+     output.sort()
+     return output
+ 

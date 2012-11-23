@@ -1,0 +1,92 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1353677428 -28800
+# Node ID 47a19dee77a21a94d3876bb013f8496007ae3627
+# Parent  a725f85e2aa22c83952fb387bf9c6965a1bc9d04
+allow numpy arrays in list_plot
+
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -1596,14 +1596,14 @@
+ @options(aspect_ratio='automatic')
+ def list_plot(data, plotjoined=False, **kwargs):
+     r"""
+-    ``list_plot`` takes either a list of numbers, a list of tuples,
+-    or a dictionary and plots the corresponding points.
++    ``list_plot`` takes either a list of numbers, a list of tuples, a numpy
++    array, or a dictionary and plots the corresponding points.
+ 
+     If given a list of numbers (that is, not a list of tuples or lists),
+     ``list_plot`` forms a list of tuples `(i, x_i)` where `i` goes from
+     0 to ``len(data)-1`` and `x_i` is the `i`-th data value, and puts
+     points at those tuple values.
+-    
++
+     ``list_plot`` will plot a list of complex numbers in the obvious
+     way; any numbers for which
+     :func:`CC()<sage.rings.complex_field.ComplexField>` makes sense will
+@@ -1623,18 +1623,23 @@
+     list_plot. Doing so will plot nothing (returning an empty plot).
+ 
+     EXAMPLES::
+-    
++
+         sage: list_plot([i^2 for i in range(5)])
+-    
++
+     Here are a bunch of random red points::
+-    
++
+         sage: r = [(random(),random()) for _ in range(20)]
+         sage: list_plot(r,color='red')
+-    
++
+     This gives all the random points joined in a purple line::
+-    
++
+         sage: list_plot(r, plotjoined=True, color='purple')
+ 
++    You can provide a numpy array.::
++
++        sage: import numpy
++        sage: list_plot(numpy.arange(10))
++
+     Plot a list of complex numbers::
+ 
+         sage: list_plot([1, I, pi + I/2, CC(.25, .25)])
+@@ -1710,9 +1715,9 @@
+     TESTS:
+ 
+     We check to see that the x/y min/max data are set correctly.
+-    
++
+     ::
+-    
++
+         sage: d = list_plot([(100,100), (120, 120)]).get_minmax_data()
+         sage: d['xmin']
+         100.0
+@@ -1720,8 +1725,12 @@
+         100.0
+     """
+     from sage.plot.all import line, point
+-    if data == {} or data == () or data == []:
++    if len(data) == 0:
+         return Graphics()
++    if not isinstance(plotjoined, bool):
++        raise TypeError("The second argument 'plotjoined' should be boolean "
++                    "(True or False).  If you meant to plot two lists 'x' "
++                    "and 'y' against each other, use 'list_plot(zip(x,y))'.")
+     if isinstance(data, dict):
+         if plotjoined:
+             list_data = sorted(list(data.iteritems()))
+@@ -1730,8 +1739,6 @@
+         return list_plot(list_data, plotjoined=plotjoined, **kwargs)
+     if not isinstance(data[0], (list, tuple)):
+         data = zip(range(len(data)), data)
+-    if isinstance(plotjoined, (list, tuple)):
+-        raise TypeError, "The second argument 'plotjoined' should be boolean (True or False).  If you meant to plot two lists 'x' and 'y' against each other, use 'list_plot(zip(x,y))'."
+     try:
+         if plotjoined:
+             return line(data, **kwargs)

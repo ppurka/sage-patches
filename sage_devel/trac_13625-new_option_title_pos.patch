@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1350753317 -28800
-# Node ID 9a6a390b45a13ab14da1ad649a2e3902a33c2d48
+# Node ID fa7b340e4656597aab1f57ad05731487239c6afb
 # Parent  6d0fdca50a5ff7bfef50e2cc4a71cd207c69ce7e
 introduce option title_pos for custom positioning of the title
 
@@ -64,7 +64,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +            sage; plot(x, -4, 4, title='Plot x', title_pos=0.05)
 +            Traceback (most recent call last):
 +            ...
-+            ValueError: `title_pos` must be a list or tuple of two real numbers.
++            ValueError: 'title_pos' must be a list or tuple of two real numbers.
 +
          """
  
@@ -85,7 +85,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +            if title_pos is not None:
 +                if ((not isinstance(title_pos, (list, tuple)))
 +                    or (len(title_pos) != 2)):
-+                    raise ValueError("`title_pos` must be a list or tuple "
++                    raise ValueError("'title_pos' must be a list or tuple "
 +                                     "of two real numbers.")
 +                title_pos = (float(title_pos[0]), float(title_pos[1]))
 +

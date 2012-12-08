@@ -1,0 +1,20 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1354981663 -28800
+# Node ID 29520146f812fe40c5dbf7014e472273905528bb
+# Parent  c7f44ac17da1aee7ac4b06a49c9718bb04434e10
+patch for forcing type-1 fonts
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -2098,6 +2098,9 @@
+ 
+         from matplotlib.figure import Figure
+         from matplotlib import rcParams
++        rcParams['ps.useafm'] = True
++        rcParams['pdf.use14corefonts'] = True
++        rcParams['text.usetex'] = True
+         self.fontsize(fontsize)
+         self.axes_labels(l=axes_labels)
+ 

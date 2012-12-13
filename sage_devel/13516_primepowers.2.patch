@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Kevin Halasz <Khalasz@pugetsound.edu>
 # Date 1350535667 25200
-# Node ID 94e6f094862472b26a7bc7a61d9f5fe793caacd6
+# Node ID 617a663e3033a9eb26b7418699c30cf6eea2b3a1
 # Parent  bd3a259433979a0ea68e03041604b0c9f2a04c23
 13516: Rehaul prime_powers function
 * * *
@@ -60,10 +60,9 @@ diff --git a/sage/rings/arith.py b/sage/rings/arith.py
      TESTS::
 -    
 -        sage: v = prime_powers(10) 
--        sage: type(v[0])      # trac #922
 +
 +        sage: v = prime_powers(10)
-+        sage: type(v[0])      # :trac:`922`
+         sage: type(v[0])      # trac #922
          <type 'sage.rings.integer.Integer'>
 +
 +        sage: prime_powers("foo")

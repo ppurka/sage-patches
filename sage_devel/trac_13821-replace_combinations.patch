@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1355586938 -28800
-# Node ID 5c4d4c9d95583b858792baa3fc0b4c18410fe5f4
-# Parent  a2a0eff66281874716ca0a780d2285686f139123
+# Date 1355588651 -28800
+# Node ID a2dd36138e04efe49273a17fa9450574dfd58bf4
+# Parent  aaf533ceb0217707c616a6d6312d77debda547fd
 replace calls to combinations and combinations_iterator by Combinations
 
 diff --git a/sage/combinat/designs/incidence_structures.py b/sage/combinat/designs/incidence_structures.py
@@ -71,22 +71,31 @@ diff --git a/sage/matrix/matrix2.pyx b/sage/matrix/matrix2.pyx
 diff --git a/sage/sandpiles/sandpile.py b/sage/sandpiles/sandpile.py
 --- a/sage/sandpiles/sandpile.py
 +++ b/sage/sandpiles/sandpile.py
-@@ -10,7 +10,8 @@
+@@ -10,7 +10,7 @@
  from sage.modules.free_module_element import vector
  from sage.matrix.constructor import matrix, identity_matrix
  from sage.interfaces.singular import singular
 -from sage.combinat.combinat import CombinatorialClass, combinations
 +from sage.combinat.combinat import CombinatorialClass
-+from sage.combinat.combination import Combinations
  from sage.combinat.set_partition import SetPartitions
  from sage.homology.simplicial_complex import SimplicialComplex
  from sage.plot.colors import rainbow
-@@ -5217,7 +5218,7 @@
+@@ -5215,13 +5215,14 @@
+         ------------------------------
+         total:     1     6     8     3
      """
++    from sage.combinat.combination import Combinations
      g = Graph()
      g.add_vertices([tuple(i) for i in p])
 -    for u,v in combinations(range(len(g.vertices())),2):
-+    for u,v in Combinations(range(len(g.vertices())),2):
-         for i in g.vertices()[u]:
-             for j in g.vertices()[v]:
+-        for i in g.vertices()[u]:
+-            for j in g.vertices()[v]:
++    for u,v in Combinations(g.vertices(), 2):
++        for i in u:
++            for j in v:
                  if (i,j,1) in S.edges():
+-                    g.add_edge((g.vertices()[u],g.vertices()[v]))
++                    g.add_edge((u, v))
+                     break
+     for i in g.vertices():
+         if S.sink() in i:

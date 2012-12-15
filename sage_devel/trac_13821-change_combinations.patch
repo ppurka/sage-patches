@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1355587539 -28800
-# Node ID aaf533ceb0217707c616a6d6312d77debda547fd
+# Date 1355603692 -28800
+# Node ID b85de488f3db7e3644cffce0c515baaef3ed80a5
 # Parent  c7f44ac17da1aee7ac4b06a49c9718bb04434e10
 deprecate combinations, combinations_iterator, arrangements, and remove very old deprecated code
 
@@ -12,8 +12,8 @@ diff --git a/sage/combinat/combinat.py b/sage/combinat/combinat.py
  
  - Fredrik Johansson (2010-07): fast implementation of ``stirling_number2``
  
-+- Punarbasu Purkayastha (2012-12): deprecate combinations*, arrangements,
-+  and clean up very old deprecated methods.
++- Punarbasu Purkayastha (2012-12): deprecate arrangements, combinations,
++  combinations_iterator, and clean up very old deprecated methods.
 +
  This module implements some combinatorial functions, as listed
  below. For a more detailed description, see the relevant
@@ -105,7 +105,7 @@ diff --git a/sage/combinat/combinat.py b/sage/combinat/combinat.py
 +
 +    - ``k`` -- (integer) the size of each set.
 +
-+    ..note::
++    .. NOTE::
 +
 +        This function is deprecated in favor of
 +        :func:`sage.combinat.combination.Combinations`. Use
@@ -138,18 +138,20 @@ diff --git a/sage/combinat/combinat.py b/sage/combinat/combinat.py
 +         ['d', 'v', 'i'],
 +         ['a', 'v', 'i']]
 +
-+    It is possible to take combinations of Sage objects.::
++    It is possible to take combinations of Sage objects::
 +
 +        sage: combinations([vector([1,1]), vector([2,2]), vector([3,3])], 2)
 +        [[(1, 1), (2, 2)], [(1, 1), (3, 3)], [(2, 2), (3, 3)]]
      """
 -    ans=gap.eval("Combinations(%s,%s)"%(mset,ZZ(k))).replace("\n","")
 -    return eval(ans)
+-
+-def combinations_iterator(mset,n=None):
 +    from sage.combinat.combination import Combinations
 +    deprecation(13821, 'Use Combinations(mset,k).list() instead.')
 +    return Combinations(mset, k).list()
- 
- def combinations_iterator(mset,n=None):
++
++def combinations_iterator(mset, k=None):
      """
 -    Posted by Raymond Hettinger, 2006/03/23, to the Python Cookbook:
 -    http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/474124
@@ -159,11 +161,11 @@ diff --git a/sage/combinat/combinat.py b/sage/combinat/combinat.py
 +
 +    INPUT:
 +
-+        - ``mset`` -- (list) the multiset presented as a list of objects.
++    - ``mset`` -- (list) the multiset presented as a list of objects.
 +
-+        - ``k`` -- (integer) the size of each set.
++    - ``k`` -- (integer, default: None) the size of each set.
 +
-+    ..note::
++    .. NOTE::
 +
 +        This function is deprecated in favor of
 +        :func:`sage.combinat.combination.Combinations`. Use
@@ -198,7 +200,7 @@ diff --git a/sage/combinat/combinat.py b/sage/combinat/combinat.py
 +    # combination.Combinations from combinat.
 +    from sage.combinat.combination import Combinations
 +    deprecation(13821, 'Use Combinations(mset,k) instead.')
-+    return Combinations(mset, n)
++    return Combinations(mset, k)
  
  def number_of_combinations(mset,k):
      """
@@ -231,7 +233,7 @@ diff --git a/sage/combinat/combinat.py b/sage/combinat/combinat.py
 +
 +    - ``k`` -- (integer) the size of each set.
 +
-+    ..note::
++    .. NOTE::
 +
 +        This function is deprecated in favor of
 +        :func:`sage.combinat.permutation.Arrangements`. Use

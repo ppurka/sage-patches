@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1355586318 -28800
-# Node ID a2a0eff66281874716ca0a780d2285686f139123
+# Date 1355587539 -28800
+# Node ID aaf533ceb0217707c616a6d6312d77debda547fd
 # Parent  c7f44ac17da1aee7ac4b06a49c9718bb04434e10
 deprecate combinations, combinations_iterator, arrangements, and remove very old deprecated code
 
@@ -234,7 +234,7 @@ diff --git a/sage/combinat/combinat.py b/sage/combinat/combinat.py
 +    ..note::
 +
 +        This function is deprecated in favor of
-+        :func:`sage.combinat.combination.Arrangements`. Use
++        :func:`sage.combinat.permutation.Arrangements`. Use
 +        ``Arrangements(mset, k).list()`` directly to get the list of
 +        arrangements of ``mset``.
  

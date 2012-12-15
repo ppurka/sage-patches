@@ -1,0 +1,92 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1355586938 -28800
+# Node ID 5c4d4c9d95583b858792baa3fc0b4c18410fe5f4
+# Parent  a2a0eff66281874716ca0a780d2285686f139123
+replace calls to combinations and combinations_iterator by Combinations
+
+diff --git a/sage/combinat/designs/incidence_structures.py b/sage/combinat/designs/incidence_structures.py
+--- a/sage/combinat/designs/incidence_structures.py
++++ b/sage/combinat/designs/incidence_structures.py
+@@ -514,7 +514,8 @@
+             (True, [2, 8, 2, 2])
+         """
+         from sage.combinat.designs.incidence_structures import coordinatewise_product
+-        from sage.combinat.combinat import unordered_tuples, combinations
++        from sage.combinat.combinat import unordered_tuples
++        from sage.combinat.combination import Combinations
+         from sage.coding.linear_code import hamming_weight
+         A = self.incidence_matrix()
+         v = len(self.points())
+@@ -533,7 +534,7 @@
+         lambdas = []
+         for t in range(2,min(v,11)):
+             #print t
+-            L1 = combinations(range(v),t)
++            L1 = Combinations(range(v),t)
+             L2 = [[rowsA[i] for i in L] for L in L1]
+             #print t,len(L2)
+             lmbda = hamming_weight(VS(coordinatewise_product(L2[0])))
+diff --git a/sage/graphs/generators/chessboard.py b/sage/graphs/generators/chessboard.py
+--- a/sage/graphs/generators/chessboard.py
++++ b/sage/graphs/generators/chessboard.py
+@@ -169,8 +169,8 @@
+     from itertools import product
+     V = map(list,list(product(*map(range,dim))))
+ 
+-    from sage.combinat.combinat import combinations
+-    combin = combinations(range(nb_dim),2)
++    from sage.combinat.combination import Combinations
++    combin = Combinations(range(nb_dim),2)
+ 
+     from sage.graphs.graph import Graph
+     G = Graph()
+diff --git a/sage/matrix/matrix2.pyx b/sage/matrix/matrix2.pyx
+--- a/sage/matrix/matrix2.pyx
++++ b/sage/matrix/matrix2.pyx
+@@ -33,7 +33,6 @@
+ 
+ from sage.misc.randstate cimport randstate, current_randstate
+ from sage.structure.sequence import Sequence
+-from sage.combinat.combinat import combinations_iterator
+ from sage.structure.element import is_Vector
+ from sage.misc.misc import verbose, get_verbose
+ from sage.misc.temporary_file import graphics_filename
+@@ -964,12 +963,12 @@
+             sage: A.minors(2)
+             [x0*x1*x2 + 16*x0*x1 - x0*x2, 5*x0*x1^2 + x0*x1*x2 - x1*x2, 5*x0*x1 + x0*x2 - x1*x2 - 16*x1]
+         """
+-        from sage.combinat.combinat import combinations_iterator
++        from sage.combinat.combination import Combinations
+         all_rows = range(self.nrows())
+         all_cols = range(self.ncols())
+         m = []
+-        for rows in combinations_iterator(all_rows,k):
+-            for cols in combinations_iterator(all_cols,k):
++        for rows in Combinations(all_rows,k):
++            for cols in Combinations(all_cols,k):
+                 m.append(self.matrix_from_rows_and_columns(rows,cols).determinant())
+         return m
+ 
+diff --git a/sage/sandpiles/sandpile.py b/sage/sandpiles/sandpile.py
+--- a/sage/sandpiles/sandpile.py
++++ b/sage/sandpiles/sandpile.py
+@@ -10,7 +10,8 @@
+ from sage.modules.free_module_element import vector
+ from sage.matrix.constructor import matrix, identity_matrix
+ from sage.interfaces.singular import singular
+-from sage.combinat.combinat import CombinatorialClass, combinations
++from sage.combinat.combinat import CombinatorialClass
++from sage.combinat.combination import Combinations
+ from sage.combinat.set_partition import SetPartitions
+ from sage.homology.simplicial_complex import SimplicialComplex
+ from sage.plot.colors import rainbow
+@@ -5217,7 +5218,7 @@
+     """
+     g = Graph()
+     g.add_vertices([tuple(i) for i in p])
+-    for u,v in combinations(range(len(g.vertices())),2):
++    for u,v in Combinations(range(len(g.vertices())),2):
+         for i in g.vertices()[u]:
+             for j in g.vertices()[v]:
+                 if (i,j,1) in S.edges():

@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1355588651 -28800
-# Node ID a2dd36138e04efe49273a17fa9450574dfd58bf4
-# Parent  aaf533ceb0217707c616a6d6312d77debda547fd
+# Date 1356183051 -28800
+# Node ID f681fa25286c89bfc5e8d2003f615c9ae6693e44
+# Parent  afe69366a347bf064814c58ac600374b0d2fdb31
 replace calls to combinations and combinations_iterator by Combinations
 
 diff --git a/sage/combinat/designs/incidence_structures.py b/sage/combinat/designs/incidence_structures.py
@@ -15,10 +15,10 @@ diff --git a/sage/combinat/designs/incidence_structures.py b/sage/combinat/desig
 -        from sage.combinat.combinat import unordered_tuples, combinations
 +        from sage.combinat.combinat import unordered_tuples
 +        from sage.combinat.combination import Combinations
-         from sage.coding.linear_code import hamming_weight
          A = self.incidence_matrix()
          v = len(self.points())
-@@ -533,7 +534,7 @@
+         b = len(self.blocks())
+@@ -532,7 +533,7 @@
          lambdas = []
          for t in range(2,min(v,11)):
              #print t
@@ -26,7 +26,7 @@ diff --git a/sage/combinat/designs/incidence_structures.py b/sage/combinat/desig
 +            L1 = Combinations(range(v),t)
              L2 = [[rowsA[i] for i in L] for L in L1]
              #print t,len(L2)
-             lmbda = hamming_weight(VS(coordinatewise_product(L2[0])))
+             lmbda = VS(coordinatewise_product(L2[0])).hamming_weight()
 diff --git a/sage/graphs/generators/chessboard.py b/sage/graphs/generators/chessboard.py
 --- a/sage/graphs/generators/chessboard.py
 +++ b/sage/graphs/generators/chessboard.py

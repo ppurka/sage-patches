@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1356183051 -28800
-# Node ID f681fa25286c89bfc5e8d2003f615c9ae6693e44
-# Parent  afe69366a347bf064814c58ac600374b0d2fdb31
+# Node ID 32bc15785b7763678598891ae89966d69a839ff5
+# Parent  54a3c81a30bad27f78fcb08e43ab29f98142af51
 replace calls to combinations and combinations_iterator by Combinations
 
 diff --git a/sage/combinat/designs/incidence_structures.py b/sage/combinat/designs/incidence_structures.py
@@ -27,6 +27,27 @@ diff --git a/sage/combinat/designs/incidence_structures.py b/sage/combinat/desig
              L2 = [[rowsA[i] for i in L] for L in L1]
              #print t,len(L2)
              lmbda = VS(coordinatewise_product(L2[0])).hamming_weight()
+diff --git a/sage/geometry/polyhedron/base_ZZ.py b/sage/geometry/polyhedron/base_ZZ.py
+--- a/sage/geometry/polyhedron/base_ZZ.py
++++ b/sage/geometry/polyhedron/base_ZZ.py
+@@ -227,7 +227,7 @@
+             sage: list( P.fibration_generator(2) )
+             [A 2-dimensional polyhedron in ZZ^4 defined as the convex hull of 3 vertices]
+         """
+-        from sage.combinat.combinat import combinations_iterator
++        from sage.combinat.combination import Combinations
+         if not self.is_compact():
+             raise ValueError('Only polytopes (compact polyhedra) are allowed.')
+ 
+@@ -236,7 +236,7 @@
+         fibers = set()
+         parent = self.parent()
+ 
+-        for points in combinations_iterator(nonzero_points, dim):
++        for points in Combinations(nonzero_points, dim):
+                 plane = parent.element_class(parent, [origin,[],points], None)
+                 if plane.dim() != dim:
+                     continue
 diff --git a/sage/graphs/generators/chessboard.py b/sage/graphs/generators/chessboard.py
 --- a/sage/graphs/generators/chessboard.py
 +++ b/sage/graphs/generators/chessboard.py
@@ -41,6 +62,23 @@ diff --git a/sage/graphs/generators/chessboard.py b/sage/graphs/generators/chess
  
      from sage.graphs.graph import Graph
      G = Graph()
+diff --git a/sage/graphs/generic_graph.py b/sage/graphs/generic_graph.py
+--- a/sage/graphs/generic_graph.py
++++ b/sage/graphs/generic_graph.py
+@@ -11906,11 +11906,11 @@
+ 
+         else:
+             if algorithm=='iter':
+-                from sage.combinat.combinat import combinations_iterator
++                from sage.combinat.combination import Combinations
+                 tr = 0
+                 ggnx = self.networkx_graph()
+                 for u in ggnx.nodes_iter():
+-                    tr += sum(ggnx.has_edge(v,w) for v,w in combinations_iterator(ggnx.neighbors(u),2))
++                    tr += sum(ggnx.has_edge(v,w) for v,w in Combinations(ggnx.neighbors(u),2))
+                 return tr/3
+ 
+             elif algorithm=='matrix':
 diff --git a/sage/matrix/matrix2.pyx b/sage/matrix/matrix2.pyx
 --- a/sage/matrix/matrix2.pyx
 +++ b/sage/matrix/matrix2.pyx

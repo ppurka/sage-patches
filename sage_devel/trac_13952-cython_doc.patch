@@ -1,0 +1,25 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1358185870 -28800
+# Node ID 654744970d4d685dc3e2fe3faee0412119768f19
+# Parent  4b5fcdb1b22237df82806771fe9673f8c73e7bfc
+add documentation about importing functions from cython cells to cython cells
+
+diff --git a/doc/en/developer/coding_in_cython.rst b/doc/en/developer/coding_in_cython.rst
+--- a/doc/en/developer/coding_in_cython.rst
++++ b/doc/en/developer/coding_in_cython.rst
+@@ -54,6 +54,14 @@
+       to use in the notebook. Also, the output cell has a link to the C
+       program that was compiled to create the ``.so`` file.
+ 
++   #. A ``cpdef`` or ``def`` function, say ``testfunction``, defined in
++      a ``%cython`` cell in a worksheet can be imported and made available
++      in a different ``%cython`` cell within the same worksheet by
++      importing it as shown below::
++
++          %cython
++          from __main__ import testfunction
++
+ #. Create an ``.spyx`` file and attach or load it from the command
+    line. This is similar to creating a ``%cython`` cell in the
+    notebook but works completely from the command line (and not from

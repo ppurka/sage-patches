@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1351317477 -28800
-# Node ID 993f139bb53ea105f344e589debc3e94ae1f17f4
-# Parent  fd316e8815137eda85460d786ee789d76f46c47c
+# Node ID 85a00cf7f2d8f090c4af99100d9216878f24cb33
+# Parent  dd62fb8faca64c3f0c885f7627755fae5e308e3b
 add RDF, CDF to linear algebra tutorial
 
 diff --git a/doc/en/tutorial/tour_linalg.rst b/doc/en/tutorial/tour_linalg.rst
@@ -12,7 +12,7 @@ diff --git a/doc/en/tutorial/tour_linalg.rst b/doc/en/tutorial/tour_linalg.rst
      [ 1.00000000000000 0.000000000000000]
      [0.000000000000000  1.00000000000000]
  
-+For computing eigenvalues and eigenvectors over matrices with floating
++For computing eigenvalues and eigenvectors of matrices over floating
 +point real or complex numbers, the matrix should be defined over ``RDF``
 +(Real Double Field) or ``CDF`` (Complex Double Field), respectively. If no
 +ring is specified and floating point real or complex numbers are used then

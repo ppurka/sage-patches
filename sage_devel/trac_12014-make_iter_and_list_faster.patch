@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1321087218 -28800
-# Node ID ef77f0cb480e5cabd5e3e8c555eaf3b9e60e24bd
-# Parent  85a856ed9a24055bf5de029cd72a69a54c12149c
+# Node ID ceceb04b2308d9fdeccf627e74e7b2acaf0416f9
+# Parent  5149624d99e0a7de3dd1d1465092a4a842a30e16
 this patch makes the following changes/fixes
  - make __iter__ and list faster by using #13417
  - fix inconsistent output between __iter__ and list
@@ -11,15 +11,17 @@ this patch makes the following changes/fixes
 diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 --- a/sage/coding/linear_code.py
 +++ b/sage/coding/linear_code.py
-@@ -825,18 +825,14 @@
+@@ -835,20 +835,14 @@
  
              sage: C = HammingCode(3,GF(2))
-             sage: [list(c) for c in C if hamming_weight(c) < 4]
--             [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1], [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0], [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
-+             [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1],
-+              [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1, 0],
-+              [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0],
-+              [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
+             sage: [list(c) for c in C if c.hamming_weight() < 4]
+-            [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1], [0, 1, 0, 0, 1, 0, 1],
+-            [0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0],
+-            [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
++            [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 1, 1],
++             [0, 1, 0, 0, 1, 0, 1], [0, 0, 1, 0, 1, 1, 0],
++             [1, 1, 1, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0],
++             [0, 1, 0, 1, 0, 1, 0], [0, 0, 1, 1, 0, 0, 1]]
          """
 -        n = self.length()
 -        k = self.dimension()
@@ -37,7 +39,7 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
  
      def ambient_space(self):
          r"""
-@@ -1831,7 +1827,7 @@
+@@ -1855,7 +1849,7 @@
              (1, 0, 1, 0, 1, 0, 1)
              True
          """

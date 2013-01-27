@@ -1,14 +1,14 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1352464426 -28800
-# Node ID a43f83b9e6536fa8860bc33083665d1d70c07897
-# Parent  deb09b0979aa7af53ab6159e6a2f248cb3b69ee1
+# Node ID e443dec12c32154d44b7ab479a6741e01e95715b
+# Parent  ceceb04b2308d9fdeccf627e74e7b2acaf0416f9
 implement __getitem__ for a linear code
 
 diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 --- a/sage/coding/linear_code.py
 +++ b/sage/coding/linear_code.py
-@@ -1532,6 +1532,74 @@
+@@ -1542,6 +1542,74 @@
          G = MS([Grref.row(i) for i in range(r)])
          return LinearCode(G)
  
@@ -28,7 +28,7 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 +            sage: C = random_matrix(GF(25,'a'), 2, 7).row_space()
 +            sage: C = LinearCode(C.basis_matrix())
 +            sage: Clist = C.list()
-+            sage: sum([C[i]==Clist[i] for i in xrange(len(C))]) == len(C)
++            sage: all([C[i]==Clist[i] for i in xrange(len(C))])
 +            True
 +        """
 +        from sage.rings.padics.factory import Zp

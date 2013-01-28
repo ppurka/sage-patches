@@ -1,14 +1,14 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1352464426 -28800
-# Node ID 3b01b1bbced71db8b096990c788e9e22c1758d9a
+# Node ID 27c7ca991d2ff67678dc89529dec288b41b0dc15
 # Parent  ceceb04b2308d9fdeccf627e74e7b2acaf0416f9
 implement __getitem__ for a linear code
 
 diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 --- a/sage/coding/linear_code.py
 +++ b/sage/coding/linear_code.py
-@@ -1542,6 +1542,83 @@
+@@ -1542,6 +1542,99 @@
          G = MS([Grref.row(i) for i in range(r)])
          return LinearCode(G)
  
@@ -46,7 +46,7 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 +
 +             \begin{aligned}
 +             & (i_0 a^0 + i_1 a^1 + \cdots + i_{m-1} a^{m-1}) G[0] + \\
-+             & (i_m * a^0 + i_{m+1}*a^1 + \cdots + i_{2m-1}*a^{m-1}) * G[1] + \\
++             & (i_m a^0 + i_{m+1} a^1 + \cdots + i_{2m-1} a^{m-1}) G[1] + \\
 +             & \vdots\\
 +             & (i_{(k-1)m} a^0 + \cdots + i_{km-1} a^{m-1}) G[k-1]
 +             \end{aligned}
@@ -66,6 +66,17 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 +            sage: Clist = C.list()
 +            sage: all([C[i]==Clist[i] for i in xrange(len(C))])
 +            True
++
++        Check that only the indices less than the size of the code are
++        allowed::
++
++            sage: C[25**2]
++            Traceback (most recent call last):
++            ...
++            ValueError: The value of 'i' must be between 0 and 'q^k -1',
++            inclusive, where 'q' is the size of the base field and 'k' is
++            the dimension of the code.
++
 +        """
 +        # IMPORTANT: If the __iter__() function implementation is changed
 +        # then the implementation here must also be changed so that
@@ -73,6 +84,11 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 +
 +        from sage.rings.padics.factory import Zp
 +        F = self.base_ring()
++        if i < 0 or i >= F.order()**self.dimension():
++            raise ValueError("The value of 'i' must be between 0 and 'q^k -1', "
++                             "inclusive, where 'q' is the size of the base "
++                             "field and 'k' is the dimension of the code.")
++
 +        a = F.primitive_element()
 +        m = F.degree()
 +        p = F.prime_subfield().order()

@@ -1,14 +1,14 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1352464426 -28800
-# Node ID 27c7ca991d2ff67678dc89529dec288b41b0dc15
+# Node ID 7db181072bee133999531acef36c1f413e7c3347
 # Parent  ceceb04b2308d9fdeccf627e74e7b2acaf0416f9
 implement __getitem__ for a linear code
 
 diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 --- a/sage/coding/linear_code.py
 +++ b/sage/coding/linear_code.py
-@@ -1542,6 +1542,99 @@
+@@ -1542,6 +1542,101 @@
          G = MS([Grref.row(i) for i in range(r)])
          return LinearCode(G)
  
@@ -73,9 +73,9 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 +            sage: C[25**2]
 +            Traceback (most recent call last):
 +            ...
-+            ValueError: The value of 'i' must be between 0 and 'q^k -1',
-+            inclusive, where 'q' is the size of the base field and 'k' is
-+            the dimension of the code.
++            IndexError: The value of the index 'i' (=625) must be between
++            0 and 'q^k -1' (=624), inclusive, where 'q' is the size of the
++            base field and 'k' is the dimension of the code.
 +
 +        """
 +        # IMPORTANT: If the __iter__() function implementation is changed
@@ -84,10 +84,12 @@ diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 +
 +        from sage.rings.padics.factory import Zp
 +        F = self.base_ring()
-+        if i < 0 or i >= F.order()**self.dimension():
-+            raise ValueError("The value of 'i' must be between 0 and 'q^k -1', "
-+                             "inclusive, where 'q' is the size of the base "
-+                             "field and 'k' is the dimension of the code.")
++        maxindex = F.order()**self.dimension()-1
++        if i < 0 or i > maxindex:
++            raise IndexError("The value of the index 'i' (={}) must be between "
++                             "0 and 'q^k -1' (={}), inclusive, where 'q' is "
++                             "the size of the base field and 'k' is the "
++                             "dimension of the code.".format(i, maxindex))
 +
 +        a = F.primitive_element()
 +        m = F.degree()

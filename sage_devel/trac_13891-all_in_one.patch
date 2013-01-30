@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Nathann Cohen <nathann.cohen@gmail.com>
 # Date 1356905040 -3600
-# Node ID 3d4e52b7a98a7f48af1745b750476350e68bff3d
+# Node ID 88ae6ebbfea5cde9c9dca1b7f106175c97142850
 # Parent  7db181072bee133999531acef36c1f413e7c3347
 Default parameters for Graph.plot() and Graph.show()
 * * *
@@ -274,15 +274,17 @@ diff --git a/sage/graphs/generic_graph.py b/sage/graphs/generic_graph.py
              sage: from sage.graphs.graph_plot import graphplot_options
              sage: list(sorted(graphplot_options.iteritems()))
              [...]
-@@ -14483,7 +14486,6 @@
+@@ -14483,41 +14486,44 @@
          
              sage: G=Graph({'a':['a','b','b','b','e'],'b':['c','d','e'],'c':['c','d','d','d'],'d':['e']},sparse=True)
              sage: G.show(pos={'a':[0,1],'b':[1,1],'c':[2,0],'d':[1,0],'e':[0,0]})
 -        
-         """
-         from sage.graphs.graph_plot import GraphPlot
-         return GraphPlot(graph=self, options=options).plot()
-@@ -14491,33 +14493,38 @@
+-        """
+-        from sage.graphs.graph_plot import GraphPlot
+-        return GraphPlot(graph=self, options=options).plot()
++        """
++        return self.graphplot(**options).plot()
+ 
      def show(self, **kwds):
          """
          Shows the (di)graph.

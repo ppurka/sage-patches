@@ -1,0 +1,50 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1359629678 -28800
+# Node ID 7a34d8dddcda09b972a6cae08c02267bd7356daf
+# Parent  5149624d99e0a7de3dd1d1465092a4a842a30e16
+add information about ymin, ymax
+
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -629,12 +629,16 @@
+       to logarithmic scale. The ``"linear"`` scale is the default value
+       when :class:`~sage.plot.graphics.Graphics` is initialized.
+ 
+-    - ``xmin`` - starting x value 
+-
+-    - ``xmax`` - ending x value 
+-
+-    - ``color`` - an RGB tuple (r,g,b) with each of r,g,b between 0 and 1, 
+-      or a color name as a string (e.g., 'purple'), or an HTML color 
++    - ``xmin`` - starting x value
++
++    - ``xmax`` - ending x value
++
++    - ``ymin`` - starting y value in the rendered figure
++
++    - ``ymax`` - ending y value in the rendered figure
++
++    - ``color`` - an RGB tuple (r,g,b) with each of r,g,b between 0 and 1,
++      or a color name as a string (e.g., 'purple'), or an HTML color
+       such as '#aaff0b'.
+ 
+     - ``detect_poles`` - (Default: False) If set to True poles are detected.
+@@ -652,6 +656,16 @@
+           use noninteger ``base`` for the logarithm, then provide your own
+           tick formatter using the option ``tick_formatter``.
+ 
++        - If you want to limit the plot along the horizontal axis in the
++          final rendered figure, then pass the ``xmin`` and ``xmax``
++          keywords to the :meth:`~sage.plot.graphics.Graphics.show` method.
++          To limit the plot along the vertical axis, ``ymin`` and ``ymax``
++          keywords can be provided to either this ``plot`` command or to
++          the ``show`` command.
++
++        - For the other keyword options that the ``plot`` function can
++          take, refer to the method :meth:`~sage.plot.graphics.Graphics.show`.
++
+     APPEARANCE OPTIONS:
+ 
+     The following options affect the appearance of

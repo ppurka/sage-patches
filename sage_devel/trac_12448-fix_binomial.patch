@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1359809871 -28800
-# Node ID f7bd16a609977e3e303a541ba40145e0d0c87cc1
+# Date 1359810250 -28800
+# Node ID 2b941f1bae9d51d03351488fd4f3ef7f8850f816
 # Parent  5149624d99e0a7de3dd1d1465092a4a842a30e16
 fix return of nan by using pari
 
@@ -76,7 +76,7 @@ diff --git a/sage/rings/arith.py b/sage/rings/arith.py
 -
 -        sage: binomial(1.,3) 
 +    Some floating point cases -- see :trac:`7562`, :trac:`9633`, and
-+    :trac:`12448'::
++    :trac:`12448`::
 +
 +        sage: binomial(1.,3)
          0.000000000000000

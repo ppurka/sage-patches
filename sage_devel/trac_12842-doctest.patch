@@ -1,0 +1,22 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1359878373 -28800
+# Node ID 11a6705a3241a8179f2b43438e0ead5262d520a5
+# Parent  5149624d99e0a7de3dd1d1465092a4a842a30e16
+add test to check failing integral
+
+diff --git a/sage/misc/functional.py b/sage/misc/functional.py
+--- a/sage/misc/functional.py
++++ b/sage/misc/functional.py
+@@ -729,6 +729,11 @@
+         sage: t.simplify_exp()  # long time
+         1/2*sqrt(pi)*e^(1/4)
+ 
++    An integral which used to return -1 before maxima 5.28. See :trac:`12842`::
++
++        sage: f = e^(-2*x)/sqrt(1-e^(-2*x))
++        sage: integrate(f, x, 0, infinity)
++        1
+ 
+     """
+     if hasattr(x, 'integral'):

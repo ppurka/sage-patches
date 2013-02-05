@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1359976914 -28800
-# Node ID 27124754e046bebe1afba5c0f5a8e7a44b4e7943
+# Date 1360045558 -28800
+# Node ID b6c537b4a60b5b760ee9a5f15bf652e6df780bab
 # Parent  5149624d99e0a7de3dd1d1465092a4a842a30e16
 fix return of nan by using pari
 
@@ -49,7 +49,7 @@ diff --git a/sage/rings/arith.py b/sage/rings/arith.py
          sage: binomial(5,2)
          10
          sage: binomial(2,0)
-@@ -3138,29 +3138,34 @@
+@@ -3138,29 +3138,36 @@
      TESTS:
  
      We test that certain binomials are very fast (this should be
@@ -90,18 +90,28 @@ diff --git a/sage/rings/arith.py b/sage/rings/arith.py
 +        1001.0
 +        sage: type(a)
 +        <type 'float'>
++        sage: binomial(float(1000), 1001)
++        0.0
  
      Test symbolic and uni/multivariate polynomials::
  
-@@ -3200,22 +3205,12 @@
+@@ -3199,23 +3206,19 @@
+                 return x.binomial(m)
              except AttributeError:
                  pass
-             raise TypeError, 'Either m or x-m must be an integer'
+-            raise TypeError, 'Either m or x-m must be an integer'
 -    # a (hopefully) temporary fix for #3309; eventually Pari should do
 -    # this for us.
++            raise TypeError('Either m or x-m must be an integer')
      if isinstance(x, (float, sage.rings.real_mpfr.RealNumber,
                        sage.rings.real_mpfr.RealLiteral)):
          P = parent(x)
++        # Try to convert x to an integer if it *is* an integer but of type
++        # float. Otherwise, pari fails below in the case m > x.
++        try:
++            x = ZZ(x)
++        except TypeError:
++            pass
          if m < 0:
              return P(0)
 -        from sage.functions.all import gamma
@@ -117,7 +127,7 @@ diff --git a/sage/rings/arith.py b/sage/rings/arith.py
      if isinstance(x,sage.symbolic.expression.Expression):
          try:
              x=x.pyobject()
-@@ -3237,7 +3232,7 @@
+@@ -3237,7 +3240,7 @@
              if m > s:
                  raise ValueError("binomial not implemented for "
                          "m > " + str(s) + ".\nThis is probably OK, "

@@ -1,0 +1,109 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1360808170 -28800
+# Node ID 90f4a1552967d79adfb51047a41353320da5b83a
+# Parent  aa4e56d08bc563cf3484860e88589cf57062e8df
+allow to turn off axes selectively
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -1290,12 +1290,16 @@
+           high as it is wide.  If set to ``'automatic'``, the aspect ratio
+           is determined by ``figsize`` and the picture fills the figure.
+ 
+-        - ``axes`` - (default: True)
+-       
++        - ``axes`` - (default: True) Turn the axes on or off. This can be
++          also provided a list or tuple of two booleans to turn on or off
++          the horizontal or vertical axis selectively. The first boolean
++          controls whether the horizontal axis is shown and the second
++          boolean controls the vertical axis.
++
+         - ``axes_labels`` - (default: None) list (or tuple) of two
+           strings; the first is used as the label for the horizontal
+           axis, and the second for the vertical axis.
+-                            
++
+         - ``fontsize`` - (default: current setting -- 10) positive
+           integer; used for axes labels; if you make this very large,
+           you may have to increase figsize to see all labels.
+@@ -1467,6 +1471,11 @@
+ 
+             sage: show(plot(sin,-4,4), axes=False)
+ 
++        It is possible to turn off the drawing of a specific axis. Below, we
++        turn off the horizontal axis::
++
++            sage: show(plot(sin,-4,4), axes=[False, True])
++
+         You can also label the axes.  Putting something in dollar
+         signs formats it as a mathematical expression::
+ 
+@@ -2123,6 +2132,15 @@
+         if axes is None:
+             axes = self._show_axes
+ 
++        if isinstance(axes, (tuple, list)):
++            if len(axes) != 2:
++                raise ValueError("axes must either be a boolean, or a tuple "
++                                 "or list of exactly two booleans")
++            x_axes, y_axes = axes
++            axes = x_axes or y_axes
++        else:
++            x_axes = y_axes = axes
++
+         from matplotlib.figure import Figure
+         from matplotlib import rcParams
+         self.fontsize(fontsize)
+@@ -2186,9 +2204,6 @@
+ 
+         locator_options=dict(nbins=9,steps=[1,2,5,10],integer=ticks_integer)
+ 
+-        if axes is None:
+-            axes = self._show_axes
+-
+         for spine in subplot.spines.values():
+             spine.set_color(self._axes_color)
+             spine.set_linewidth(self._axes_width)
+@@ -2209,10 +2224,10 @@
+             
+             subplot.set_frame_on(True)
+             if axes and xscale == 'linear' and yscale == 'linear':
+-                if (ymin<=0 and ymax>=0) or (ymax<=0 and ymin>=0):
++                if x_axes and ((ymin<=0 and ymax>=0) or (ymax<=0 and ymin>=0)):
+                     subplot.axhline(color=self._axes_color,
+                                     linewidth=self._axes_width)
+-                if (xmin<=0 and xmax>=0) or (xmax<=0 and xmin>=0):
++                if y_axes and ((xmin<=0 and xmax>=0) or (xmax<=0 and xmin>=0)):
+                     subplot.axvline(color=self._axes_color,
+                                     linewidth=self._axes_width)
+ 
+@@ -2223,7 +2238,12 @@
+             # flips the axis horizontally. Hence we need to check for both
+             # the possibilities in the if statements below. Similar
+             # comments hold for ymin and ymax.
+-            if xscale == 'log':
++            if not y_axes:
++                subplot.spines['left'].set_visible(False)
++                subplot.spines['right'].set_visible(False)
++                ticks = (ticks[0], [])
++                yaxis='left'
++            elif xscale == 'log':
+                 if xmax > xmin:
+                     subplot.spines['right'].set_visible(False)
+                     subplot.spines['left'].set_position(('outward',10))
+@@ -2256,7 +2276,12 @@
+                 ymiddle=True
+                 yaxis='left'
+ 
+-            if yscale == 'log':
++            if not x_axes:
++                subplot.spines['top'].set_visible(False)
++                subplot.spines['bottom'].set_visible(False)
++                ticks = ([], ticks[1])
++                xaxis='bottom'
++            elif yscale == 'log':
+                 if ymax > ymin:
+                     subplot.spines['top'].set_visible(False)
+                     subplot.spines['bottom'].set_position(('outward',10))

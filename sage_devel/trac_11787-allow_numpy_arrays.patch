@@ -1,14 +1,14 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1353677428 -28800
-# Node ID 47a19dee77a21a94d3876bb013f8496007ae3627
-# Parent  a725f85e2aa22c83952fb387bf9c6965a1bc9d04
+# Node ID a3b1ac4c81b274e3b1af151ea645ab70a29e3723
+# Parent  a88cf4d159b8152ef9ed3136f6fdbd561d3f178d
 allow numpy arrays in list_plot
 
 diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 --- a/sage/plot/plot.py
 +++ b/sage/plot/plot.py
-@@ -1596,14 +1596,14 @@
+@@ -1616,14 +1616,14 @@
  @options(aspect_ratio='automatic')
  def list_plot(data, plotjoined=False, **kwargs):
      r"""
@@ -18,16 +18,16 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 +    array, or a dictionary and plots the corresponding points.
  
      If given a list of numbers (that is, not a list of tuples or lists),
-     ``list_plot`` forms a list of tuples `(i, x_i)` where `i` goes from
-     0 to ``len(data)-1`` and `x_i` is the `i`-th data value, and puts
+     ``list_plot`` forms a list of tuples ``(i, x_i)`` where ``i`` goes from
+     0 to ``len(data)-1`` and ``x_i`` is the ``i``-th data value, and puts
      points at those tuple values.
 -    
 +
      ``list_plot`` will plot a list of complex numbers in the obvious
      way; any numbers for which
      :func:`CC()<sage.rings.complex_field.ComplexField>` makes sense will
-@@ -1623,18 +1623,23 @@
-     list_plot. Doing so will plot nothing (returning an empty plot).
+@@ -1643,18 +1643,25 @@
+     ``list_plot``. Doing so will plot nothing (returning an empty plot).
  
      EXAMPLES::
 -    
@@ -52,10 +52,12 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 +        sage: import numpy
 +        sage: list_plot(numpy.arange(10))
 +
++        sage: list_plot(numpy.array([[1,2], [2,3], [3,4]]))
++
      Plot a list of complex numbers::
  
          sage: list_plot([1, I, pi + I/2, CC(.25, .25)])
-@@ -1710,9 +1715,9 @@
+@@ -1730,9 +1737,9 @@
      TESTS:
  
      We check to see that the x/y min/max data are set correctly.
@@ -67,7 +69,7 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
          sage: d = list_plot([(100,100), (120, 120)]).get_minmax_data()
          sage: d['xmin']
          100.0
-@@ -1720,8 +1725,12 @@
+@@ -1740,18 +1747,32 @@
          100.0
      """
      from sage.plot.all import line, point
@@ -81,12 +83,27 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
      if isinstance(data, dict):
          if plotjoined:
              list_data = sorted(list(data.iteritems()))
-@@ -1730,8 +1739,6 @@
+         else:
+             list_data = list(data.iteritems())
          return list_plot(list_data, plotjoined=plotjoined, **kwargs)
-     if not isinstance(data[0], (list, tuple)):
-         data = zip(range(len(data)), data)
+-    if not isinstance(data[0], (list, tuple)):
+-        data = zip(range(len(data)), data)
 -    if isinstance(plotjoined, (list, tuple)):
 -        raise TypeError, "The second argument 'plotjoined' should be boolean (True or False).  If you meant to plot two lists 'x' and 'y' against each other, use 'list_plot(zip(x,y))'."
++
++    # Importing ndarray appears as the simplest solution to checking for numpy
++    from numpy import ndarray
++    if isinstance(data, ndarray):
++        if isinstance(data[0], ndarray):
++            data = map(list, data)
++        else:
++            data = list(data)
++
++    if isinstance(data[0], ndarray):
++        # maybe someone passed in a list of ndarrays
++        data = map(list, data)
++    elif not isinstance(data[0], (list, tuple)):
++        data = enumerate(data)
      try:
          if plotjoined:
              return line(data, **kwargs)

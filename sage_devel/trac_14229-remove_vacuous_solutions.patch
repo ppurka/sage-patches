@@ -1,0 +1,69 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1362489000 -28800
+# Node ID cfeb4bb4548c8ae6be5a96535dffabbb4034b362
+# Parent  be4962cdd100d0521c00f2469aa014e2a124ca5c
+remove vacuous solutions from solve
+
+diff --git a/sage/symbolic/relation.py b/sage/symbolic/relation.py
+--- a/sage/symbolic/relation.py
++++ b/sage/symbolic/relation.py
+@@ -313,6 +313,45 @@
+ import operator
+ from sage.calculus.calculus import maxima
+ 
++def _test_solution(solution_list):
++    """
++    Test if the list of symbolic expressions in ``solution_list`` have an
++    expression which can never be ``True``, like ``0 != 0``. It returns
++    ``False`` if some expression in the ``solution_list`` evaluates to
++    ``False``, and otherwise returns ``True``.
++
++    INPUT:
++
++    - ``solution_list`` - a list of symbolic expressions, or a symbolic
++      expression. It may be an equality or inequality.
++
++    EXAMPLES::
++
++        sage: from sage.symbolic.relation import _test_solution
++        sage: from sage.symbolic.ring import SR
++        sage: _test_solution([x > 2, SR(0) != SR(0)])
++        False
++        sage: _test_solution(x > 2)
++        True
++        sage: _test_solution([x > 2, x < 4])
++        True
++        sage: _test_solution(SR(0) != SR(0))
++        False
++        sage: _test_solution([])
++        False
++
++    """
++    if isinstance(solution_list, list):
++        if not solution_list: # empty list
++            return False
++        for s in solution_list:
++            if (not s.variables()) and (not bool(s)):
++                return False
++        return True
++    elif (not solution_list.variables()) and (not bool(solution_list)):
++        return False
++    return True
++
+ def test_relation_maxima(relation):
+     """
+     Return True if this (in)equality is definitely true. Return False
+@@ -750,7 +789,11 @@
+         except StandardError: # if that gives an error, stick with no solutions
+             s = []
+ 
+-    sol_list = string_to_list_of_solutions(repr(s))
++    maxima_sol_list = string_to_list_of_solutions(repr(s))
++    sol_list = []
++    for s in maxima_sol_list:
++        if _test_solution(s):
++            sol_list.append(s)
+ 
+     # Relaxed form suggested by Mike Hansen (#8553):
+     if kwds.get('solution_dict', False):

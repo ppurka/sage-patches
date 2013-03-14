@@ -1,0 +1,312 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1363279056 -28800
+# Node ID 48460d863a54359967ce1f982588302a091f0f5a
+# Parent  a3b1ac4c81b274e3b1af151ea645ab70a29e3723
+remove function call syntax from symbolic expressions
+
+diff --git a/sage/calculus/calculus.py b/sage/calculus/calculus.py
+--- a/sage/calculus/calculus.py
++++ b/sage/calculus/calculus.py
+@@ -168,17 +168,16 @@
+ 
+ It was formerly the case that if there was no ambiguity of variable
+ names, we didn't have to specify them; that still works for the moment,
+-but the behavior is deprecated::
++but the behavior is now raises a syntax error::
+ 
+     sage: f = sin(x)
+     sage: f(y)
+-    doctest:...: DeprecationWarning: Substitution using function-call
+-    syntax and unnamed arguments is deprecated and will be removed
+-    from a future release of Sage; you can use named arguments instead,
+-    like EXPR(x=..., y=...)
+-    See http://trac.sagemath.org/5930 for details.
+-    sin(y)
+-    sage: f(pi)
++    Traceback (most recent call last):
++    ...
++    SyntaxError: Substitution using function-call syntax and unnamed
++    arguments has been removed. You can use named arguments instead, like
++    EXPR(x=..., y=...)
++    sage: f(x=pi)
+     0
+ 
+ However if there is ambiguity, we should explicitly state what
+diff --git a/sage/ext/fast_callable.pyx b/sage/ext/fast_callable.pyx
+--- a/sage/ext/fast_callable.pyx
++++ b/sage/ext/fast_callable.pyx
+@@ -409,8 +409,10 @@
+                         vars = ['EXTRA_VAR0']
+                 else:
+                     if _autocompute_vars_for_backward_compatibility_with_deprecated_fast_float_functionality:
+-                        from sage.misc.superseded import deprecation
+-                        deprecation(5413, "Substitution using function-call syntax and unnamed arguments is deprecated and will be removed from a future release of Sage; you can use named arguments instead, like EXPR(x=..., y=...)")
++                        raise SyntaxError("Substitution using function-call syntax "
++                            "and unnamed arguments has been removed. You "
++                            "can use named arguments instead, like "
++                            "EXPR(x=..., y=...)")
+                     else:
+                         raise ValueError, "List of variables must be specified for symbolic expressions"
+             from sage.rings.all import is_PolynomialRing, is_MPolynomialRing
+diff --git a/sage/matrix/matrix_symbolic_dense.pyx b/sage/matrix/matrix_symbolic_dense.pyx
+--- a/sage/matrix/matrix_symbolic_dense.pyx
++++ b/sage/matrix/matrix_symbolic_dense.pyx
+@@ -660,15 +660,11 @@
+             [sin(x) + cos(x)               0]
+             [              0 sin(x) + cos(x)]
+             sage: h(1)
+-            doctest:...: DeprecationWarning: Substitution using function-call syntax and unnamed arguments is deprecated and will be removed from a future release of Sage; you can use named arguments instead, like EXPR(x=..., y=...)
+-            See http://trac.sagemath.org/4513 for details.
+-            doctest:...: DeprecationWarning: Substitution using function-call syntax and unnamed arguments is deprecated and will be removed from a future release of Sage; you can use named arguments instead, like EXPR(x=..., y=...)
+-            See http://trac.sagemath.org/5930 for details.
+-            [sin(1) + cos(1)               0]
+-            [              0 sin(1) + cos(1)]
+-            sage: h(x)
+-            [sin(x) + cos(x)               0]
+-            [              0 sin(x) + cos(x)]
++            Traceback (most recent call last):
++            ...
++            SyntaxError: Substitution using function-call syntax and
++            unnamed arguments has been removed. You can use named arguments
++            instead, like EXPR(x=..., y=...)
+ 
+             sage: f = M([0,x,y,z]); f
+             [0 x]
+@@ -678,15 +674,6 @@
+             sage: f()
+             [0 x]
+             [y z]
+-            sage: f(1)
+-            [0 1]
+-            [y z]
+-            sage: f(1,2)
+-            [0 1]
+-            [2 z]
+-            sage: f(1,2,3)
+-            [0 1]
+-            [2 3]
+             sage: f(x=1)
+             [0 1]
+             [y z]
+@@ -704,10 +691,6 @@
+             Traceback (most recent call last):
+             ...
+             ValueError: args and kwargs cannot both be specified
+-            sage: f(1,2,3,4)
+-            Traceback (most recent call last):
+-            ...
+-            ValueError: the number of arguments must be less than or equal to 3
+         """
+         if kwargs and args:
+             raise ValueError, "args and kwargs cannot both be specified"
+@@ -727,14 +710,16 @@
+             #Handle the case where args are specified
+ 
+             if args:
+-                from sage.misc.superseded import deprecation
+-                deprecation(4513, "Substitution using function-call syntax and unnamed arguments is deprecated and will be removed from a future release of Sage; you can use named arguments instead, like EXPR(x=..., y=...)")
++                raise SyntaxError("Substitution using function-call syntax "
++                            "and unnamed arguments has been removed. You "
++                            "can use named arguments instead, like "
++                            "EXPR(x=..., y=...)")
+             #Get all the variables
+             variables = list( self.arguments() )
+ 
+             if len(args) > self.number_of_arguments():
+                 raise ValueError, "the number of arguments must be less than or equal to %s"%self.number_of_arguments()
+-            
++
+             new_entries = []
+             for entry in self.list():
+                 try:
+diff --git a/sage/symbolic/expression.pyx b/sage/symbolic/expression.pyx
+--- a/sage/symbolic/expression.pyx
++++ b/sage/symbolic/expression.pyx
+@@ -4031,13 +4031,15 @@
+             3
+             sage: (sin(x+y)).number_of_arguments()
+             2
+-        
++
+         ::
+-        
++
+             sage: ( 2^(8/9) - 2^(1/9) )(x-1)
+             Traceback (most recent call last):
+             ...
+-            ValueError: the number of arguments must be less than or equal to 0
++            SyntaxError: Substitution using function-call syntax and
++            unnamed arguments has been removed. You can use named arguments
++            instead, like EXPR(x=..., y=...)
+         """
+         return len(self.arguments())
+ 
+@@ -4046,7 +4048,7 @@
+         Returns the number of arguments of this expression.
+ 
+         EXAMPLES::
+-        
++
+             sage: var('a,b,c,x,y')
+             (a, b, c, x, y)
+             sage: a.number_of_operands()
+diff --git a/sage/symbolic/expression_conversions.py b/sage/symbolic/expression_conversions.py
+--- a/sage/symbolic/expression_conversions.py
++++ b/sage/symbolic/expression_conversions.py
+@@ -1079,21 +1079,19 @@
+             sage: ff(1.0,2.0,3.0)
+             4.1780638977...
+ 
+-        Using _fast_float_ without specifying the variable names is 
++        Using _fast_float_ without specifying the variable names is
+         deprecated::
+-        
++
+             sage: f = x._fast_float_()
+-            doctest:...: DeprecationWarning: Substitution using
+-            function-call syntax and unnamed arguments is deprecated
+-            and will be removed from a future release of Sage; you
+-            can use named arguments instead, like EXPR(x=..., y=...)
+-            See http://trac.sagemath.org/5930 for details.
+-            sage: f(1.2)
+-            1.2
++            Traceback (most recent call last):
++            ...
++            SyntaxError: Substitution using function-call syntax and
++            unnamed arguments has been removed. You can use named arguments
++            instead, like EXPR(x=..., y=...)
+ 
+-        Using _fast_float_ on a function which is the identity is 
+-        now supported (see Trac 10246)::
+-        
++        Using _fast_float_ on a function which is the identity is
++        now supported (see :trac:`10246`)::
++
+             sage: f = symbolic_expression(x).function(x)
+             sage: f._fast_float_(x)
+             <sage.ext.fast_eval.FastDoubleFunc object at ...>
+@@ -1109,10 +1107,10 @@
+                 vars = ex.variables()
+ 
+             if vars:
+-                from sage.misc.superseded import deprecation
+-                deprecation(5930, "Substitution using function-call syntax and unnamed arguments is deprecated and will be removed from a future release of Sage; you can use named arguments instead, like EXPR(x=..., y=...)")
+-
+-        
++                raise SyntaxError("Substitution using function-call syntax "
++                            "and unnamed arguments has been removed. You "
++                            "can use named arguments instead, like "
++                            "EXPR(x=..., y=...)")
+         self.vars = vars
+ 
+         import sage.ext.fast_eval as fast_float
+diff --git a/sage/symbolic/ring.pyx b/sage/symbolic/ring.pyx
+--- a/sage/symbolic/ring.pyx
++++ b/sage/symbolic/ring.pyx
+@@ -606,7 +606,7 @@
+     def _call_element_(self, _the_element, *args, **kwds):
+         """
+         EXAMPLES::
+-        
++
+             sage: x,y=var('x,y')
+             sage: f = x+y
+             sage: f.variables()
+@@ -614,24 +614,20 @@
+             sage: f()
+             x + y
+             sage: f(3)
+-            doctest:...: DeprecationWarning: Substitution using function-call syntax and unnamed arguments is deprecated and will be removed from a future release of Sage; you can use named arguments instead, like EXPR(x=..., y=...)
+-            See http://trac.sagemath.org/5930 for details.
+-            y + 3
++            Traceback (most recent call last):
++            ...
++            SyntaxError: Substitution using function-call syntax and
++            unnamed arguments has been removed. You can use named arguments
++            instead, like EXPR(x=..., y=...)
+             sage: f(x=3)
+             y + 3
+-            sage: f(3,4)
+-            7
+             sage: f(x=3,y=4)
+             7
+-            sage: f(2,3,4)
+-            Traceback (most recent call last):
+-            ...
+-            ValueError: the number of arguments must be less than or equal to 2
+             sage: f(x=2,y=3,z=4)
+             5
+-        
++
+         ::
+-        
++
+             sage: f({x:3})
+             y + 3
+             sage: f({x:3,y:4})
+@@ -640,15 +636,17 @@
+             y + 3
+             sage: f(x=3,y=4)
+             7
+-        
++
+         ::
+-        
++
+             sage: a = (2^(8/9))
+             sage: a(4)
+             Traceback (most recent call last):
+             ...
+-            ValueError: the number of arguments must be less than or equal to 0
+-        
++            SyntaxError: Substitution using function-call syntax and
++            unnamed arguments has been removed. You can use named arguments
++            instead, like EXPR(x=..., y=...)
++
+ 
+         Note that you make get unexpected results when calling
+         symbolic expressions and not explicitly giving the variables::
+@@ -656,9 +654,17 @@
+             sage: f = function('Gamma', var('z'), var('w')); f
+             Gamma(z, w)
+             sage: f(2)
+-            Gamma(z, 2)
++            Traceback (most recent call last):
++            ...
++            SyntaxError: Substitution using function-call syntax and
++            unnamed arguments has been removed. You can use named arguments
++            instead, like EXPR(x=..., y=...)
+             sage: f(2,5)
+-            Gamma(5, 2)
++            Traceback (most recent call last):
++            ...
++            SyntaxError: Substitution using function-call syntax and
++            unnamed arguments has been removed. You can use named arguments
++            instead, like EXPR(x=..., y=...)
+ 
+         Thus, it is better to be explicit::
+ 
+@@ -670,18 +676,10 @@
+         elif len(args) == 1 and isinstance(args[0], dict):
+             d = args[0]
+         else:
+-            from sage.misc.superseded import deprecation
+-            vars = _the_element.operands()
+-            deprecation(5930, "Substitution using function-call syntax and unnamed arguments is deprecated and will be removed from a future release of Sage; you can use named arguments instead, like EXPR(x=..., y=...)")
+-            d = {}
+-            
+-            vars = _the_element.variables()
+-            for i, arg in enumerate(args):
+-                try:
+-                    d[ vars[i] ] = arg
+-                except IndexError:
+-                    raise ValueError, "the number of arguments must be less than or equal to %s"%len(vars)
+-
++            raise SyntaxError("Substitution using function-call syntax "
++                            "and unnamed arguments has been removed. You "
++                            "can use named arguments instead, like "
++                            "EXPR(x=..., y=...)")
+         return _the_element.subs(d, **kwds)
+ 
+ SR = SymbolicRing()

@@ -1,0 +1,26 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1363511678 -28800
+# Node ID 4230f88da26a7865ffc54877da7577a800dd3c81
+# Parent  3e1ffff10251b1674d2bbe8063ca32fcf91dc38b
+add -sagenb to help text of -t
+
+diff --git a/spkg/bin/sage b/spkg/bin/sage
+--- a/spkg/bin/sage
++++ b/spkg/bin/sage
+@@ -38,6 +38,7 @@
+     echo "                           -only-optional <tag1,...,tagn>  -- only run tests"
+     echo "                            including one of the #optional tags"
+     echo "                           -randorder[=seed]  -- randomize order of tests"
++    echo "                           -sagenb -- test all sagenb files"
+     echo "  -upgrade [url]      -- download, build and install standard packages from"
+     echo "                         given url.  If url not given, automatically selects a"
+     echo "                         suitable mirror.  If url='ask', it lets you select"
+@@ -166,6 +167,7 @@
+     echo "                           -only-optional <tag1,...,tagn>  -- only run tests"
+     echo "                            including one of the #optional tags"
+     echo "                           -randorder[=seed]  -- randomize order of tests"
++    echo "                           -sagenb -- test all sagenb files"
+     echo "  -tnew [...]         -- like -t above, but only tests files modified since"
+     echo "                         last commit"
+     echo "  -tp <N> [...]       -- like -t above, but tests in parallel using N threads"

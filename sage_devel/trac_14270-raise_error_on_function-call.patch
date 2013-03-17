@@ -1,10 +1,42 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1363279056 -28800
-# Node ID 48460d863a54359967ce1f982588302a091f0f5a
-# Parent  a3b1ac4c81b274e3b1af151ea645ab70a29e3723
+# Date 1363533380 -28800
+# Node ID ddfebca2b2a82266ed420c938f689f3de3646705
+# Parent  97fe6a650f00cf504cf4f7c12200a90b66ceacc8
 remove function call syntax from symbolic expressions
 
+diff --git a/doc/en/prep/Symbolics-and-Basic-Plotting.rst b/doc/en/prep/Symbolics-and-Basic-Plotting.rst
+--- a/doc/en/prep/Symbolics-and-Basic-Plotting.rst
++++ b/doc/en/prep/Symbolics-and-Basic-Plotting.rst
+@@ -120,28 +120,6 @@
+     128.402541668774
+     128.402541668774
+ 
+-This is why we receive a deprecation error message when we try to do
+-:math:`FV` without explicitly mentioning the variables.
+-
+-::
+-
+-    sage: FV(5,.05)
+-    doctest:...: DeprecationWarning: Substitution using function-call syntax and unnamed arguments is deprecated and will be removed from a future release of Sage; you can use named arguments instead, like EXPR(x=..., y=...)
+-    See http://trac.sagemath.org/5930 for details.
+-    128.402541668774
+-
+-In this case, the outcome is the same, since :math:`rt=tr`!  Of course,
+-in most expressions, one would not be so lucky, as the following example
+-indicates.
+-
+-::
+-
+-    sage: y = var('y')
+-    sage: G = x*y^2
+-    sage: G(1,2); G(2,1)
+-    4
+-    2
+-
+ Also remember that when we don't use function notation, we'll need to
+ define our variables.
+ 
 diff --git a/sage/calculus/calculus.py b/sage/calculus/calculus.py
 --- a/sage/calculus/calculus.py
 +++ b/sage/calculus/calculus.py

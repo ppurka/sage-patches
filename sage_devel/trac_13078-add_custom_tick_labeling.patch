@@ -1,16 +1,16 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1342682017 -28800
-# Node ID fd578fa7def6ee7ecc736cf0e22a30b31ffc5f0f
-# Parent  79d0af78e6acaae1431cea49b21f1befbc45cd42
+# Node ID b25de44a7205ae135833540dbc6657abf3cc2be1
+# Parent  5017bc3139657557555e9aec2194a92a845ef5a3
 add custom tick labeling and position
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 --- a/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py
-@@ -1387,6 +1387,17 @@
-             intended to be used when the tick locator for at least one of
-             the axes is a list including some symbolic elements.  See examples.
+@@ -1418,6 +1418,17 @@
+             title along the horizontal direction, but will place the title
+             a fraction `0.1` times above the plot.
  
 +          - If the first entry is a list of strings (or numbers), then the
 +            formatting for the horizontal axis will be typeset with the strings
@@ -25,8 +25,8 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +
          - ``show_legend`` - (default: None) If True, show the legend
  
-         - ``legend_*`` - all the options valid for :meth:`set_legend_options` prefixed with ``legend_``
-@@ -1689,6 +1700,25 @@
+         - ``legend_*`` - all the options valid for :meth:`set_legend_options`
+@@ -1730,6 +1741,25 @@
  
              sage: plot(arcsin(x),(x,-1,1),ticks=[None,pi/6],tick_formatter=[None,pi]) # Not so nice-looking
  
@@ -52,7 +52,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          When using logarithmic scale along the axis, make sure to have
          enough room for two ticks so that the user can tell what the scale
          is. This can be effected by increasing the range of the independent
-@@ -1915,7 +1945,7 @@
+@@ -1964,7 +1994,7 @@
                  '(option `ticks`).')
  
          x_formatter, y_formatter = tick_formatter
@@ -61,7 +61,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          from sage.misc.latex import latex
          from sage.symbolic.ring import SR
          #---------------------- Formatting x-ticks ----------------------#
-@@ -1937,6 +1967,13 @@
+@@ -1986,6 +2016,13 @@
                                                          "\\mathdefault",""))
              else:
                  x_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
@@ -75,7 +75,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          #---------------------- Formatting y-ticks ----------------------#
          if y_formatter is None:
              if scale[1] == 'log':
-@@ -1956,6 +1993,13 @@
+@@ -2005,6 +2042,13 @@
                                                          "\\mathdefault",""))
              else:
                  y_formatter = FuncFormatter(lambda n,pos: '$%s$'%latex(n))
@@ -102,8 +102,8 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 +
  We construct a plot involving several graphics objects::
  
-     sage: G = plot(cos(x), (x, -5, 5), thickness=5, color='green')
-@@ -978,6 +982,10 @@
+     sage: G = plot(cos(x), (x, -5, 5), thickness=5, color='green', title='A plot')
+@@ -1002,6 +1006,10 @@
  
          sage: plot(sin(x),(x,0,2*pi),ticks=pi/3,tick_formatter=pi)
  

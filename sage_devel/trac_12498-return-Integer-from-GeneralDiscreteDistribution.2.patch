@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1332754279 -28800
-# Node ID d594c4f0c0d688965a9e52ede28772d86d9c0377
-# Parent  66e568c3d082ee389659bd257efa500e5a8e5955
+# Node ID 52ac66b953364717c2bdc0350e047d5656720b92
+# Parent  5017bc3139657557555e9aec2194a92a845ef5a3
 return Integer instead of int from GeneralDiscreteDistribution().get_random_element() and don't import sage.rings.real_double
 
 diff --git a/sage/gsl/probability_distribution.pyx b/sage/gsl/probability_distribution.pyx
@@ -17,8 +17,13 @@ diff --git a/sage/gsl/probability_distribution.pyx b/sage/gsl/probability_distri
  import random, sys
  import integration
  from sage.modules.free_module_element import vector
-@@ -1042,7 +1042,7 @@
+@@ -1050,9 +1050,12 @@
+             sage: X = GeneralDiscreteDistribution(P)
+             sage: [X.get_random_element() for _ in range(10)] # random
              [1, 0, 1, 1, 2, 0, 0, 2, 2, 0]
++            sage: isinstance(X.get_random_element(), sage.rings.integer.Integer)
++            True
++
          """
  
 -        return gsl_ran_discrete(self.r, self.dist)

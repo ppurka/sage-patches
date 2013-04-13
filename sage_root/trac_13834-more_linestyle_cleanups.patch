@@ -1,0 +1,596 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1365874061 -28800
+# Node ID d233175ec9a20520a4e856e02b7c7401cc2193f3
+# Parent  bf38e047f50f8dd7f063ab6c41a597baa024569d
+clean up more linestyle options
+
+diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
+--- a/sage/graphs/graph_plot.py
++++ b/sage/graphs/graph_plot.py
+@@ -55,19 +55,35 @@
+ graphplot_options.update(
+                    {'pos': 'The position dictionary of vertices',
+                     'vertex_labels': 'Whether or not to draw vertex labels.',
+-                    'vertex_colors': 'Dictionary of vertex coloring : each key is a color recognizable by matplotlib, and each corresponding entry is a list of vertices. If a vertex is not listed, it looks invisible on the resulting plot (it doesn\'t get drawn).',
++                    'vertex_colors': 'Dictionary of vertex coloring : each '
++                        'key is a color recognizable by matplotlib, and each '
++                        'corresponding entry is a list of vertices. '
++                        'If a vertex is not listed, it looks invisible on '
++                        'the resulting plot (it does not get drawn).',
+                     'vertex_size': 'The size to draw the vertices.',
+-                    'vertex_shape': 'The shape to draw the vertices, Currently unavailable for Multi-edged DiGraphs.',
++                    'vertex_shape': 'The shape to draw the vertices. '
++                        'Currently unavailable for Multi-edged DiGraphs.',
+                     'edge_labels': 'Whether or not to draw edge labels.',
+-                    'edge_style': 'The linestyle of the edges-- one of "solid", "dashed", "dotted", dashdot". This currently only works for directed graphs, since we pass off the undirected graph to networkx',
++                    'edge_style': 'The linestyle of the edges. It should be '
++                        'one of "solid", "dashed", "dotted", dashdot", or '
++                        '"-", "--", ":", "-.", respectively. '
++                        'This currently only works for directed graphs, '
++                        'since we pass off the undirected graph to networkx.',
+                     'edge_color': 'The default color for edges.',
+-                    'edge_colors': 'a dictionary specifying edge colors: each key is a color recognized by matplotlib, and each entry is a list of edges.',
+-                    'color_by_label': 'Whether to color the edges according to their labels. This also accepts a function or dictionary mapping labels to colors.',
+-                    'partition': 'A partition of the vertex set.  If specified, plot will show each cell in a different color. vertex_colors takes precedence.',
++                    'edge_colors': 'a dictionary specifying edge colors: each '
++                        'key is a color recognized by matplotlib, and each '
++                        'entry is a list of edges.',
++                    'color_by_label': 'Whether to color the edges according '
++                        'to their labels. This also accepts a function or '
++                        'dictionary mapping labels to colors.',
++                    'partition': 'A partition of the vertex set. If specified, '
++                        'plot will show each cell in a different color. '
++                        'vertex_colors takes precedence.',
+                     'loop_size': 'The radius of the smallest loop.',
+                     'dist': 'The distance between multiedges.',
+                     'max_dist': 'The max distance range to allow multiedges.',
+-                    'talk': 'Whether to display the vertices in talk mode (larger and white)',
++                    'talk': 'Whether to display the vertices in talk mode '
++                        '(larger and white).',
+                     'graph_border': 'Whether or not to draw a frame around the graph.'})
+ 
+ for key, value in graphplot_options.iteritems():
+@@ -488,7 +504,10 @@
+         # Handle base edge options: thickness, linestyle
+         eoptions={}
+         if 'edge_style' in self._options:
+-            eoptions['linestyle'] = self._options['edge_style']
++            from sage.plot.misc import get_matplotlib_linestyle
++            eoptions['linestyle'] = get_matplotlib_linestyle(
++                                        self._options['edge_style'],
++                                        return_type='long')
+         if 'thickness' in self._options:
+             eoptions['thickness'] = self._options['thickness']
+ 
+@@ -863,6 +882,10 @@
+             ...     (0,1,'e'),(0,1,'f'),(0,1,'f'),(2,1,'g'),(2,2,'h')])
+             sage: g.graphplot(edge_labels=True, color_by_label=True, edge_style='dashed').plot()
+ 
++        The ``edge_style`` option may be provided in the short format too::
++
++            sage: g.graphplot(edge_labels=True, color_by_label=True, edge_style='--').plot()
++
+         Wrong input (any input) :trac:`13891`::
+ 
+             sage: graphs.PetersenGraph().graphplot().plot(aertataert=346345345)
+diff --git a/sage/modular/arithgroup/farey_symbol.pyx b/sage/modular/arithgroup/farey_symbol.pyx
+--- a/sage/modular/arithgroup/farey_symbol.pyx
++++ b/sage/modular/arithgroup/farey_symbol.pyx
+@@ -461,7 +461,6 @@
+     @options(alpha=1, fill=True, thickness=1, rgbcolor="lightgray", \
+              zorder=2, linestyle='solid', show_pairing=True, \
+              show_tesselation=False)
+-    
+     def fundamental_domain(self, **options):
+         r"""
+         Plot a fundamental domain of an arithmetic subgroup of
+@@ -469,20 +468,26 @@
+ 
+         OPTIONS:
+ 
+-        - ``fill`` - fill the fundamental domain (default True)
++        - ``fill`` - boolean (default True) fill the fundamental domain
+ 
+-        - ``rgbcolor`` - fill color (default 'lightgray')
++        - ``linestyle`` - string (default: 'solid') The style of the line,
++          which is one of 'dashed', 'dotted', 'solid', 'dashdot', or '--',
++          ':', '-', '-.', respectively
+ 
+-        - ``show_pairing`` - flag for pairing (default True)
++        - ``rgbcolor`` - (default: 'lightgray') fill color
+ 
+-        - ``show_tesselation`` - flag for the hyperbolic tesselation
+-          (default False)
++        - ``show_pairing`` - boolean (default: True) flag for pairing
++
++        - ``show_tesselation`` - boolean (default: False) flag for the
++          hyperbolic tesselation
++
++        - ``thickness`` - float (default: 1) the thickness of the line
+ 
+         EXAMPLES:
+ 
+         For example to plot the fundamental domain of `\Gamma_0(11)`
+         with pairings use the following command::
+-        
++
+             sage: FareySymbol(Gamma0(11)).fundamental_domain()
+ 
+         indicating that side 1 is paired with side 3 and side 2 is
+@@ -490,15 +495,18 @@
+ 
+         To plot the fundamental domain of `\Gamma(3)` without pairings
+         use the following command::
+-        
++
+             sage: FareySymbol(Gamma(3)).fundamental_domain(show_pairing=False)
+ 
+         Plot the fundamental domain of `\Gamma_0(23)` showing the left
+-        coset representatives.
+-
+-        ::
++        coset representatives::
+ 
+             sage: FareySymbol(Gamma0(23)).fundamental_domain(show_tesselation=True)
++
++        The same as above but with a custom linestyle::
++
++            sage: FareySymbol(Gamma0(23)).fundamental_domain(show_tesselation=True, linestyle=':', thickness='2')
++
+         """
+         from sage.plot.colors import rainbow
+         L = 1000
+@@ -514,29 +522,39 @@
+                     /(c*c+c*d+d*d)
+             else:
+                 A, B, C = [x.acton(z) for z in [CC(0, 0), CC(1, 0), CC(0, L)]]
+-            g += hyperbolic_triangle(A, B, C, \
+-                                     color=options['rgbcolor'], \
+-                                     fill=options['fill'], \
+-                                     alpha=options['alpha'])
++            g += hyperbolic_triangle(A, B, C,
++                                     alpha=options['alpha'],
++                                     color=options['rgbcolor'],
++                                     fill=options['fill'],
++                                     linestyle=options['linestyle'],
++                                     thickness=options['thickness'])
+             if options['show_tesselation']:
+-                g += hyperbolic_triangle(A, B, C, color="gray")
++                g += hyperbolic_triangle(A, B, C, color="gray",
++                                         linestyle=options['linestyle'],
++                                         thickness=options['thickness'])
+         ## show pairings
+         p = self.pairings()
+         x = self.fractions()
+         if options['show_pairing']:
+             rc = rainbow(max(p)-min(p)+1)
+             if p[0] > 0:
+-                g += hyperbolic_arc(CC(0, L), x[0], color=rc[p[0]-min(p)])
++                g += hyperbolic_arc(CC(0, L), x[0], color=rc[p[0]-min(p)],
++                                    linestyle=options['linestyle'],
++                                    thickness=options['thickness'])
+             if p[-1] > 0:
+-                g += hyperbolic_arc(CC(0, L), x[-1], color=rc[p[-1]-min(p)])
++                g += hyperbolic_arc(CC(0, L), x[-1], color=rc[p[-1]-min(p)],
++                                    linestyle=options['linestyle'],
++                                    thickness=options['thickness'])
+             for i in range(len(x)-1):
+                 if p[i+1] > 0:
+-                    g += hyperbolic_arc(x[i], x[i+1], color=rc[p[i+1]-min(p)])
++                    g += hyperbolic_arc(x[i], x[i+1], color=rc[p[i+1]-min(p)],
++                                        linestyle=options['linestyle'],
++                                        thickness=options['thickness'])
+         d = g.get_minmax_data()
+         g.set_axes_range(d['xmin'], d['xmax'], 0, 1)
+         return g
+ 
+-        
++
+ #--- conversions ------------------------------------------------------------
+ 
+ cdef public long convert_to_long(n):
+diff --git a/sage/plot/bezier_path.py b/sage/plot/bezier_path.py
+--- a/sage/plot/bezier_path.py
++++ b/sage/plot/bezier_path.py
+@@ -90,15 +90,15 @@
+     def _plot3d_options(self, options=None):
+         """
+         Updates ``BezierPath`` options to those allowed by 3D implementation.
+-        
++
+         EXAMPLES::
+-        
++
+             sage: from sage.plot.bezier_path import BezierPath
+             sage: B = BezierPath([[(0,0),(.5,.5),(1,0)],[(.5,1),(0,0)]],{'linestyle':'dashed'})
+             sage: B._plot3d_options()
+             Traceback (most recent call last):
+             ...
+-            NotImplementedError: Invalid 3d line style: dashed
++            NotImplementedError: Invalid 3d line style: 'dashed'
+             sage: B = BezierPath([[(0,0),(.5,.5),(1,0)],[(.5,1),(0,0)]],{'fill':False, 'thickness':2})
+             sage: B._plot3d_options()
+             {'thickness': 2}
+@@ -114,8 +114,9 @@
+                 raise NotImplementedError, "Invalid 3d fill style.  Must set fill to False."
+             del options['fill']
+         if 'linestyle' in options:
+-            if options['linestyle'] != 'solid':
+-                raise NotImplementedError, "Invalid 3d line style: %s" % options['linestyle']
++            if options['linestyle'] not in ('solid', '-'):
++                raise NotImplementedError("Invalid 3d line style: '%s'"%
++                                          (options['linestyle']))
+             del options['linestyle']
+         options_3d.update(GraphicPrimitive_xydata._plot3d_options(self, options))
+         return options_3d
+@@ -257,8 +258,8 @@
+     - ``fill`` -- default: False
+     - ``thickness`` -- default: 1
+     - ``linestyle`` -- default: ``'solid'``, The style of the line, which is one
+-       of ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``, or ``'--'``, 
+-       ``':'``, ``'-'``, ``'-.'``, respectively. 
++       of ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``, or ``'--'``,
++       ``':'``, ``'-'``, ``'-.'``, respectively.
+     - ``rbgcolor`` -- default: (0,0,0)
+     - ``zorder`` -- the layer in which to draw
+         
+diff --git a/sage/plot/contour_plot.py b/sage/plot/contour_plot.py
+--- a/sage/plot/contour_plot.py
++++ b/sage/plot/contour_plot.py
+@@ -178,7 +178,13 @@
+             linewidths = int(linewidths)
+         elif isinstance(linewidths, (list, tuple)):
+             linewidths = tuple(int(x) for x in linewidths)
+-        linestyles = options.get('linestyles',None)
++
++        from sage.plot.misc import get_matplotlib_linestyle
++        linestyles = options.get('linestyles', None)
++        if isinstance(linestyles, (list, tuple)):
++            linestyles = [get_matplotlib_linestyle(l, 'long') for l in linestyles]
++        else:
++            linestyles = get_matplotlib_linestyle(linestyles, 'long')
+         if contours is None:
+             CS = subplot.contour(self.xy_data_array, cmap=cmap, extent=(x0,x1,y0,y1),
+                                  linewidths=linewidths, linestyles=linestyles, label=options['legend_label'])
+@@ -205,9 +211,9 @@
+ @suboptions('label', fontsize=9, colors='blue', inline=None, inline_spacing=3, fmt="%1.2f")
+ @options(plot_points=100, fill=True, contours=None, linewidths=None, linestyles=None, labels=False, frame=True, axes=False, colorbar=False, legend_label=None, aspect_ratio=1, region=None)
+ def contour_plot(f, xrange, yrange, **options):
+-    r"""    
++    r"""
+     ``contour_plot`` takes a function of two variables, `f(x,y)`
+-    and plots contour lines of the function over the specified 
++    and plots contour lines of the function over the specified
+     ``xrange`` and ``yrange`` as demonstrated below.
+ 
+     ``contour_plot(f, (xmin, xmax), (ymin, ymax), ...)``
+@@ -250,12 +256,13 @@
+       the widths will be repeated cyclically.
+ 
+     - ``linestyles`` -- string or list of strings (default: None), the
+-      style of the lines to be plotted, one of: solid, dashed,
+-      dashdot, or dotted.  If the list is shorter than the number of
++      style of the lines to be plotted, one of: ``"solid"``, ``"dashed"``,
++      ``"dashdot"``, ``"dotted"``, respectively ``"-"``, ``"--"``,
++      ``"-."``, ``":"``.  If the list is shorter than the number of
+       contours, then the styles will be repeated cyclically.
+ 
+     - ``labels`` -- boolean (default: False) Show level labels or not.
+- 
++
+       The following options are to adjust the style and placement of
+       labels, they have no effect if no labels are shown.
+ 
+@@ -376,6 +383,10 @@
+         ...    linewidths=[1,5],linestyles=['solid','dashed'])
+         sage: P
+ 
++        sage: P=contour_plot(x^2-y^2,(x,-3,3),(y,-3,3),contours=[0,1,2,3,4],\
++        ...    linewidths=[1,5],linestyles=['-',':'])
++        sage: P
++
+     We can add labels and play with them::
+ 
+         sage: contour_plot(y^2 + 1 - x^3 - x, (x,-pi,pi), (y,-pi,pi),  fill=False, cmap='hsv', labels=True)
+@@ -546,14 +557,15 @@
+ 
+     - ``fill`` -- boolean (default: ``False``); if ``True``, fill the region
+       `f(x,y) < 0`.
+-        
++
+     - ``linewidth`` -- integer (default: None), if a single integer all levels 
+       will be of the width given, otherwise the levels will be plotted with the 
+       widths in the order given.
+ 
+-    - ``linestyle`` -- string (default: None), the style of the line to be 
+-      plotted, one of: solid, dashed, dashdot or dotted.
+-      
++    - ``linestyle`` -- string (default: None), the style of the line to be
++      plotted, one of: ``"solid"``, ``"dashed"``, ``"dashdot"`` or
++      ``"dotted"``, respectively ``"-"``, ``"--"``, ``"-."``, or ``":"``.
++
+     - ``color`` -- string (default: ``blue``), the color of the plot. Colors are
+       defined in :mod:`sage.plot.colors`; try ``colors?`` to see them all.
+ 
+@@ -733,10 +745,12 @@
+      - ``bordercol`` -- a color (default: ``None``), the color of the border
+        (``'black'`` if ``borderwidth`` or ``borderstyle`` is specified but not ``bordercol``)
+ 
+-    - ``borderstyle``  -- string (default: 'solid'), one of 'solid', 'dashed', 'dotted', 'dashdot'
++    - ``borderstyle``  -- string (default: 'solid'), one of ``'solid'``,
++      ``'dashed'``, ``'dotted'``, ``'dashdot'``, respectively ``'-'``,
++      ``'--'``, ``':'``, ``'-.'``.
+ 
+     - ``borderwidth``  -- integer (default: None), the width of the border in pixels
+- 
++
+     - ``legend_label`` -- the label for this item in the legend
+ 
+     - ``base`` - (default: 10) the base of the logarithm if
+diff --git a/sage/plot/line.py b/sage/plot/line.py
+--- a/sage/plot/line.py
++++ b/sage/plot/line.py
+@@ -114,8 +114,9 @@
+         if 'zorder' in options:
+             del options['zorder']
+         if 'linestyle' in options:
+-            if options['linestyle'] != '--':
+-                raise NotImplementedError, "Invalid 3d line style: '%s'" % options['linestyle']
++            if options['linestyle'] not in ('-', 'solid'):
++                raise NotImplementedError("Invalid 3d line style: '%s'"%
++                                          (options['linestyle']))
+             del options['linestyle']
+         options_3d.update(GraphicPrimitive_xydata._plot3d_options(self, options))
+         return options_3d
+@@ -243,19 +244,21 @@
+         del options['thickness']
+         del options['rgbcolor']
+         del options['legend_label']
+-        if 'linestyle' in options: 
++        if 'linestyle' in options:
+             del options['linestyle']
+         p = lines.Line2D(self.xdata, self.ydata, **options)
+         options = self.options()
+         a = float(options['alpha'])
+         p.set_alpha(a)
+         p.set_linewidth(float(options['thickness']))
+-        p.set_color(to_mpl_color(options['rgbcolor']))  
++        p.set_color(to_mpl_color(options['rgbcolor']))
+         p.set_label(options['legend_label'])
+-        # we don't pass linestyle in directly since the drawstyles aren't 
++        # we don't pass linestyle in directly since the drawstyles aren't
+         # pulled off automatically.  This (I think) is a bug in matplotlib 1.0.1
+-        if 'linestyle' in options: 
+-            p.set_linestyle(options['linestyle']) 
++        if 'linestyle' in options:
++            from sage.plot.misc import get_matplotlib_linestyle
++            p.set_linestyle(get_matplotlib_linestyle(options['linestyle'],
++                                                     return_type='short'))
+         subplot.add_line(p)
+ 
+ def line(points, **kwds):
+@@ -305,11 +308,11 @@
+ 
+     Any MATPLOTLIB line option may also be passed in.  E.g.,
+ 
+-    - ``linestyle`` - The style of the line, which is one of
+-       - ``"-"`` (solid) -- default
+-       - ``"--"`` (dashed)
+-       - ``"-."`` (dash dot)
+-       - ``":"`` (dotted)
++    - ``linestyle`` - (default: "-") The style of the line, which is one of
++       - ``"-"`` or ``"solid"``
++       - ``"--"`` or ``"dashed"``
++       - ``"-."`` or ``"dash dot"``
++       - ``":"`` or ``"dotted"``
+        - ``"None"`` or ``" "`` or ``""`` (nothing)
+ 
+        The linestyle can also be prefixed with a drawing style (e.g., ``"steps--"``)
+@@ -321,7 +324,7 @@
+          horizontal lines)
+        - ``"steps-post"`` (step function; horizontal line is to the
+          right of point)
+-        
++
+     - ``marker``  - The style of the markers, which is one of
+        - ``"None"`` or ``" "`` or ``""`` (nothing) -- default
+        - ``","`` (pixel), ``"."`` (point)
+diff --git a/sage/plot/misc.py b/sage/plot/misc.py
+--- a/sage/plot/misc.py
++++ b/sage/plot/misc.py
+@@ -240,49 +240,137 @@
+     
+ def get_matplotlib_linestyle(linestyle, return_type):
+     """
+-    Function which translates between matplotlib linestyle in short notation 
+-    (i.e. '-', '--', ':', '-.') and long notation (i.e. 'solid', 'dashed', 
+-    'dotted', 'dashdot' ). If linestyle is none of these allowed options the 
+-    function raises a value Error.
+-    Note: This function does NOT accept mixtures of linestyle and drawstyle as 
+-    e.g. 'step--'
++    Function which translates between matplotlib linestyle in short notation
++    (i.e. '-', '--', ':', '-.') and long notation (i.e. 'solid', 'dashed',
++    'dotted', 'dashdot' ). If linestyle is none of these allowed options the
++    function raises a ValueError.
++
++    INPUT:
++
++    - ``linestyle`` - The style of the line, which is one of
++       - ``"-"`` or ``"solid"``
++       - ``"--"`` or ``"dashed"``
++       - ``"-."`` or ``"dash dot"``
++       - ``":"`` or ``"dotted"``
++       - ``"None"`` or ``" "`` or ``""`` (nothing)
++
++       The linestyle can also be prefixed with a drawing style (e.g., ``"steps--"``)
++
++       - ``"default"`` (connect the points with straight lines)
++       - ``"steps"`` or ``"steps-pre"`` (step function; horizontal
++         line is to the left of point)
++       - ``"steps-mid"`` (step function; points are in the middle of
++         horizontal lines)
++       - ``"steps-post"`` (step function; horizontal line is to the
++         right of point)
++
++       If ``linestyle`` is ``None`` (of type NoneType), then we return it
++       back unmodified.
++
++    - ``return_type`` - The type of linestyle that should be output. This
++      argument takes only two values - ``"long"`` or ``"short"``.
+ 
+     EXAMPLES:
+ 
+     Here is an example how to call this function::
+ 
+         sage: from sage.plot.misc import get_matplotlib_linestyle
+-        sage: print get_matplotlib_linestyle(':', return_type='short')
+-        :
+-        
+-        sage: from sage.plot.misc import get_matplotlib_linestyle
+-        sage: print get_matplotlib_linestyle(':', return_type='long')
+-        dotted
++        sage: get_matplotlib_linestyle(':', return_type='short')
++        ':'
++
++        sage: get_matplotlib_linestyle(':', return_type='long')
++        'dotted'
++
++    TESTS:
++
++    Make sure that if the input is already in the desired format, then it
++    is unchanged::
++
++        sage: get_matplotlib_linestyle(':', 'short')
++        ':'
++
++    Empty linestyles should be handled properly::
++
++        sage: get_matplotlib_linestyle("", 'short')
++        ''
++        sage: get_matplotlib_linestyle("", 'long')
++        'None'
++        sage: get_matplotlib_linestyle(None, 'short') is None
++        True
++
++    Linestyles with ``"default"`` or ``"steps"`` in them should also be
++    properly handled.  For instance, matplotlib understands only the short
++    version when ``"steps"`` is used::
++
++        sage: get_matplotlib_linestyle("default", "short")
++        ''
++        sage: get_matplotlib_linestyle("steps--", "short")
++        'steps--'
++        sage: get_matplotlib_linestyle("steps-predashed", "long")
++        'steps-pre--'
++
++    Finally, raise error on invalid linestyles::
++
++        sage: get_matplotlib_linestyle("isthissage", "long")
++        Traceback (most recent call last):
++        ...
++        ValueError: WARNING: Unrecognized linestyle 'isthissage'. Possible
++        linestyle options are:
++        {'solid', 'dashed', 'dotted', dashdot', 'None'}, respectively {'-',
++        '--', ':', '-.', ''}
+ 
+     """
+     long_to_short_dict={'solid' : '-','dashed' : '--', 'dotted' : ':',
+                         'dashdot':'-.'}
+     short_to_long_dict={'-' : 'solid','--' : 'dashed', ':' : 'dotted',
+                         '-.':'dashdot'}
++
++    # We need this to take care of region plot. Essentially, if None is
++    # passed, then we just return back the same thing.
++    if linestyle is None:
++        return None
++
++    if linestyle.startswith("default"):
++        return get_matplotlib_linestyle(linestyle.strip("default"), "short")
++    elif linestyle.startswith("steps"):
++        if linestyle.startswith("steps-mid"):
++            return "steps-mid" + get_matplotlib_linestyle(
++                                    linestyle.strip("steps-mid"), "short")
++        elif linestyle.startswith("steps-post"):
++            return "steps-post" + get_matplotlib_linestyle(
++                                    linestyle.strip("steps-post"), "short")
++        elif linestyle.startswith("steps-pre"):
++            return "steps-pre" + get_matplotlib_linestyle(
++                                    linestyle.strip("steps-pre"), "short")
++        else:
++            return "steps" + get_matplotlib_linestyle(
++                                    linestyle.strip("steps"), "short")
++
+     if return_type == 'short':
+         if linestyle in short_to_long_dict.keys():
+             return linestyle
++        elif linestyle == "" or linestyle == " " or linestyle == "None":
++            return ''
+         elif linestyle in long_to_short_dict.keys():
+             return long_to_short_dict[linestyle]
+         else:
+-            raise ValueError("WARNING: Unrecognized linestyle\n"
+-                             "possible linestyle options are:\n{'solid', "
+-                             "'dashed', 'dotted', dashdot'} respectively {'-', "
+-                             "'--', ':', '-.'}"%(linestyle))    
+-         
++            raise ValueError("WARNING: Unrecognized linestyle '%s'. "
++                             "Possible linestyle options are:\n{'solid', "
++                             "'dashed', 'dotted', dashdot', 'None'}, "
++                             "respectively {'-', '--', ':', '-.', ''}"%
++                             (linestyle))
++
+     elif return_type == 'long':
+-        if linestyle in short_to_long_dict.keys():
++        if linestyle in long_to_short_dict.keys():
++            return linestyle
++        elif linestyle == "" or linestyle == " " or linestyle == "None":
++            return "None"
++        elif linestyle in short_to_long_dict.keys():
+             return short_to_long_dict[linestyle]
+-        elif linestyle in long_to_short_dict.keys():
+-            return linestyle
+         else:
+-            raise ValueError("WARNING: Unrecognized linestyle\n"
+-                             "possible linestyle options are:\n{'solid', "
+-                             "'dashed', 'dotted', dashdot'} respectively {'-', "
+-                             "'--', ':', '-.'}"%(linestyle))    
+-         
+\ No newline at end of file
++            raise ValueError("WARNING: Unrecognized linestyle '%s'. "
++                             "Possible linestyle options are:\n{'solid', "
++                             "'dashed', 'dotted', dashdot', 'None'}, "
++                             "respectively {'-', '--', ':', '-.', ''}"%
++                             (linestyle))
++
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -687,12 +687,12 @@
+     - ``hue`` - The color given as a hue
+ 
+     Any MATPLOTLIB line option may also be passed in.  E.g.,
+-    
+-    - ``linestyle`` - The style of the line, which is one of
+-       - ``"-"`` (solid) -- default
+-       - ``"--"`` (dashed)
+-       - ``"-."`` (dash dot)
+-       - ``":"`` (dotted)
++
++    - ``linestyle`` - (default: "-") The style of the line, which is one of
++       - ``"-"`` or ``"solid"``
++       - ``"--"`` or ``"dashed"``
++       - ``"-."`` or ``"dash dot"``
++       - ``":"`` or ``"dotted"``
+        - ``"None"`` or ``" "`` or ``""`` (nothing)
+ 
+        The linestyle can also be prefixed with a drawing style (e.g., ``"steps--"``)
+@@ -704,7 +704,7 @@
+          horizontal lines)
+        - ``"steps-post"`` (step function; horizontal line is to the
+          right of point)
+-        
++
+     - ``marker``  - The style of the markers, which is one of
+        - ``"None"`` or ``" "`` or ``""`` (nothing) -- default
+        - ``","`` (pixel), ``"."`` (point)

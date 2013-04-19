@@ -1,0 +1,235 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1366386350 -28800
+# Node ID f005522a2ebb8c46260d653378e23e4fa93e39da
+# Parent  acd84da876135230ad8161a621743c61f995f20b
+allow numpy arrays in list_plot, line, points
+
+diff --git a/sage/plot/line.py b/sage/plot/line.py
+--- a/sage/plot/line.py
++++ b/sage/plot/line.py
+@@ -348,8 +348,13 @@
+     A line with no points or one point::
+ 
+         sage: line([])      #returns an empty plot
++        sage: import numpy; line(numpy.array([]))
+         sage: line([(1,1)])
+ 
++    A line with numpy arrays::
++
++        sage: line(numpy.array([[1,2], [3,4]]))
++
+     A line with a legend::
+ 
+         sage: line([(0,0),(1,1)], legend_label='line')
+@@ -440,7 +445,7 @@
+     """
+     from sage.plot.all import Graphics
+     from sage.plot.plot import xydata_from_point_list
+-    if points == []:
++    if len(points) == 0:
+         return Graphics()
+     xdata, ydata = xydata_from_point_list(points)
+     g = Graphics()
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -1624,14 +1624,14 @@
+ @options(aspect_ratio='automatic')
+ def list_plot(data, plotjoined=False, **kwargs):
+     r"""
+-    ``list_plot`` takes either a list of numbers, a list of tuples,
+-    or a dictionary and plots the corresponding points.
++    ``list_plot`` takes either a list of numbers, a list of tuples, a numpy
++    array, or a dictionary and plots the corresponding points.
+ 
+     If given a list of numbers (that is, not a list of tuples or lists),
+     ``list_plot`` forms a list of tuples ``(i, x_i)`` where ``i`` goes from
+     0 to ``len(data)-1`` and ``x_i`` is the ``i``-th data value, and puts
+     points at those tuple values.
+-    
++
+     ``list_plot`` will plot a list of complex numbers in the obvious
+     way; any numbers for which
+     :func:`CC()<sage.rings.complex_field.ComplexField>` makes sense will
+@@ -1651,18 +1651,25 @@
+     ``list_plot``. Doing so will plot nothing (returning an empty plot).
+ 
+     EXAMPLES::
+-    
++
+         sage: list_plot([i^2 for i in range(5)])
+-    
++
+     Here are a bunch of random red points::
+-    
++
+         sage: r = [(random(),random()) for _ in range(20)]
+         sage: list_plot(r,color='red')
+-    
++
+     This gives all the random points joined in a purple line::
+-    
++
+         sage: list_plot(r, plotjoined=True, color='purple')
+ 
++    You can provide a numpy array.::
++
++        sage: import numpy
++        sage: list_plot(numpy.arange(10))
++
++        sage: list_plot(numpy.array([[1,2], [2,3], [3,4]]))
++
+     Plot a list of complex numbers::
+ 
+         sage: list_plot([1, I, pi + I/2, CC(.25, .25)])
+@@ -1738,9 +1745,9 @@
+     TESTS:
+ 
+     We check to see that the x/y min/max data are set correctly.
+-    
++
+     ::
+-    
++
+         sage: d = list_plot([(100,100), (120, 120)]).get_minmax_data()
+         sage: d['xmin']
+         100.0
+@@ -1748,18 +1755,24 @@
+         100.0
+     """
+     from sage.plot.all import line, point
+-    if data == {} or data == () or data == []:
++    if len(data) == 0:
+         return Graphics()
++    if not isinstance(plotjoined, bool):
++        raise TypeError("The second argument 'plotjoined' should be boolean "
++                    "(True or False).  If you meant to plot two lists 'x' "
++                    "and 'y' against each other, use 'list_plot(zip(x,y))'.")
+     if isinstance(data, dict):
+         if plotjoined:
+             list_data = sorted(list(data.iteritems()))
+         else:
+             list_data = list(data.iteritems())
+         return list_plot(list_data, plotjoined=plotjoined, **kwargs)
+-    if not isinstance(data[0], (list, tuple)):
+-        data = zip(range(len(data)), data)
+-    if isinstance(plotjoined, (list, tuple)):
+-        raise TypeError, "The second argument 'plotjoined' should be boolean (True or False).  If you meant to plot two lists 'x' and 'y' against each other, use 'list_plot(zip(x,y))'."
++    try:
++        from sage.rings.all import RDF
++        tmp = RDF(data[0])
++        data = list(enumerate(data))
++    except TypeError:
++        pass
+     try:
+         if plotjoined:
+             return line(data, **kwargs)
+diff --git a/sage/plot/plot3d/shapes2.py b/sage/plot/plot3d/shapes2.py
+--- a/sage/plot/plot3d/shapes2.py
++++ b/sage/plot/plot3d/shapes2.py
+@@ -70,27 +70,32 @@
+     
+     -  ``opacity`` - (default: 1) if less than 1 then is
+        transparent
+-    
+-    
+-    EXAMPLES: 
++
++
++    EXAMPLES:
+ 
+     A line in 3-space::
+-    
++
+         sage: line3d([(1,2,3), (1,0,-2), (3,1,4), (2,1,-2)])
+-    
++
+     The same line but red::
+-    
++
+         sage: line3d([(1,2,3), (1,0,-2), (3,1,4), (2,1,-2)], color='red')
+-    
++
++    The points of the line provided as a numpy array::
++
++        sage: import numpy
++        sage: line3d(numpy.array([(1,2,3), (1,0,-2), (3,1,4), (2,1,-2)]))
++
+     A transparent thick green line and a little blue line::
+-    
++
+         sage: line3d([(0,0,0), (1,1,1), (1,0,2)], opacity=0.5, radius=0.1, \
+                      color='green') + line3d([(0,1,0), (1,0,2)])
+-    
++
+     A Dodecahedral complex of 5 tetrahedrons (a more elaborate examples
+     from Peter Jipsen)::
+-    
+-        sage: def tetra(col): 
++
++        sage: def tetra(col):
+         ...       return line3d([(0,0,1), (2*sqrt(2.)/3,0,-1./3), (-sqrt(2.)/3, sqrt(6.)/3,-1./3),\
+         ...              (-sqrt(2.)/3,-sqrt(6.)/3,-1./3), (0,0,1), (-sqrt(2.)/3, sqrt(6.)/3,-1./3),\
+         ...              (-sqrt(2.)/3,-sqrt(6.)/3,-1./3), (2*sqrt(2.)/3,0,-1./3)],\
+@@ -1016,11 +1021,24 @@
+     We check to make sure the options work::
+ 
+         sage: point3d((4,3,2),size=20,color='red',opacity=.5)
++
++    numpy arrays can be provided as input::
++
++        sage: import numpy
++        sage: point3d(numpy.array([1,2,3]))
++
++        sage: point3d(numpy.array([[1,2,3], [4,5,6], [7,8,9]]))
++
+     """
+-    if len(v) == 3 and v[0] in RDF:
+-        return Point(v, size, **kwds)
+-    else:
+-        A = sum([Point(z, size, **kwds) for z in v])
+-        A._set_extra_kwds(kwds)
+-        return A
+-    
++    if len(v) == 3:
++        try:
++            # check if the first element can be changed to a float
++            tmp = RDF(v[0])
++            return Point(v, size, **kwds)
++        except TypeError:
++            pass
++
++    A = sum([Point(z, size, **kwds) for z in v])
++    A._set_extra_kwds(kwds)
++    return A
++
+diff --git a/sage/plot/point.py b/sage/plot/point.py
+--- a/sage/plot/point.py
++++ b/sage/plot/point.py
+@@ -325,12 +325,13 @@
+     A purple point from a single tuple or coordinates::
+ 
+         sage: point((0.5, 0.5), rgbcolor=hue(0.75))
+-        
++
+     Passing an empty list returns an empty plot::
+-        
++
+         sage: point([])
++        sage: import numpy; point(numpy.array([]))
+ 
+-    If you need a 2D point to live in 3-space later, 
++    If you need a 2D point to live in 3-space later,
+     this is possible::
+ 
+         sage: A=point((1,1))
+@@ -374,7 +375,7 @@
+     """
+     from sage.plot.plot import xydata_from_point_list
+     from sage.plot.all import Graphics
+-    if points == []:
++    if len(points) == 0:
+         return Graphics()
+     xdata, ydata = xydata_from_point_list(points)
+     g = Graphics()

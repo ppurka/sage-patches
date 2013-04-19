@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1366386350 -28800
-# Node ID f005522a2ebb8c46260d653378e23e4fa93e39da
+# Date 1366386980 -28800
+# Node ID ee69f262f14e3e08f7f50933cc210ddcb18cf85b
 # Parent  acd84da876135230ad8161a621743c61f995f20b
 allow numpy arrays in list_plot, line, points
 
@@ -125,6 +125,15 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
      try:
          if plotjoined:
              return line(data, **kwargs)
+@@ -1772,7 +1785,7 @@
+         # gets to (1, I).
+         from sage.rings.complex_field import ComplexField
+         CC = ComplexField()
+-        # if we get here, we already did "zip(range(len(data)), data)",
++        # if we get here, we already did "list(enumerate(data))",
+         # so look at z[1] in inner list
+         data = [(z.real(), z.imag()) for z in [CC(z[1]) for z in data]]
+         if plotjoined:
 diff --git a/sage/plot/plot3d/shapes2.py b/sage/plot/plot3d/shapes2.py
 --- a/sage/plot/plot3d/shapes2.py
 +++ b/sage/plot/plot3d/shapes2.py

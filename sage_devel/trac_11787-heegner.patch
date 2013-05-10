@@ -1,0 +1,21 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1368175717 -28800
+# Node ID ae45e3bbe22ea01f8ab6763555a0733806bb1503
+# Parent  1815b635af0cac4a7caab2d7ea3cab35be3cca31
+fix plot of complex numbers in HeegnerPointOnX0N
+
+diff --git a/sage/schemes/elliptic_curves/heegner.py b/sage/schemes/elliptic_curves/heegner.py
+--- a/sage/schemes/elliptic_curves/heegner.py
++++ b/sage/schemes/elliptic_curves/heegner.py
+@@ -2844,8 +2844,9 @@
+         
+             sage: heegner_point(389,-7,1).plot(pointsize=50)            
+         """
++        c = CDF(self.tau())
+         from sage.plot.all import point
+-        return point(CDF(self.tau()), **kwds)
++        return point((c.real(), c.imag()), **kwds)
+ 
+ class HeegnerPointOnEllipticCurve(HeegnerPoint):
+     """

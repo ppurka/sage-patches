@@ -1,0 +1,175 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1369049991 -28800
+# Node ID f76467f81aca03986a133d96c4aebe55cd6b7992
+# Parent  0e93e60fd28e9cc2545b6326700e5257c5e84186
+add option to add individual color to legend texts
+
+diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
+--- a/sage/plot/graphics.py
++++ b/sage/plot/graphics.py
+@@ -161,6 +161,7 @@
+         self._bbox_extra_artists = []
+         self._extra_kwds = {}
+         self._fontsize = 10
++        self._legend_colors = []
+         self._legend_opts = {}
+         self._objects = []
+         self._show_axes = True
+@@ -1037,6 +1038,7 @@
+         g._show_legend = self._show_legend or other._show_legend
+         g._extra_kwds.update(self._extra_kwds)
+         g._extra_kwds.update(other._extra_kwds)
++        g._legend_colors = self._legend_colors + other._legend_colors
+         g._legend_opts.update(self._legend_opts)
+         g._legend_opts.update(other._legend_opts)
+         if self.aspect_ratio()=='automatic':
+@@ -2297,7 +2299,10 @@
+                 # color
+                 lframe = leg.get_frame()
+                 lframe.set_facecolor(color)
+-        
++                from sage.plot.colors import to_mpl_color
++                for txt,color in zip(leg.get_texts(), self._legend_colors):
++                    if color is not None:
++                        txt.set_color(to_mpl_color(color))
+             
+         subplot.set_xlim([xmin, xmax])
+         subplot.set_ylim([ymin, ymax])
+diff --git a/sage/plot/line.py b/sage/plot/line.py
+--- a/sage/plot/line.py
++++ b/sage/plot/line.py
+@@ -74,7 +74,8 @@
+         """
+         return {'alpha':'How transparent the line is.', 
+                 'legend_label':'The label for this item in the legend.',
+-               'thickness':'How thick the line is.',
++                'legend_color':'The color of the legend text',
++                'thickness':'How thick the line is.',
+                 'rgbcolor':'The color as an RGB tuple.',
+                 'hue':'The color given as a hue.',
+                 'linestyle':"The style of the line, which is one of '--' (dashed), '-.' (dash dot), '-' (solid), 'steps', ':' (dotted).",
+@@ -85,7 +86,7 @@
+                 'markerfacecolor':'the color of the marker face',
+                 'zorder':'The layer level in which to draw'
+                 }
+-                
++
+     def _plot3d_options(self, options=None):
+         """
+         Translate 2D plot options into 3D plot options. 
+@@ -239,12 +240,10 @@
+         """
+         import matplotlib.lines as lines
+         options = dict(self.options())
+-        del options['alpha']
+-        del options['thickness']
+-        del options['rgbcolor']
+-        del options['legend_label']
+-        if 'linestyle' in options: 
+-            del options['linestyle']
++        for o in ('alpha', 'legend_color', 'legend_label', 'linestyle',
++                  'rgbcolor', 'thickness'):
++            if o in options:
++                del options[o]
+         p = lines.Line2D(self.xdata, self.ydata, **options)
+         options = self.options()
+         a = float(options['alpha'])
+@@ -280,9 +279,10 @@
+         from sage.plot.plot3d.shapes2 import line3d
+         return line3d(points, **kwds)
+ 
+-    
++
+ @rename_keyword(color='rgbcolor')
+-@options(alpha=1, rgbcolor=(0,0,1), thickness=1, legend_label=None, aspect_ratio ='automatic')
++@options(alpha=1, rgbcolor=(0,0,1), thickness=1, legend_label=None,
++         legend_color=None, aspect_ratio ='automatic')
+ def line2d(points, **options):
+     r"""
+     Create the line through the given list of points.
+@@ -301,8 +301,11 @@
+ 
+     - ``hue`` -- The color given as a hue
+ 
++    - ``legend_color`` -- The color of the text in the legend
++
+     - ``legend_label`` -- the label for this item in the legend
+ 
++
+     Any MATPLOTLIB line option may also be passed in.  E.g.,
+ 
+     - ``linestyle`` - The style of the line, which is one of
+@@ -354,6 +357,12 @@
+ 
+         sage: line([(0,0),(1,1)], legend_label='line')
+ 
++    Lines with different colors in the legend text::
++
++        sage: p1 = line([(0,0),(1,1)], legend_label='line')
++        sage: p2 = line([(1,1),(2,4)], legend_label='squared', legend_color='red')
++        sage: p1 + p2
++
+     Extra options will get passed on to show(), as long as they are valid::
+ 
+         sage: line([(0,1), (3,4)], figsize=[10, 2])
+@@ -448,4 +457,5 @@
+     g.add_primitive(Line(xdata, ydata, options))
+     if options['legend_label']:
+         g.legend(True)
++        g._legend_colors = [options['legend_color']]
+     return g
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -648,6 +648,8 @@
+     - ``detect_poles`` - (Default: False) If set to True poles are detected.
+       If set to "show" vertical asymptotes are drawn.
+ 
++    - ``legend_color`` - the color of the text for this item in the legend
++
+     - ``legend_label`` - the label for this item in the legend
+ 
+     .. note::
+@@ -840,6 +842,12 @@
+         sage: plot(sin, legend_label='$sin$')
+         sage: plot(sin, legend_label='$\sin$')
+ 
++    It is possible to use a different color for the text of each label::
++
++        sage: p1 = plot(sin, legend_label='sin', legend_color='red')
++        sage: p2 = plot(cos, legend_label='cos', legend_color='green')
++        sage: p1 + p2
++
+     Note that the independent variable may be omitted if there is no
+     ambiguity::
+ 
+diff --git a/sage/plot/point.py b/sage/plot/point.py
+--- a/sage/plot/point.py
++++ b/sage/plot/point.py
+@@ -90,6 +90,7 @@
+             'How big the point is (i.e., area in points^2=(1/72 inch)^2).'
+         """
+         return {'alpha':'How transparent the point is.',
++                'legend_color':'The color of the legend text',
+                 'legend_label':'The label for this item in the legend.',
+                 'size': 'How big the point is (i.e., area in points^2=(1/72 inch)^2).',
+                 'faceted': 'If True color the edge of the point.',
+@@ -312,7 +313,8 @@
+         return point3d(points, **kwds)
+ 
+ @rename_keyword(color='rgbcolor', pointsize='size')
+-@options(alpha=1, size=10, faceted=False, rgbcolor=(0,0,1), legend_label=None, aspect_ratio='automatic')
++@options(alpha=1, size=10, faceted=False, rgbcolor=(0,0,1),
++         legend_color=None, legend_label=None, aspect_ratio='automatic')
+ def point2d(points, **options):
+     r"""
+     A point of size ``size`` defined by point = `(x,y)`.
+@@ -382,6 +384,7 @@
+     g.add_primitive(Point(xdata, ydata, options))
+     if options['legend_label']:
+         g.legend(True)
++        g._legend_colors = [options['legend_color']]
+     return g
+ 
+ points = point

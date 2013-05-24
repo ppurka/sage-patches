@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1366386980 -28800
-# Node ID f94cf29629860e5b29407b22476f02c4c252e2c0
+# Node ID 4055d8edc3421ff1e4ced6f3a3357ca7a152989a
 # Parent  0f5fd41a0abf8d0f5d665fec2541af2458178cf5
 allow numpy arrays in list_plot, line, points
 
@@ -128,13 +128,17 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
          sage: d = list_plot([(100,100), (120, 120)]).get_minmax_data()
          sage: d['xmin']
          100.0
-@@ -1748,18 +1755,24 @@
+@@ -1748,18 +1755,27 @@
          100.0
      """
      from sage.plot.all import line, point
 -    if data == {} or data == () or data == []:
-+    if len(data) == 0:
-         return Graphics()
+-        return Graphics()
++    try:
++        if not data:
++            return Graphics()
++    except ValueError: # numpy raises ValueError if it is not empty
++        pass
 +    if not isinstance(plotjoined, bool):
 +        raise TypeError("The second argument 'plotjoined' should be boolean "
 +                    "(True or False).  If you meant to plot two lists 'x' "
@@ -158,7 +162,7 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
      try:
          if plotjoined:
              return line(data, **kwargs)
-@@ -1772,7 +1785,7 @@
+@@ -1772,7 +1788,7 @@
          # gets to (1, I).
          from sage.rings.complex_field import ComplexField
          CC = ComplexField()

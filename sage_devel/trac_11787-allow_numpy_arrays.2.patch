@@ -1,14 +1,38 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1366386980 -28800
-# Node ID ee69f262f14e3e08f7f50933cc210ddcb18cf85b
-# Parent  acd84da876135230ad8161a621743c61f995f20b
+# Node ID f94cf29629860e5b29407b22476f02c4c252e2c0
+# Parent  0f5fd41a0abf8d0f5d665fec2541af2458178cf5
 allow numpy arrays in list_plot, line, points
 
 diff --git a/sage/plot/line.py b/sage/plot/line.py
 --- a/sage/plot/line.py
 +++ b/sage/plot/line.py
-@@ -348,8 +348,13 @@
+@@ -263,6 +263,11 @@
+     Returns either a 2-dimensional or 3-dimensional line depending
+     on value of points.
+ 
++    INPUT:
++
++    -  ``points`` - either a single point (as a tuple), a list of
++       points, a single complex number, or a list of complex numbers.
++
+     For information regarding additional arguments, see either line2d?
+     or line3d?.
+ 
+@@ -287,6 +292,11 @@
+     r"""
+     Create the line through the given list of points.
+ 
++    INPUT:
++
++    -  ``points`` - either a single point (as a tuple), a list of
++       points, a single complex number, or a list of complex numbers.
++
+     Type ``line2d.options`` for a dictionary of the default options for
+     lines.  You can change this to change the defaults for all future
+     lines.  Use ``line2d.reset()`` to reset to the default options.
+@@ -348,8 +358,13 @@
      A line with no points or one point::
  
          sage: line([])      #returns an empty plot
@@ -22,15 +46,24 @@ diff --git a/sage/plot/line.py b/sage/plot/line.py
      A line with a legend::
  
          sage: line([(0,0),(1,1)], legend_label='line')
-@@ -440,7 +445,7 @@
+@@ -440,8 +455,15 @@
      """
      from sage.plot.all import Graphics
      from sage.plot.plot import xydata_from_point_list
 -    if points == []:
-+    if len(points) == 0:
-         return Graphics()
+-        return Graphics()
++    from sage.rings.all import CC, CDF
++    if points in CC or points in CDF:
++        pass
++    else:
++        try:
++            if not points:
++                return Graphics()
++        except ValueError: # numpy raises a ValueError if not empty
++            pass
      xdata, ydata = xydata_from_point_list(points)
      g = Graphics()
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options))
 diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 --- a/sage/plot/plot.py
 +++ b/sage/plot/plot.py
@@ -216,7 +249,39 @@ diff --git a/sage/plot/plot3d/shapes2.py b/sage/plot/plot3d/shapes2.py
 diff --git a/sage/plot/point.py b/sage/plot/point.py
 --- a/sage/plot/point.py
 +++ b/sage/plot/point.py
-@@ -325,12 +325,13 @@
+@@ -271,7 +271,7 @@
+         scatteroptions={}
+         if not faceted: scatteroptions['edgecolors'] = 'none'
+         subplot.scatter(self.xdata, self.ydata, s=s, c=c, alpha=a, zorder=z, label=options['legend_label'], **scatteroptions)
+-        
++
+ 
+ def point(points, **kwds):
+     """
+@@ -279,7 +279,8 @@
+ 
+     INPUT:
+ 
+-    -  ``points`` - either a single point (as a tuple) or a list of points. 
++    -  ``points`` - either a single point (as a tuple), a list of
++       points, a single complex number, or a list of complex numbers.
+ 
+     For information regarding additional arguments, see either point2d?
+     or point3d?.
+@@ -316,7 +317,11 @@
+ def point2d(points, **options):
+     r"""
+     A point of size ``size`` defined by point = `(x,y)`.
+-    Point takes either a single tuple of coordinates or a list of tuples.
++
++    INPUT:
++
++    -  ``points`` - either a single point (as a tuple), a list of
++       points, a single complex number, or a list of complex numbers.
+ 
+     Type ``point2d.options`` to see all options.
+ 
+@@ -325,12 +330,13 @@
      A purple point from a single tuple or coordinates::
  
          sage: point((0.5, 0.5), rgbcolor=hue(0.75))
@@ -233,12 +298,33 @@ diff --git a/sage/plot/point.py b/sage/plot/point.py
      this is possible::
  
          sage: A=point((1,1))
-@@ -374,7 +375,7 @@
+@@ -371,11 +377,27 @@
+     ::
+ 
+         sage: point((3,4), pointsize=100)
++
++    We can plot a single complex number::
++
++        sage: point(CC(1+I), pointsize=100)
++
++    We can also plot a list of complex numbers::
++
++        sage: point([CC(I), CC(I+1), CC(2+2*I)], pointsize=100)
++
      """
      from sage.plot.plot import xydata_from_point_list
      from sage.plot.all import Graphics
 -    if points == []:
-+    if len(points) == 0:
-         return Graphics()
+-        return Graphics()
++    from sage.rings.all import CC, CDF
++    if points in CC or points in CDF:
++        pass
++    else:
++        try:
++            if not points:
++                return Graphics()
++        except ValueError: # numpy raises a ValueError if not empty
++            pass
      xdata, ydata = xydata_from_point_list(points)
      g = Graphics()
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options))

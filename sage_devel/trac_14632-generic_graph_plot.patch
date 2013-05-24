@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1369382303 -28800
-# Node ID 0f5fd41a0abf8d0f5d665fec2541af2458178cf5
+# Date 1369410903 -28800
+# Node ID 4f9067b629454f323b9a889c89146c7804fb018c
 # Parent  1077314f416653b28e199c382667a1f11e444bdd
 Make plot() in sage.graphs accept show() options
 
@@ -79,7 +79,7 @@ diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
  
          .. NOTE::
  
-@@ -863,21 +841,18 @@
+@@ -863,21 +841,31 @@
              ...     (0,1,'e'),(0,1,'f'),(0,1,'f'),(2,1,'g'),(2,2,'h')])
              sage: g.graphplot(edge_labels=True, color_by_label=True, edge_style='dashed').plot()
  
@@ -95,6 +95,13 @@ diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
 +            sage: g = Graph({})
 +            sage: g.plot(title='empty graph', axes=True)
 +
++        Check for invalid inputs:
++
++            sage: p = graphs.PetersenGraph().plot(egabrag='garbage')
++            Traceback (most recent call last):
++            ...
++            ValueError: Invalid input 'egabrag=garbage'
++
          """
 -        # This method takes NO input
 -        # This has been added in early 2013. Remove it before my death, please.
@@ -102,11 +109,17 @@ diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
 -            from sage.misc.superseded import deprecation
 -            deprecation(13891, "This method takes no argument ! You may want "
 -                               "to give it as an argument to graphplot instead.")
--
-         G = Graphics()
++        G = Graphics()
 +        options = self._options.copy()
 +        options.update(kwds)
 +        G._set_extra_kwds(Graphics._extract_kwds_for_show(options))
+ 
+-        G = Graphics()
++        # Check the arguments
++        for o in options:
++            if o not in graphplot_options and o not in G._extra_kwds:
++                raise ValueError("Invalid input '{}={}'".format(o, options[o]))
++
          for comp in self._plot_components.values():
              if not isinstance(comp, list):
                  G += comp

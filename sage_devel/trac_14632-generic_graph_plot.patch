@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1369410903 -28800
-# Node ID 4f9067b629454f323b9a889c89146c7804fb018c
+# Date 1369560170 -28800
+# Node ID 5e5e65cfc988c9d085a7bcb540470ea99e9c321e
 # Parent  1077314f416653b28e199c382667a1f11e444bdd
 Make plot() in sage.graphs accept show() options
 
@@ -95,7 +95,7 @@ diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
 +            sage: g = Graph({})
 +            sage: g.plot(title='empty graph', axes=True)
 +
-+        Check for invalid inputs:
++        Check for invalid inputs::
 +
 +            sage: p = graphs.PetersenGraph().plot(egabrag='garbage')
 +            Traceback (most recent call last):

@@ -1,20 +1,93 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1354981663 -28800
-# Node ID 29520146f812fe40c5dbf7014e472273905528bb
-# Parent  c7f44ac17da1aee7ac4b06a49c9718bb04434e10
-patch for forcing type-1 fonts
+# Node ID 5c87b750b352274cdd3c897038aaab6bbcba1c42
+# Parent  d4700f4a6c8739b20dbe75fb355fd9f300285c14
+Enable the option to have Type 1 fonts in the figures
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 --- a/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py
-@@ -2098,6 +2098,9 @@
+@@ -1251,7 +1251,9 @@
+                         # Legend options
+                         legend_options={}, show_legend=None,
+                         # Ticks options
+-                        ticks=None, tick_formatter=None, ticks_integer=False)
++                        ticks=None, tick_formatter=None, ticks_integer=False,
++                        # Text options
++                        type1_fonts=False)
+ 
+     @suboptions('legend',
+                 back_color=(0.9, 0.9, 0.9), borderpad=0.6,
+@@ -1475,11 +1477,15 @@
+               do use noninteger ``base`` for the logarithm, then provide
+               your own tick formatter using the option ``tick_formatter``.
+ 
++        - ``type1_fonts`` -- (default: ``False``) boolean. Whether Type 1
++          fonts are used by matplotlib in the text in the figure.  This
++          requires LaTeX, dvipng and Ghostscript to be installed.
++
+         EXAMPLES::
+-        
++
+             sage: c = circle((1,1), 1, color='red')
+             sage: c.show(xmin=-1, xmax=3, ymin=-1, ymax=3)
+-        
++
+         You could also just make the picture larger by changing ``figsize``::
+ 
+             sage: c.show(figsize=8, xmin=-1, xmax=3, ymin=-1, ymax=3)
+@@ -1502,6 +1508,12 @@
+ 
+             sage: plot(sin, -4, 4, title='Plot sin(x)', title_pos=(0.05,-0.05))
+ 
++        If you want all the text in your plot to use Type 1 fonts, then
++        set the corresponding option to ``True``. This requires that LaTeX,
++        dvipng and Ghostscript be installed::
++
++            sage: plot(x, type1_fonts=True) # optional - latex
++
+         You can turn on the drawing of a frame around the plots::
+ 
+             sage: show(plot(sin,-4,4), frame=True)
+@@ -2108,7 +2120,7 @@
+                    show_legend=None, legend_options={},
+                    axes_pad=None, ticks_integer=None,
+                    tick_formatter=None, ticks=None, title=None,
+-                   title_pos=None, base=None, scale=None):
++                   title_pos=None, type1_fonts=False, base=None, scale=None):
+         r"""
+         Return a matplotlib figure object representing the graphic
+ 
+@@ -2175,6 +2187,15 @@
  
          from matplotlib.figure import Figure
          from matplotlib import rcParams
-+        rcParams['ps.useafm'] = True
-+        rcParams['pdf.use14corefonts'] = True
-+        rcParams['text.usetex'] = True
++        if type1_fonts: # Requires LaTeX to be installed.
++            rcParams['ps.useafm'] = True
++            rcParams['pdf.use14corefonts'] = True
++            rcParams['text.usetex'] = True
++        else:
++            rcParams['ps.useafm'] = False
++            rcParams['pdf.use14corefonts'] = False
++            rcParams['text.usetex'] = False
++
          self.fontsize(fontsize)
          self.axes_labels(l=axes_labels)
  
+diff --git a/sage/plot/plot.py b/sage/plot/plot.py
+--- a/sage/plot/plot.py
++++ b/sage/plot/plot.py
+@@ -1010,6 +1010,12 @@
+ 
+         sage: plot(x**2, (x,0,3), ticks=[[1,2.5],[0.5,1,2]], tick_formatter=[["$x_1$","$x_2$"],["$y_1$","$y_2$","$y_3$"]])
+ 
++    You can force Type 1 fonts in your figures by providing the relevant
++    option as shown below. This also requires that LaTeX, dvipng and
++    Ghostscript be installed::
++
++        sage: plot(x, type1_fonts=True) # optional - latex
++
+     A example with excluded values::
+ 
+         sage: plot(floor(x), (x, 1, 10), exclude = [1..10])

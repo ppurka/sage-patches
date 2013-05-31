@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1354981663 -28800
-# Node ID 5c87b750b352274cdd3c897038aaab6bbcba1c42
-# Parent  d4700f4a6c8739b20dbe75fb355fd9f300285c14
+# Node ID 6be51ac7c7e8545a603d860ff8a429507d49953b
+# Parent  c51790ab9720282e8ffc8c921b4e36f8e846f3d3
 Enable the option to have Type 1 fonts in the figures
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
@@ -15,17 +15,26 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 -                        ticks=None, tick_formatter=None, ticks_integer=False)
 +                        ticks=None, tick_formatter=None, ticks_integer=False,
 +                        # Text options
-+                        type1_fonts=False)
++                        font_style='default')
  
      @suboptions('legend',
                  back_color=(0.9, 0.9, 0.9), borderpad=0.6,
-@@ -1475,11 +1477,15 @@
+@@ -1475,11 +1477,24 @@
                do use noninteger ``base`` for the logarithm, then provide
                your own tick formatter using the option ``tick_formatter``.
  
-+        - ``type1_fonts`` -- (default: ``False``) boolean. Whether Type 1
-+          fonts are used by matplotlib in the text in the figure.  This
-+          requires LaTeX, dvipng and Ghostscript to be installed.
++        - ``font_style`` -- (default: ``"default"``) string. The type of
++          font rendering that should be used for the text. The possible
++          values are
++
++          - ``"default"`` -- Uses matplotlib's internal text rendering
++            engine called Mathtext ( see
++            http://matplotlib.org/users/mathtext.html#mathtext-tutorial ).
++          - ``"latex"`` -- LaTeX is used for rendering the fonts. This
++            requires LaTeX, dvipng and Ghostscript to be installed.
++          - ``"type1"`` -- Type 1 fonts are used by matplotlib in the text
++            in the figure.  This requires LaTeX, dvipng and Ghostscript to
++            be installed.
 +
          EXAMPLES::
 -        
@@ -37,35 +46,46 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          You could also just make the picture larger by changing ``figsize``::
  
              sage: c.show(figsize=8, xmin=-1, xmax=3, ymin=-1, ymax=3)
-@@ -1502,6 +1508,12 @@
+@@ -1502,6 +1517,18 @@
  
              sage: plot(sin, -4, 4, title='Plot sin(x)', title_pos=(0.05,-0.05))
  
-+        If you want all the text in your plot to use Type 1 fonts, then
-+        set the corresponding option to ``True``. This requires that LaTeX,
-+        dvipng and Ghostscript be installed::
++        If you want all the text to be rendered by using an external LaTeX
++        installation then set the ``font_style`` to ``"latex"``. This
++        requires that LaTeX, dvipng and Ghostscript be installed::
 +
-+            sage: plot(x, type1_fonts=True) # optional - latex
++            sage: plot(x, font_style='latex') # optional - latex
++
++        If you want all the text in your plot to use Type 1 fonts, then
++        set the ``font_style`` option to ``"type1"``. This requires that
++        LaTeX, dvipng and Ghostscript be installed::
++
++            sage: plot(x, font_style='type1') # optional - latex
 +
          You can turn on the drawing of a frame around the plots::
  
              sage: show(plot(sin,-4,4), frame=True)
-@@ -2108,7 +2120,7 @@
+@@ -2108,7 +2135,8 @@
                     show_legend=None, legend_options={},
                     axes_pad=None, ticks_integer=None,
                     tick_formatter=None, ticks=None, title=None,
 -                   title_pos=None, base=None, scale=None):
-+                   title_pos=None, type1_fonts=False, base=None, scale=None):
++                   title_pos=None, base=None, scale=None,
++                   font_style='default'):
          r"""
          Return a matplotlib figure object representing the graphic
  
-@@ -2175,6 +2187,15 @@
+@@ -2175,6 +2203,19 @@
  
          from matplotlib.figure import Figure
          from matplotlib import rcParams
-+        if type1_fonts: # Requires LaTeX to be installed.
++        if font_style == 'type1': # Requires LaTeX to be installed.
 +            rcParams['ps.useafm'] = True
 +            rcParams['pdf.use14corefonts'] = True
++            rcParams['text.usetex'] = True
++        elif font_style == 'latex':
++            rcParams['ps.useafm'] = False
++            rcParams['pdf.use14corefonts'] = False
 +            rcParams['text.usetex'] = True
 +        else:
 +            rcParams['ps.useafm'] = False
@@ -86,7 +106,7 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 +    option as shown below. This also requires that LaTeX, dvipng and
 +    Ghostscript be installed::
 +
-+        sage: plot(x, type1_fonts=True) # optional - latex
++        sage: plot(x, font_style='type1') # optional - latex
 +
      A example with excluded values::
  

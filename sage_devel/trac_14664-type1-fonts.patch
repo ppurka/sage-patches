@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1354981663 -28800
-# Node ID 22f0d7dc42bd0d6ab0ff8d528c2746cf7a73a73e
-# Parent  d4700f4a6c8739b20dbe75fb355fd9f300285c14
+# Node ID 8957e70eb9f75df27be8e7b894c42624350aa305
+# Parent  9b3e6b467313a8df84543e4cbc882580a9fc0678
 Enable the option to have Type 1 fonts in the figures
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
@@ -19,7 +19,19 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
  
      @suboptions('legend',
                  back_color=(0.9, 0.9, 0.9), borderpad=0.6,
-@@ -1475,11 +1477,24 @@
+@@ -1401,7 +1403,10 @@
+           - If one of the entries is the string ``"latex"``, then the
+             formatting will be nice typesetting of the ticks.  This is
+             intended to be used when the tick locator for at least one of
+-            the axes is a list including some symbolic elements.  See examples.
++            the axes is a list including some symbolic elements. This uses
++            matplotlib's internal LaTeX rendering engine. If you want to
++            use an external LaTeX compiler, then set the keyword option
++            ``typeset``.  See examples.
+ 
+         - ``title`` - (default: None) The title for the plot
+ 
+@@ -1465,11 +1470,27 @@
                do use noninteger ``base`` for the logarithm, then provide
                your own tick formatter using the option ``tick_formatter``.
  
@@ -29,7 +41,10 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 +
 +          - ``"default"`` -- Uses matplotlib's internal text rendering
 +            engine called Mathtext ( see
-+            http://matplotlib.org/users/mathtext.html#mathtext-tutorial ).
++            http://matplotlib.org/users/mathtext.html ). If you have
++            modified the default matplotlib settings, for instance via
++            a matplotlibrc file, then this option will not change any of
++            those settings.
 +          - ``"latex"`` -- LaTeX is used for rendering the fonts. This
 +            requires LaTeX, dvipng and Ghostscript to be installed.
 +          - ``"type1"`` -- Type 1 fonts are used by matplotlib in the text
@@ -46,7 +61,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          You could also just make the picture larger by changing ``figsize``::
  
              sage: c.show(figsize=8, xmin=-1, xmax=3, ymin=-1, ymax=3)
-@@ -1502,6 +1517,18 @@
+@@ -1492,6 +1513,18 @@
  
              sage: plot(sin, -4, 4, title='Plot sin(x)', title_pos=(0.05,-0.05))
  
@@ -65,9 +80,9 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          You can turn on the drawing of a frame around the plots::
  
              sage: show(plot(sin,-4,4), frame=True)
-@@ -2108,7 +2135,8 @@
+@@ -2087,7 +2120,8 @@
                     show_legend=None, legend_options={},
-                    axes_pad=None, ticks_integer=None,
+                    axes_pad=0.02, ticks_integer=None,
                     tick_formatter=None, ticks=None, title=None,
 -                   title_pos=None, base=None, scale=None):
 +                   title_pos=None, base=None, scale=None,
@@ -75,30 +90,109 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          r"""
          Return a matplotlib figure object representing the graphic
  
-@@ -2175,6 +2203,19 @@
+@@ -2135,6 +2169,14 @@
+         the following plot (see :trac:`10512`)::
+ 
+             sage: plot(sin(x^2), (x, -3, 3), title='Plot of sin(x^2)', axes_labels=['x','y'],frame=True)
++
++        ``typeset`` must not be set to an arbitrary string::
++
++            sage: plot(x, typeset='garbage')
++            Traceback (most recent call last):
++            ...
++            ValueError: typeset must be set to one of 'default', 'latex', or
++            'type1'; got 'garbage'.
+         """
+         if not isinstance(ticks, (list, tuple)):
+             ticks = (ticks, None)
+@@ -2145,14 +2187,14 @@
+                 tick_formatter = (tick_formatter, "latex")
+             else:
+                 tick_formatter = (tick_formatter, None)
+-            
++
+         self.set_axes_range(xmin, xmax, ymin, ymax)
+         d = self.get_axes_range()
+         xmin = d['xmin']
+         xmax = d['xmax']
+         ymin = d['ymin']
+         ymax = d['ymax']
+-        
++
+         x_pad=(xmax-xmin)*float(axes_pad)
+         y_pad=(ymax-ymin)*float(axes_pad)
+ 
+@@ -2160,7 +2202,7 @@
+         xmax+=x_pad
+         ymin-=y_pad
+         ymax+=y_pad
+-                
++
+         global do_verify
+         do_verify = verify
+ 
+@@ -2169,6 +2211,18 @@
  
          from matplotlib.figure import Figure
          from matplotlib import rcParams
-+        if typeset == 'type1': # Requires LaTeX to be installed.
++        if typeset == 'type1': # Requires LaTeX, dvipng, gs to be installed.
 +            rcParams['ps.useafm'] = True
 +            rcParams['pdf.use14corefonts'] = True
 +            rcParams['text.usetex'] = True
-+        elif typeset == 'latex':
++        elif typeset == 'latex': # Requires LaTeX, dvipng, gs to be installed.
 +            rcParams['ps.useafm'] = False
 +            rcParams['pdf.use14corefonts'] = False
 +            rcParams['text.usetex'] = True
-+        else:
-+            rcParams['ps.useafm'] = False
-+            rcParams['pdf.use14corefonts'] = False
-+            rcParams['text.usetex'] = False
++        elif typeset != 'default': # We won't change (maybe user-set) defaults
++            raise ValueError("typeset must be set to one of 'default', 'latex',"
++                             " or 'type1'; got '{}'.".format(typeset))
 +
          self.fontsize(fontsize)
          self.axes_labels(l=axes_labels)
  
+@@ -2178,7 +2232,7 @@
+ 
+         if figure is None:
+             figure=Figure(figsize=figsize)
+-        
++
+         #the incoming subplot instance
+         subplot = sub
+         if not subplot:
+@@ -2665,6 +2719,9 @@
+         elif ext in ['', '.sobj']:
+             SageObject.save(self, filename)
+         else:
++            from matplotlib import rcParams
++            rc_backup = (rcParams['ps.useafm'], rcParams['pdf.use14corefonts'],
++                         rcParams['text.usetex']) # save the rcParams
+             figure = self.matplotlib(**options)
+             # You can output in PNG, PS, EPS, PDF, or SVG format, depending
+             # on the file extension.
+@@ -2676,7 +2733,7 @@
+             figure.set_canvas(FigureCanvasAgg(figure))
+             # this messes up the aspect ratio!
+             #figure.canvas.mpl_connect('draw_event', pad_for_tick_labels)
+-            
++
+             # tight_layout adjusts the *subplot* parameters so ticks aren't cut off, etc.
+             figure.tight_layout()
+ 
+@@ -2688,6 +2745,10 @@
+                 figure.savefig(filename, dpi=dpi,
+                            transparent=transparent)
+ 
++            # Restore the rcParams to the original, possibly user-set values
++            (rcParams['ps.useafm'], rcParams['pdf.use14corefonts'],
++                                           rcParams['text.usetex']) = rc_backup
++
+ 
+ class GraphicsArray(SageObject):
+     """
 diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 --- a/sage/plot/plot.py
 +++ b/sage/plot/plot.py
-@@ -1010,6 +1010,12 @@
+@@ -1009,6 +1009,12 @@
  
          sage: plot(x**2, (x,0,3), ticks=[[1,2.5],[0.5,1,2]], tick_formatter=[["$x_1$","$x_2$"],["$y_1$","$y_2$","$y_3$"]])
  

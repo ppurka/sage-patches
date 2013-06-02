@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1354981663 -28800
-# Node ID 29d5524c40ecd0a53a0603920265cc72b576a059
+# Node ID d52af5062a992339385d3866d540724a8fc38aa2
 # Parent  0d67e1a425be9647120393d227789080fbaf4cfb
 Enable the option to have Type 1 fonts in the figures
 
@@ -178,13 +178,14 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
              # tight_layout adjusts the *subplot* parameters so ticks aren't cut off, etc.
              figure.tight_layout()
  
-@@ -2688,6 +2745,9 @@
+@@ -2688,6 +2745,10 @@
                  figure.savefig(filename, dpi=dpi,
                             transparent=transparent)
  
 +            # Restore the rcParams to the original, possibly user-set values
 +            (rcParams['ps.useafm'], rcParams['pdf.use14corefonts'],
 +                                           rcParams['text.usetex']) = rc_backup
++
      def description(self):
          r"""
          Print a textual description to stdout.

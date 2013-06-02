@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1354981663 -28800
-# Node ID 8957e70eb9f75df27be8e7b894c42624350aa305
-# Parent  9b3e6b467313a8df84543e4cbc882580a9fc0678
+# Node ID 599d7e502f341ee8c91abcb5b36320bf4256ab08
+# Parent  0d67e1a425be9647120393d227789080fbaf4cfb
 Enable the option to have Type 1 fonts in the figures
 
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
@@ -159,7 +159,18 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
          #the incoming subplot instance
          subplot = sub
          if not subplot:
-@@ -2665,6 +2719,9 @@
+@@ -2471,6 +2525,10 @@
+                     subplot.xaxis.grid(True, **vgridstyle)
+ 
+ 
++            # Restore the rcParams to the original, possibly user-set values
++            (rcParams['ps.useafm'], rcParams['pdf.use14corefonts'],
++                                           rcParams['text.usetex']) = rc_backup
++
+ 
+         if self._axes_labels is not None:
+             label_options={}
+@@ -2665,6 +2723,9 @@
          elif ext in ['', '.sobj']:
              SageObject.save(self, filename)
          else:
@@ -169,7 +180,7 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
              figure = self.matplotlib(**options)
              # You can output in PNG, PS, EPS, PDF, or SVG format, depending
              # on the file extension.
-@@ -2676,7 +2733,7 @@
+@@ -2676,7 +2737,7 @@
              figure.set_canvas(FigureCanvasAgg(figure))
              # this messes up the aspect ratio!
              #figure.canvas.mpl_connect('draw_event', pad_for_tick_labels)
@@ -178,17 +189,6 @@ diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
              # tight_layout adjusts the *subplot* parameters so ticks aren't cut off, etc.
              figure.tight_layout()
  
-@@ -2688,6 +2745,10 @@
-                 figure.savefig(filename, dpi=dpi,
-                            transparent=transparent)
- 
-+            # Restore the rcParams to the original, possibly user-set values
-+            (rcParams['ps.useafm'], rcParams['pdf.use14corefonts'],
-+                                           rcParams['text.usetex']) = rc_backup
-+
- 
- class GraphicsArray(SageObject):
-     """
 diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 --- a/sage/plot/plot.py
 +++ b/sage/plot/plot.py

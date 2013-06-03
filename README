@@ -7,3 +7,8 @@ applied and which are not yet merged in Sage.
 
 The master branch will always contain the pending patches. Other branches
 may contain extra or old patches.
+
+The no-hope directory contains patches which will probably never get into
+Sage because of various reasons. If you want to know the reasons then just
+visit the corresponding ticket page - the ticket number is part of the
+patch name.

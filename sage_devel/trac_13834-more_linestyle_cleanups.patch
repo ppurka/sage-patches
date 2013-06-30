@@ -1,8 +1,8 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1365874061 -28800
-# Node ID d233175ec9a20520a4e856e02b7c7401cc2193f3
-# Parent  bf38e047f50f8dd7f063ab6c41a597baa024569d
+# Node ID 59361f10b1b2dbd408504bbe0d8d1203ed52f87d
+# Parent  8ebfadc386ca8a494861f695af1f31ac87ca654c
 clean up more linestyle options
 
 diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
@@ -51,7 +51,7 @@ diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
                      'graph_border': 'Whether or not to draw a frame around the graph.'})
  
  for key, value in graphplot_options.iteritems():
-@@ -488,7 +504,10 @@
+@@ -465,7 +481,10 @@
          # Handle base edge options: thickness, linestyle
          eoptions={}
          if 'edge_style' in self._options:
@@ -63,7 +63,7 @@ diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
          if 'thickness' in self._options:
              eoptions['thickness'] = self._options['thickness']
  
-@@ -863,6 +882,10 @@
+@@ -841,6 +860,10 @@
              ...     (0,1,'e'),(0,1,'f'),(0,1,'f'),(2,1,'g'),(2,2,'h')])
              sage: g.graphplot(edge_labels=True, color_by_label=True, edge_style='dashed').plot()
  
@@ -71,9 +71,9 @@ diff --git a/sage/graphs/graph_plot.py b/sage/graphs/graph_plot.py
 +
 +            sage: g.graphplot(edge_labels=True, color_by_label=True, edge_style='--').plot()
 +
-         Wrong input (any input) :trac:`13891`::
+         TESTS:
  
-             sage: graphs.PetersenGraph().graphplot().plot(aertataert=346345345)
+         Make sure that show options work with plot also::
 diff --git a/sage/modular/arithgroup/farey_symbol.pyx b/sage/modular/arithgroup/farey_symbol.pyx
 --- a/sage/modular/arithgroup/farey_symbol.pyx
 +++ b/sage/modular/arithgroup/farey_symbol.pyx
@@ -190,6 +190,100 @@ diff --git a/sage/modular/arithgroup/farey_symbol.pyx b/sage/modular/arithgroup/
  #--- conversions ------------------------------------------------------------
  
  cdef public long convert_to_long(n):
+diff --git a/sage/plot/arc.py b/sage/plot/arc.py
+--- a/sage/plot/arc.py
++++ b/sage/plot/arc.py
+@@ -255,8 +255,8 @@
+         """
+         import matplotlib.patches as patches
+         from sage.plot.misc import get_matplotlib_linestyle
+-        
+-        
++
++
+         options = self.options()
+ 
+         p = patches.Arc(
+diff --git a/sage/plot/arrow.py b/sage/plot/arrow.py
+--- a/sage/plot/arrow.py
++++ b/sage/plot/arrow.py
+@@ -63,7 +63,7 @@
+                 'xmax': self.vertices[:,0].max(),
+                 'ymin': self.vertices[:,1].min(),
+                 'ymax': self.vertices[:,1].max()}
+-        
++
+     def _allowed_options(self):
+         """
+         Return the dictionary of allowed options for the curve arrow graphics primitive.
+@@ -72,16 +72,16 @@
+ 
+              sage: from sage.plot.arrow import CurveArrow
+              sage: list(sorted(CurveArrow(path=[[(0,0),(2,3)]],options={})._allowed_options().iteritems()))
+-             [('arrowsize', 'The size of the arrowhead'), 
+-             ('arrowstyle', 'todo'), 
+-             ('head', '2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)'), 
+-             ('hue', 'The color given as a hue.'), 
++             [('arrowsize', 'The size of the arrowhead'),
++             ('arrowstyle', 'todo'),
++             ('head', '2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)'),
++             ('hue', 'The color given as a hue.'),
+              ('legend_label', 'The label for this item in the legend.'),
+-             ('linestyle', "2d only: The style of the line, which is one of 
+-             'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', 
+-             respectively."), 
+-             ('rgbcolor', 'The color as an RGB tuple.'), 
+-             ('width', 'The width of the shaft of the arrow, in points.'), 
++             ('linestyle', "2d only: The style of the line, which is one of
++             'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.',
++             respectively."),
++             ('rgbcolor', 'The color as an RGB tuple.'),
++             ('width', 'The width of the shaft of the arrow, in points.'),
+              ('zorder', '2-d only: The layer level in which to draw')]
+         """
+         return {'width':'The width of the shaft of the arrow, in points.',
+@@ -92,10 +92,10 @@
+                 'arrowsize':'The size of the arrowhead',
+                 'zorder':'2-d only: The layer level in which to draw',
+                 'head':'2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)',
+-                'linestyle':"2d only: The style of the line, which is one of " 
++                'linestyle':"2d only: The style of the line, which is one of "
+                 "'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', "
+                 "respectively."}
+-        
++
+     def _repr_(self):
+         """
+         Text representation of an arrow graphics primitive.
+@@ -107,7 +107,7 @@
+             'CurveArrow from (0, 0) to (2, 3)'
+         """
+         return "CurveArrow from %s to %s"%(self.path[0][0],self.path[-1][-1])
+-        
++
+     def _render_on_subplot(self, subplot):
+         """
+         Render this arrow in a subplot.  This is the key function that
+@@ -120,7 +120,7 @@
+             sage: arrow(path=[[(0,1), (2,-1), (4,5)]])
+         """
+         from sage.plot.misc import get_matplotlib_linestyle
+-        
++
+         options = self.options()
+         width = float(options['width'])
+         head = options.pop('head')
+@@ -350,8 +350,8 @@
+             True
+         """
+         from sage.plot.misc import get_matplotlib_linestyle
+-        
+-        
++
++
+         options = self.options()
+         head = options.pop('head')
+         if head == 0: style = '<|-'
 diff --git a/sage/plot/bezier_path.py b/sage/plot/bezier_path.py
 --- a/sage/plot/bezier_path.py
 +++ b/sage/plot/bezier_path.py
@@ -235,6 +329,18 @@ diff --git a/sage/plot/bezier_path.py b/sage/plot/bezier_path.py
      - ``rbgcolor`` -- default: (0,0,0)
      - ``zorder`` -- the layer in which to draw
          
+diff --git a/sage/plot/circle.py b/sage/plot/circle.py
+--- a/sage/plot/circle.py
++++ b/sage/plot/circle.py
+@@ -141,7 +141,7 @@
+         """
+         import matplotlib.patches as patches
+         from sage.plot.misc import get_matplotlib_linestyle
+-        
++
+         options = self.options()
+         p = patches.Circle((float(self.x), float(self.y)), float(self.r), clip_on=options['clip'])
+         if not options['clip']:
 diff --git a/sage/plot/contour_plot.py b/sage/plot/contour_plot.py
 --- a/sage/plot/contour_plot.py
 +++ b/sage/plot/contour_plot.py
@@ -328,6 +434,62 @@ diff --git a/sage/plot/contour_plot.py b/sage/plot/contour_plot.py
      - ``legend_label`` -- the label for this item in the legend
  
      - ``base`` - (default: 10) the base of the logarithm if
+diff --git a/sage/plot/ellipse.py b/sage/plot/ellipse.py
+--- a/sage/plot/ellipse.py
++++ b/sage/plot/ellipse.py
+@@ -182,7 +182,7 @@
+         """
+         import matplotlib.patches as patches
+         from sage.plot.misc import get_matplotlib_linestyle
+-        
++
+         options = self.options()
+         p = patches.Ellipse(
+                 (self.x,self.y),
+diff --git a/sage/plot/hyperbolic_arc.py b/sage/plot/hyperbolic_arc.py
+--- a/sage/plot/hyperbolic_arc.py
++++ b/sage/plot/hyperbolic_arc.py
+@@ -54,16 +54,16 @@
+     def _repr_(self):
+         """
+         String representation of HyperbolicArc.
+-        
++
+         TESTS::
+ 
+             sage: from sage.plot.hyperbolic_arc import HyperbolicArc
+             sage: HyperbolicArc(0, 1/2+I*sqrt(3)/2, {})._repr_()
+             'Hyperbolic arc (0.000000000000000, 0.500000000000000 + 0.866025403784439*I)'
+         """
+-       
++
+         return "Hyperbolic arc (%s, %s)" % (self.A, self.B)
+-    
++
+     def _hyperbolic_arc(self, z0, z3, first=False):
+         """
+         Function to construct Bezier path as an approximation to
+diff --git a/sage/plot/hyperbolic_triangle.py b/sage/plot/hyperbolic_triangle.py
+--- a/sage/plot/hyperbolic_triangle.py
++++ b/sage/plot/hyperbolic_triangle.py
+@@ -65,7 +65,7 @@
+     def _repr_(self):
+         """
+         String representation of HyperbolicArc.
+-        
++
+         TESTS::
+ 
+             sage: from sage.plot.hyperbolic_triangle import HyperbolicTriangle
+@@ -73,7 +73,7 @@
+             'Hyperbolic triangle (0.000000000000000, 0.500000000000000, 1.00000000000000*I)'
+         """
+         return "Hyperbolic triangle (%s, %s, %s)" % (self.A, self.B, self.C)
+-    
++
+     def _hyperbolic_arc(self, z0, z3, first=False):
+         """
+         Function to construct Bezier path as an approximation to
 diff --git a/sage/plot/line.py b/sage/plot/line.py
 --- a/sage/plot/line.py
 +++ b/sage/plot/line.py
@@ -399,8 +561,12 @@ diff --git a/sage/plot/line.py b/sage/plot/line.py
 diff --git a/sage/plot/misc.py b/sage/plot/misc.py
 --- a/sage/plot/misc.py
 +++ b/sage/plot/misc.py
-@@ -240,49 +240,137 @@
-     
+@@ -237,52 +237,140 @@
+     c=[i for i in convergents(n/const.n()) if i.denominator()<12]
+     return '$%s$'%latex(c[-1]*const)
+ 
+-    
++
  def get_matplotlib_linestyle(linestyle, return_type):
      """
 -    Function which translates between matplotlib linestyle in short notation 
@@ -566,12 +732,12 @@ diff --git a/sage/plot/misc.py b/sage/plot/misc.py
 diff --git a/sage/plot/plot.py b/sage/plot/plot.py
 --- a/sage/plot/plot.py
 +++ b/sage/plot/plot.py
-@@ -687,12 +687,12 @@
+@@ -686,12 +686,12 @@
      - ``hue`` - The color given as a hue
  
      Any MATPLOTLIB line option may also be passed in.  E.g.,
 -    
--    - ``linestyle`` - The style of the line, which is one of
+-    - ``linestyle`` -- The style of the line, which is one of
 -       - ``"-"`` (solid) -- default
 -       - ``"--"`` (dashed)
 -       - ``"-."`` (dash dot)
@@ -585,7 +751,7 @@ diff --git a/sage/plot/plot.py b/sage/plot/plot.py
         - ``"None"`` or ``" "`` or ``""`` (nothing)
  
         The linestyle can also be prefixed with a drawing style (e.g., ``"steps--"``)
-@@ -704,7 +704,7 @@
+@@ -703,7 +703,7 @@
           horizontal lines)
         - ``"steps-post"`` (step function; horizontal line is to the
           right of point)

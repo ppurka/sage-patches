@@ -1,0 +1,503 @@
+# HG changeset patch
+# User Tobias Weich <tobias.weich@googlemail.com>
+# Date 1365424338 -7200
+# Node ID 8ebfadc386ca8a494861f695af1f31ac87ca654c
+# Parent  5d8c13e7b81a1e152855073f97a4d48ee97255d1
+Enable short mpl linestyle options (like ':') to various plot functions
+
+diff --git a/sage/plot/arc.py b/sage/plot/arc.py
+--- a/sage/plot/arc.py
++++ b/sage/plot/arc.py
+@@ -231,7 +231,9 @@
+                 'hue':'The color given as a hue.',
+                 'rgbcolor':'The color',
+                 'zorder':'2D only: The layer level in which to draw',
+-                'linestyle':"2D only: The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'."}
++                'linestyle':"2D only: The style of the line, which is one of " 
++                "'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', "
++                "respectively."}
+ 
+     def _repr_(self):
+         """
+@@ -252,7 +254,9 @@
+             sage: A = arc((1,1),3,4,pi/4,(pi,4*pi/3)); A
+         """
+         import matplotlib.patches as patches
+-
++        from sage.plot.misc import get_matplotlib_linestyle
++        
++        
+         options = self.options()
+ 
+         p = patches.Arc(
+@@ -268,7 +272,7 @@
+         z = int(options.pop('zorder',1))
+         p.set_zorder(z)
+         c = to_mpl_color(options['rgbcolor'])
+-        p.set_linestyle(options['linestyle'])
++        p.set_linestyle(get_matplotlib_linestyle(options['linestyle'],return_type='long'))
+         p.set_edgecolor(c)
+         subplot.add_patch(p)
+ 
+@@ -316,7 +320,9 @@
+     - ``color``, ``rgbcolor`` - string or 2-tuple (default: 'blue') - the color
+       of the arc
+ 
+-    - ``linestyle`` - string (default: 'solid') - the style of the line
++    - ``linestyle`` - string (default: ``'solid'``) - The style of the line, 
++      which is one of ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``, 
++      or ``'--'``, ``':'``, ``'-'``, ``'-.'``, respectively.
+ 
+     EXAMPLES:
+ 
+@@ -336,6 +342,7 @@
+     Plot an arc of an ellipse in red with a dashed linestyle::
+ 
+         sage: arc((0,0), 2, 1, 0, (0,pi/2), linestyle="dashed", color="red")
++        sage: arc((0,0), 2, 1, 0, (0,pi/2), linestyle="--", color="red")
+ 
+     The default aspect ratio for arcs is 1.0::
+ 
+diff --git a/sage/plot/arrow.py b/sage/plot/arrow.py
+--- a/sage/plot/arrow.py
++++ b/sage/plot/arrow.py
+@@ -77,7 +77,9 @@
+              ('head', '2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)'), 
+              ('hue', 'The color given as a hue.'), 
+              ('legend_label', 'The label for this item in the legend.'),
+-             ('linestyle', "2d only: The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'."), 
++             ('linestyle', "2d only: The style of the line, which is one of 
++             'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', 
++             respectively."), 
+              ('rgbcolor', 'The color as an RGB tuple.'), 
+              ('width', 'The width of the shaft of the arrow, in points.'), 
+              ('zorder', '2-d only: The layer level in which to draw')]
+@@ -87,11 +89,12 @@
+                 'hue':'The color given as a hue.',
+                 'legend_label':'The label for this item in the legend.',
+                 'arrowstyle': 'todo',
+-                'linestyle': 'todo',
+                 'arrowsize':'The size of the arrowhead',
+                 'zorder':'2-d only: The layer level in which to draw',
+                 'head':'2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)',
+-                'linestyle':"2d only: The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'."}
++                'linestyle':"2d only: The style of the line, which is one of " 
++                "'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', "
++                "respectively."}
+         
+     def _repr_(self):
+         """
+@@ -116,6 +119,8 @@
+         This function implicitly ends up rendering this arrow on a matplotlib subplot:
+             sage: arrow(path=[[(0,1), (2,-1), (4,5)]])
+         """
++        from sage.plot.misc import get_matplotlib_linestyle
++        
+         options = self.options()
+         width = float(options['width'])
+         head = options.pop('head')
+@@ -132,7 +137,8 @@
+         bpath = Path(self.vertices, self.codes)
+         p = FancyArrowPatch(path=bpath,
+                             lw=width, arrowstyle='%s,head_width=%s,head_length=%s'%(style,head_width, head_length), 
+-                            fc=color, ec=color, linestyle=options['linestyle'])
++                            fc=color, ec=color)
++        p.set_linestyle(get_matplotlib_linestyle(options['linestyle'],return_type='long'))
+         p.set_zorder(options['zorder'])
+         p.set_label(options['legend_label'])
+         subplot.add_patch(p)
+@@ -196,14 +202,18 @@
+ 
+              sage: from sage.plot.arrow import Arrow
+              sage: list(sorted(Arrow(0,0,2,3,{})._allowed_options().iteritems()))
+-             [('arrowshorten', 'The length in points to shorten the arrow.'), 
+-             ('arrowsize', 'The size of the arrowhead'), 
+-             ('head', '2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)'), 
+-             ('hue', 'The color given as a hue.'), 
++             [('arrowshorten', 'The length in points to shorten the arrow.'),
++             ('arrowsize', 'The size of the arrowhead'),
++             ('head',
++             '2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)'),
++             ('hue', 'The color given as a hue.'),
+              ('legend_label', 'The label for this item in the legend.'),
+-             ('linestyle', "2d only: The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'."), 
+-             ('rgbcolor', 'The color as an RGB tuple.'), 
+-             ('width', 'The width of the shaft of the arrow, in points.'), 
++             ('linestyle',
++             "2d only: The style of the line, which is one of 'dashed', 
++             'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', 
++             respectively."),
++             ('rgbcolor', 'The color as an RGB tuple.'),
++             ('width', 'The width of the shaft of the arrow, in points.'),
+              ('zorder', '2-d only: The layer level in which to draw')]
+         """
+         return {'width':'The width of the shaft of the arrow, in points.',
+@@ -214,7 +224,9 @@
+                 'legend_label':'The label for this item in the legend.',
+                 'zorder':'2-d only: The layer level in which to draw',
+                 'head':'2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)',
+-                'linestyle':"2d only: The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'."}
++                'linestyle':"2d only: The style of the line, which is one of "
++                "'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', "
++                "respectively."}
+ 
+     def _plot3d_options(self, options=None):
+         """
+@@ -337,6 +349,9 @@
+             sage: two_stroke_re.search(contents) is None
+             True
+         """
++        from sage.plot.misc import get_matplotlib_linestyle
++        
++        
+         options = self.options()
+         head = options.pop('head')
+         if head == 0: style = '<|-'
+@@ -353,7 +368,8 @@
+         p = FancyArrowPatch((self.xtail, self.ytail), (self.xhead, self.yhead),
+                             lw=width, arrowstyle='%s,head_width=%s,head_length=%s'%(style,head_width, head_length), 
+                             shrinkA=arrowshorten_end, shrinkB=arrowshorten_end,
+-                            fc=color, ec=color, linestyle=options['linestyle'])
++                            fc=color, ec=color)
++        p.set_linestyle(get_matplotlib_linestyle(options['linestyle'],return_type='long'))
+         p.set_zorder(options['zorder'])
+         p.set_label(options['legend_label'])
+ 
+@@ -453,8 +469,9 @@
+       of the path (using 0 will swap headpoint and tailpoint).  This is ignored
+       in 3D plotting.
+ 
+-    - ``linestyle`` - The style of the line, which is one of 'dashed',
+-      'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', respectively.
++    - ``linestyle`` - (default: ``'solid'``) The style of the line, which is one of
++      ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``, or ``'--'``, ``':'``,
++      ``'-'``, ``'-.'``, respectively.
+ 
+     - ``width`` - (default: 2) the width of the arrow shaft, in points
+ 
+@@ -516,11 +533,6 @@
+         sage: arrow2d((-2, 2), (7,1), frame=True)
+         sage: arrow2d((-2, 2), (7,1)).show(frame=True)
+     """
+-    # Allow the usual linestyles used in the plot() command
+-    dict_line = {':': 'dotted', '-': 'solid', '--': 'dashed', '-.': 'dashdot'}
+-    if options['linestyle'] in dict_line:
+-        options['linestyle'] = dict_line[options['linestyle']]
+-
+     from sage.plot.all import Graphics
+     g = Graphics()
+     g._set_extra_kwds(Graphics._extract_kwds_for_show(options))
+diff --git a/sage/plot/bezier_path.py b/sage/plot/bezier_path.py
+--- a/sage/plot/bezier_path.py
++++ b/sage/plot/bezier_path.py
+@@ -69,19 +69,23 @@
+             sage: from sage.plot.bezier_path import BezierPath
+             sage: list(sorted(BezierPath([[[-1,2], [14,2.3], [17,4]]], {})._allowed_options().iteritems()))
+             [('alpha', 'How transparent the line is.'),
+-             ('fill', 'Whether or not to fill the polygon.'),
+-             ('linestyle',
+-              "The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'."),
+-             ('rgbcolor', 'The color as an RGB tuple.'),
+-             ('thickness', 'How thick the border of the polygon is.'),
+-             ('zorder', 'The layer level in which to draw')]
++            ('fill', 'Whether or not to fill the polygon.'),
++            ('linestyle',
++            "The style of the line, which is one of 'dashed', 'dotted', 'solid',
++            'dashdot', or '--', ':', '-', '-.', respectively."),
++            ('rgbcolor', 'The color as an RGB tuple.'),
++            ('thickness', 'How thick the border of the polygon is.'),
++            ('zorder', 'The layer level in which to draw')]
++
+         """
+         return {'alpha':'How transparent the line is.',
+                 'fill': 'Whether or not to fill the polygon.',
+                 'thickness':'How thick the border of the polygon is.',
+                 'rgbcolor':'The color as an RGB tuple.',
+                 'zorder':'The layer level in which to draw',
+-                'linestyle':"The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'."}
++                'linestyle':"The style of the line, which is one of 'dashed',"
++                " 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.',"
++                " respectively."}
+     
+     def _plot3d_options(self, options=None):
+         """
+@@ -170,6 +174,8 @@
+         """
+         from matplotlib.patches import PathPatch  
+         from matplotlib.path import Path
++        from sage.plot.misc import get_matplotlib_linestyle
++
+         options = dict(self.options())
+         
+         del options['alpha']
+@@ -190,7 +196,7 @@
+         c = to_mpl_color(options['rgbcolor'])
+         bpatch.set_edgecolor(c)
+         bpatch.set_facecolor(c)
+-        bpatch.set_linestyle(options['linestyle'])
++        bpatch.set_linestyle(get_matplotlib_linestyle(options['linestyle'],return_type='long'))
+         subplot.add_patch(bpatch)
+ 
+     def get_minmax_data(self):
+@@ -250,7 +256,9 @@
+     - ``alpha`` -- default: 1
+     - ``fill`` -- default: False
+     - ``thickness`` -- default: 1
+-    - ``linestyle`` -- default: 'solid'
++    - ``linestyle`` -- default: ``'solid'``, The style of the line, which is one
++       of ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``, or ``'--'``, 
++       ``':'``, ``'-'``, ``'-.'``, respectively. 
+     - ``rbgcolor`` -- default: (0,0,0)
+     - ``zorder`` -- the layer in which to draw
+         
+diff --git a/sage/plot/circle.py b/sage/plot/circle.py
+--- a/sage/plot/circle.py
++++ b/sage/plot/circle.py
+@@ -116,7 +116,9 @@
+                 'rgbcolor':'The color (edge and face) as an RGB tuple.',
+                 'hue':'The color given as a hue.',
+                 'zorder':'2D only: The layer level in which to draw',
+-                'linestyle':"2D only: The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'.",
++                'linestyle':"2D only: The style of the line, which is one of "
++                "'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', "
++                "respectively.",
+                 'clip': 'Whether or not to clip the circle.'}
+ 
+     def _repr_(self):
+@@ -137,7 +139,9 @@
+ 
+             sage: C = circle((2,pi), 2, edgecolor='black', facecolor='green', fill=True) 
+         """
+-        import matplotlib.patches as patches        
++        import matplotlib.patches as patches
++        from sage.plot.misc import get_matplotlib_linestyle
++        
+         options = self.options()
+         p = patches.Circle((float(self.x), float(self.y)), float(self.r), clip_on=options['clip'])
+         if not options['clip']:
+@@ -152,7 +156,7 @@
+             ec = fc = to_mpl_color(options['rgbcolor'])
+         p.set_edgecolor(ec)
+         p.set_facecolor(fc)
+-        p.set_linestyle(options['linestyle'])
++        p.set_linestyle(get_matplotlib_linestyle(options['linestyle'],return_type='long'))
+         p.set_label(options['legend_label'])
+         z = int(options.pop('zorder', 0))
+         p.set_zorder(z)
+@@ -229,7 +233,9 @@
+ 
+     - ``thickness`` - default: 1
+ 
+-    - ``linestyle`` - default: 'solid' (2D plotting only)
++    - ``linestyle`` - default: ``'solid'`` (2D plotting only) The style of the 
++      line, which is one of ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``,
++      or ``'--'``, ``':'``, ``'-'``, ``'-.'``, respectively.
+ 
+     - ``edgecolor`` - default: 'blue' (2D plotting only)
+ 
+@@ -243,14 +249,14 @@
+ 
+     EXAMPLES:
+ 
+-    The default color is blue, but this is easy to change::
++    The default color is blue, the default linestyle is solid, but this is easy to change::
+ 
+         sage: c = circle((1,1), 1)
+         sage: c
+ 
+     ::
+ 
+-        sage: c = circle((1,1), 1, rgbcolor=(1,0,0))
++        sage: c = circle((1,1), 1, rgbcolor=(1,0,0), linestyle='-.')
+         sage: c
+ 
+     We can also use this command to plot three-dimensional circles parallel
+diff --git a/sage/plot/ellipse.py b/sage/plot/ellipse.py
+--- a/sage/plot/ellipse.py
++++ b/sage/plot/ellipse.py
+@@ -150,7 +150,9 @@
+                 'rgbcolor':'The color (edge and face) as an RGB tuple.',
+                 'hue':'The color given as a hue.',
+                 'zorder':'2D only: The layer level in which to draw',
+-                'linestyle':"2D only: The style of the line, which is one of 'dashed', 'dotted', 'solid', 'dashdot'."}
++                'linestyle':"2D only: The style of the line, which is one of "
++                "'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.', "
++                "respectively."}
+ 
+     def _repr_(self):
+         """
+@@ -178,7 +180,9 @@
+ 
+             sage: ellipse((3,2),1,2)
+         """
+-        import matplotlib.patches as patches        
++        import matplotlib.patches as patches
++        from sage.plot.misc import get_matplotlib_linestyle
++        
+         options = self.options()
+         p = patches.Ellipse(
+                 (self.x,self.y),
+@@ -193,7 +197,7 @@
+             ec = fc = to_mpl_color(options['rgbcolor'])
+         p.set_edgecolor(ec)
+         p.set_facecolor(fc)
+-        p.set_linestyle(options['linestyle'])
++        p.set_linestyle(get_matplotlib_linestyle(options['linestyle'],return_type='long'))
+         p.set_label(options['legend_label'])
+         z = int(options.pop('zorder', 0))
+         p.set_zorder(z)
+@@ -239,7 +243,9 @@
+ 
+     - ``thickness`` - default: 1 - thickness of the line
+ 
+-    - ``linestyle`` - default: 'solid'
++    - ``linestyle`` - default: ``'solid'`` - The style of the line, which is one
++      of ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``, or ``'--'``, 
++      ``':'``, ``'-'``, ``'-.'``,  respectively.
+ 
+     - ``edgecolor`` - default: 'black' - color of the contour
+ 
+@@ -258,6 +264,7 @@
+     More complicated examples with tilted axes and drawing options::
+ 
+         sage: ellipse((0,0),3,1,pi/6,fill=True,alpha=0.3,linestyle="dashed")
++        sage: ellipse((0,0),3,1,pi/6,fill=True,alpha=0.3,linestyle="--")
+ 
+     ::
+ 
+diff --git a/sage/plot/hyperbolic_arc.py b/sage/plot/hyperbolic_arc.py
+--- a/sage/plot/hyperbolic_arc.py
++++ b/sage/plot/hyperbolic_arc.py
+@@ -54,7 +54,14 @@
+     def _repr_(self):
+         """
+         String representation of HyperbolicArc.
++        
++        TESTS::
++
++            sage: from sage.plot.hyperbolic_arc import HyperbolicArc
++            sage: HyperbolicArc(0, 1/2+I*sqrt(3)/2, {})._repr_()
++            'Hyperbolic arc (0.000000000000000, 0.500000000000000 + 0.866025403784439*I)'
+         """
++       
+         return "Hyperbolic arc (%s, %s)" % (self.A, self.B)
+     
+     def _hyperbolic_arc(self, z0, z3, first=False):
+@@ -112,7 +119,9 @@
+ 
+     - ``rgbcolor`` - default: 'blue'
+ 
+-    - ``linestyle`` - default: 'solid'
++    - ``linestyle`` - (default: ``'solid'``) The style of the line, which is one
++      of ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``, or ``'--'``, 
++      ``':'``, ``'-'``, ``'-.'``, respectively.
+ 
+     Examples:
+ 
+@@ -127,6 +136,7 @@
+     Show a hyperbolic arc form `i` to `2 i` with dashed line::
+     
+          sage: hyperbolic_arc(I, 2*I, linestyle='dashed')
++         sage: hyperbolic_arc(I, 2*I, linestyle='--')
+     """
+     from sage.plot.all import Graphics
+     g = Graphics()
+diff --git a/sage/plot/hyperbolic_triangle.py b/sage/plot/hyperbolic_triangle.py
+--- a/sage/plot/hyperbolic_triangle.py
++++ b/sage/plot/hyperbolic_triangle.py
+@@ -64,7 +64,13 @@
+ 
+     def _repr_(self):
+         """
+-        String representation of HyperbolicTriangle.
++        String representation of HyperbolicArc.
++        
++        TESTS::
++
++            sage: from sage.plot.hyperbolic_triangle import HyperbolicTriangle
++            sage: HyperbolicTriangle(0, 1/2, I,{})._repr_()
++            'Hyperbolic triangle (0.000000000000000, 0.500000000000000, 1.00000000000000*I)'
+         """
+         return "Hyperbolic triangle (%s, %s, %s)" % (self.A, self.B, self.C)
+     
+@@ -125,7 +131,9 @@
+ 
+     - ``rgbcolor`` - default: 'blue'
+ 
+-    - ``linestyle`` - default: 'solid'
++    - ``linestyle`` - (default: ``'solid'``) The style of the line, which is 
++      one of ``'dashed'``, ``'dotted'``, ``'solid'``, ``'dashdot'``, or ``'--'``,
++      ``':'``, ``'-'``, ``'-.'``, respectively.
+ 
+     EXAMPLES:
+ 
+@@ -134,9 +142,9 @@
+     
+          sage: hyperbolic_triangle(0, -1/2+I*sqrt(3)/2, 1/2+I*sqrt(3)/2)
+ 
+-    A hyperbolic triangle with coordinates 0, 1 and 2+i::
++    A hyperbolic triangle with coordinates 0, 1 and 2+i and a dashed line::
+     
+-         sage: hyperbolic_triangle(0, 1, 2+i, fill=true, rgbcolor='red')
++         sage: hyperbolic_triangle(0, 1, 2+i, fill=true, rgbcolor='red', linestyle='--')
+     """
+     from sage.plot.all import Graphics
+     g = Graphics()
+diff --git a/sage/plot/misc.py b/sage/plot/misc.py
+--- a/sage/plot/misc.py
++++ b/sage/plot/misc.py
+@@ -236,3 +236,53 @@
+     from sage.rings.arith import convergents
+     c=[i for i in convergents(n/const.n()) if i.denominator()<12]
+     return '$%s$'%latex(c[-1]*const)
++
++    
++def get_matplotlib_linestyle(linestyle, return_type):
++    """
++    Function which translates between matplotlib linestyle in short notation 
++    (i.e. '-', '--', ':', '-.') and long notation (i.e. 'solid', 'dashed', 
++    'dotted', 'dashdot' ). If linestyle is none of these allowed options the 
++    function raises a value Error.
++    Note: This function does NOT accept mixtures of linestyle and drawstyle as 
++    e.g. 'step--'
++
++    EXAMPLES:
++
++    Here is an example how to call this function::
++
++        sage: from sage.plot.misc import get_matplotlib_linestyle
++        sage: print get_matplotlib_linestyle(':', return_type='short')
++        :
++        
++        sage: from sage.plot.misc import get_matplotlib_linestyle
++        sage: print get_matplotlib_linestyle(':', return_type='long')
++        dotted
++
++    """
++    long_to_short_dict={'solid' : '-','dashed' : '--', 'dotted' : ':',
++                        'dashdot':'-.'}
++    short_to_long_dict={'-' : 'solid','--' : 'dashed', ':' : 'dotted',
++                        '-.':'dashdot'}
++    if return_type == 'short':
++        if linestyle in short_to_long_dict.keys():
++            return linestyle
++        elif linestyle in long_to_short_dict.keys():
++            return long_to_short_dict[linestyle]
++        else:
++            raise ValueError("WARNING: Unrecognized linestyle\n"
++                             "possible linestyle options are:\n{'solid', "
++                             "'dashed', 'dotted', dashdot'} respectively {'-', "
++                             "'--', ':', '-.'}"%(linestyle))    
++         
++    elif return_type == 'long':
++        if linestyle in short_to_long_dict.keys():
++            return short_to_long_dict[linestyle]
++        elif linestyle in long_to_short_dict.keys():
++            return linestyle
++        else:
++            raise ValueError("WARNING: Unrecognized linestyle\n"
++                             "possible linestyle options are:\n{'solid', "
++                             "'dashed', 'dotted', dashdot'} respectively {'-', "
++                             "'--', ':', '-.'}"%(linestyle))    
++         
+\ No newline at end of file

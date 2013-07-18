@@ -1,0 +1,105 @@
+# HG changeset patch
+# User Burcin Erocal <burcin@erocal.org>
+# Date 1352290923 -3600
+# Node ID 47e1d51e43cdd4adcb26db520e98ce9698751a88
+# Parent  5d8c13e7b81a1e152855073f97a4d48ee97255d1
+trac 13645: fix input handling issues with the solve() function.
+
+diff --git a/sage/symbolic/expression.pyx b/sage/symbolic/expression.pyx
+--- a/sage/symbolic/expression.pyx
++++ b/sage/symbolic/expression.pyx
+@@ -9000,6 +9000,13 @@
+ 
+             sage: solve([x-4], [x])
+             [x == 4]
++
++        :trac:`13645`: fixed::
++
++            sage: x.solve((1,2))
++            Traceback (most recent call last):
++            ...
++            TypeError: 1 is not a valid variable.
+         """
+         import operator
+         cdef Expression ex
+@@ -9039,7 +9046,7 @@
+             x = v[0]
+ 
+         if not isinstance(x, Expression):
+-            raise TypeError, "%s is not a valid variable."%x
++            raise TypeError("%s is not a valid variable."%repr(x))
+ 
+         m = ex._maxima_()
+         P = m.parent()
+diff --git a/sage/symbolic/relation.py b/sage/symbolic/relation.py
+--- a/sage/symbolic/relation.py
++++ b/sage/symbolic/relation.py
+@@ -680,9 +680,9 @@
+     Test if the empty list is returned, too, when (a list of)
+     dictionaries (is) are requested (#8553)::
+ 
+-        sage: solve([0==1],x)
++        sage: solve([SR(0)==1],x)
+         []
+-        sage: solve([0==1],x,solution_dict=True)
++        sage: solve([SR(0)==1],x,solution_dict=True)
+         []
+         sage: solve([x==1,x==-1],x)
+         []
+@@ -707,6 +707,21 @@
+         sage: solve(x^4+2>0,x)
+         [x < +Infinity]
+ 
++    Test for user friendly input handling :trac:`13645`::
++
++        sage: poly.<a,b> = PolynomialRing(RR)
++        sage: solve([a+b+a*b == 1], a)
++        Traceback (most recent call last):
++        ...
++        TypeError: The first argument to solve() should be a symbolic expression or a list of symbolic expressions, cannot handle <type 'bool'>
++        sage: solve([a, b], (1, a))
++        Traceback (most recent call last):
++        ...
++        TypeError: 1 is not a valid variable.
++        sage: solve([x == 1], (1, a))
++        Traceback (most recent call last):
++        ...
++        TypeError: 1 is not a valid variable.
+     """
+     from sage.symbolic.expression import is_Expression
+     if is_Expression(f): # f is a single expression
+@@ -716,15 +731,21 @@
+     if not isinstance(f, (list, tuple)):
+         raise TypeError("The first argument must be a symbolic expression or a list of symbolic expressions.")
+ 
+-    if len(f)==1 and is_Expression(f[0]):
+-        # f is a list with a single expression
+-        return f[0].solve(*args,**kwds)
++    if len(f)==1:
++        # f is a list with a single element
++        if is_Expression(f[0]):
++            # if its a symbolic expression call solve method of this expression
++            return f[0].solve(*args,**kwds)
++        # otherwise complain
++        raise TypeError("The first argument to solve() should be a symbolic "
++                        "expression or a list of symbolic expressions, "
++                        "cannot handle %s"%repr(type(f[0])))
+ 
+     # f is a list of such expressions or equations
+     from sage.symbolic.ring import is_SymbolicVariable
+ 
+     if len(args)==0:
+-        raise TypeError, "Please input variables to solve for."
++        raise TypeError("Please input variables to solve for.")
+     if is_SymbolicVariable(args[0]):
+         variables = args
+     else:
+@@ -732,7 +753,7 @@
+     
+     for v in variables:
+         if not is_SymbolicVariable(v):
+-            raise TypeError, "%s is not a valid variable."%v
++            raise TypeError("%s is not a valid variable."%repr(v))
+ 
+     try:
+         f = [s for s in f if s is not True]

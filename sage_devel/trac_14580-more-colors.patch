@@ -1,0 +1,255 @@
+# HG changeset patch
+# User Karl-Dieter Crisman <kcrisman@gmail.com>
+# Date 1371595255 14400
+# Node ID c022f2d2536f5e708b4daf2a780a0beb99c01c03
+# Parent  a2714dfdc18da0e4eafd0b843c65de04a1660252
+Trac 14580 - more legend colors in different plot types
+
+diff --git a/sage/plot/arrow.py b/sage/plot/arrow.py
+--- a/sage/plot/arrow.py
++++ b/sage/plot/arrow.py
+@@ -76,6 +76,7 @@
+              ('arrowstyle', 'todo'),
+              ('head', '2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)'),
+              ('hue', 'The color given as a hue.'),
++             ('legend_color', 'The color of the legend text.'),
+              ('legend_label', 'The label for this item in the legend.'),
+              ('linestyle', "2d only: The style of the line, which is one of
+              'dashed', 'dotted', 'solid', 'dashdot', or '--', ':', '-', '-.',
+@@ -88,6 +89,7 @@
+                 'rgbcolor':'The color as an RGB tuple.',
+                 'hue':'The color given as a hue.',
+                 'legend_label':'The label for this item in the legend.',
++                'legend_color':'The color of the legend text.',
+                 'arrowstyle': 'todo',
+                 'arrowsize':'The size of the arrowhead',
+                 'zorder':'2-d only: The layer level in which to draw',
+@@ -207,6 +209,7 @@
+              ('head',
+              '2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)'),
+              ('hue', 'The color given as a hue.'),
++             ('legend_color', 'The color of the legend text.'),
+              ('legend_label', 'The label for this item in the legend.'),
+              ('linestyle',
+              "2d only: The style of the line, which is one of 'dashed', 
+@@ -222,6 +225,7 @@
+                 'arrowshorten':'The length in points to shorten the arrow.',
+                 'arrowsize':'The size of the arrowhead',
+                 'legend_label':'The label for this item in the legend.',
++                'legend_color':'The color of the legend text.',
+                 'zorder':'2-d only: The layer level in which to draw',
+                 'head':'2-d only: Which end of the path to draw the head (one of 0 (start), 1 (end) or 2 (both)',
+                 'linestyle':"2d only: The style of the line, which is one of "
+@@ -486,6 +490,8 @@
+ 
+     - ``legend_label`` - the label for this item in the legend
+ 
++    - ``legend_color`` - the color for the legend label
++
+     - ``zorder`` - the layer level to draw the arrow-- note that this is ignored in 3D
+       plotting.
+ 
+@@ -523,10 +529,9 @@
+ 
+         sage: arrow2d(headpoint=None, tailpoint=None)
+ 
+-
+     We can also draw an arrow with a legend::
+ 
+-        sage: arrow((0,0), (0,2), legend_label='up')
++        sage: arrow((0,0), (0,2), legend_label='up', legend_color='purple')
+ 
+     Extra options will get passed on to show(), as long as they are valid::
+ 
+@@ -549,4 +554,5 @@
+         raise TypeError('Arrow requires either both headpoint and tailpoint or a path parameter.')
+     if options['legend_label']:
+         g.legend(True)
++        g._legend_colors = [options['legend_color']]
+     return g
+diff --git a/sage/plot/circle.py b/sage/plot/circle.py
+--- a/sage/plot/circle.py
++++ b/sage/plot/circle.py
+@@ -110,6 +110,7 @@
+         return {'alpha':'How transparent the figure is.',
+                 'fill':'Whether or not to fill the circle.',
+                 'legend_label':'The label for this item in the legend.',
++                'legend_color':'The color of the legend text.',
+                 'thickness':'How thick the border of the circle is.',
+                 'edgecolor':'2D only: The color of the edge as an RGB tuple.',
+                 'facecolor':'2D only: The color of the face as an RGB tuple.',
+@@ -218,7 +219,7 @@
+ 
+ @rename_keyword(color='rgbcolor')
+ @options(alpha=1, fill=False, thickness=1, edgecolor='blue', facecolor='blue', linestyle='solid',
+-         zorder=5, legend_label=None, clip=True, aspect_ratio=1.0)
++         zorder=5, legend_label=None, legend_color=None, clip=True, aspect_ratio=1.0)
+ def circle(center, radius, **options):
+     """
+     Return a circle at a point center = `(x,y)` (or `(x,y,z)` and 
+@@ -247,6 +248,8 @@
+ 
+     - ``legend_label`` - the label for this item in the legend
+ 
++    - ``legend_color`` - the color for the legend label
++
+     EXAMPLES:
+ 
+     The default color is blue, the default linestyle is solid, but this is easy to change::
+@@ -299,10 +302,14 @@
+ 
+         sage: circle((2,3), 1, fill=True, edgecolor='blue', rgbcolor='green', hue=.8)
+ 
+-    And a circle with a legend::
++    And circles with legends::
+ 
+         sage: circle((4,5), 1, rgbcolor='yellow', fill=True, legend_label='the sun').show(xmin=0, ymin=0)
+ 
++    ::
++
++        sage: circle((4,5), 1, legend_label='the sun', legend_color='yellow').show(xmin=0, ymin=0)
++
+     Extra options will get passed on to show(), as long as they are valid::
+ 
+         sage: circle((0, 0), 2, figsize=[10,10]) # That circle is huge!
+@@ -341,6 +348,7 @@
+     g.add_primitive(Circle(center[0], center[1], radius, options))
+     if options['legend_label']:
+         g.legend(True)
++        g._legend_colors = [options['legend_color']]
+     if len(center)==2:
+         return g
+     elif len(center)==3:
+diff --git a/sage/plot/disk.py b/sage/plot/disk.py
+--- a/sage/plot/disk.py
++++ b/sage/plot/disk.py
+@@ -123,6 +123,7 @@
+         return {'alpha':'How transparent the figure is.',
+                 'fill':'Whether or not to fill the disk.',
+                 'legend_label':'The label for this item in the legend.',
++                'legend_color':'The color of the legend text.',
+                 'thickness':'How thick the border of the disk is.',
+                 'rgbcolor':'The color as an RGB tuple.',
+                 'hue':'The color given as a hue.',
+@@ -283,6 +284,10 @@
+ 
+     TESTS:
+ 
++    Testing that legend labels work right::
++
++        sage: disk((2,4), 3, (pi/8, pi/4), hue=1, legend_label='disk', legend_color='blue')
++
+     We cannot currently plot disks in more than three dimensions::
+ 
+         sage: d = disk((1,1,1,1), 1, (0,pi))
+@@ -305,6 +310,7 @@
+     g.add_primitive(Disk(point, radius, angle, options))
+     if options['legend_label']:
+         g.legend(True)
++        g._legend_colors = [options['legend_color']]
+     if len(point)==2:
+         return g
+     elif len(point)==3:
+diff --git a/sage/plot/ellipse.py b/sage/plot/ellipse.py
+--- a/sage/plot/ellipse.py
++++ b/sage/plot/ellipse.py
+@@ -144,6 +144,7 @@
+         return {'alpha':'How transparent the figure is.',
+                 'fill': 'Whether or not to fill the ellipse.',
+                 'legend_label':'The label for this item in the legend.',
++                'legend_color':'The color of the legend text.',
+                 'thickness':'How thick the border of the ellipse is.',
+                 'edgecolor':'2D only: The color of the edge as an RGB tuple.',
+                 'facecolor':'2D only: The color of the face as an RGB tuple.',
+@@ -219,7 +220,7 @@
+ 
+ @rename_keyword(color='rgbcolor')
+ @options(alpha=1, fill=False, thickness=1, edgecolor='blue', facecolor='blue', linestyle='solid', zorder=5,
+-         aspect_ratio=1.0, legend_label=None)
++         aspect_ratio=1.0, legend_label=None, legend_color=None)
+ def ellipse(center, r1, r2, angle=0, **options):
+     """
+     Return an ellipse centered at a point center = ``(x,y)`` with radii =
+@@ -254,6 +255,10 @@
+     - ``rgbcolor`` - 2D or 3D plotting.  This option overrides
+       ``edgecolor`` and ``facecolor`` for 2D plotting.
+ 
++    - ``legend_label`` - the label for this item in the legend
++
++    - ``legend_color`` - the color for the legend label
++
+     EXAMPLES:
+ 
+     An ellipse centered at (0,0) with major and minor axes of lengths 2 and 1.
+@@ -286,6 +291,10 @@
+         Traceback (most recent call last):
+         ...
+         NotImplementedError: plotting ellipse in 3D is not implemented
++
++    We can also give ellipses a legend::
++
++        sage: ellipse((0,0),2,1,legend_label="My ellipse", legend_color='green')
+     """
+     from sage.plot.all import Graphics
+     g = Graphics()
+@@ -302,6 +311,7 @@
+     g.add_primitive(Ellipse(center[0],center[1],r1,r2,angle,options))
+     if options['legend_label']:
+         g.legend(True)
++        g._legend_colors = [options['legend_color']]
+     if len(center)==2:
+         return g
+     elif len(center)==3:
+diff --git a/sage/plot/point.py b/sage/plot/point.py
+--- a/sage/plot/point.py
++++ b/sage/plot/point.py
+@@ -354,6 +354,11 @@
+ 
+         sage: point((0,0), rgbcolor='black', pointsize=40, legend_label='origin')
+ 
++    The legend can be colored::
++
++        sage: P = points([(0,0),(1,0)], pointsize=40, legend_label='origin', legend_color='red')
++        sage: P + plot(x^2,(x,0,1), legend_label='plot', legend_color='green')
++
+     Extra options will get passed on to show(), as long as they are valid::
+ 
+         sage: point([(cos(theta), sin(theta)) for theta in srange(0, 2*pi, pi/8)], frame=True)
+diff --git a/sage/plot/polygon.py b/sage/plot/polygon.py
+--- a/sage/plot/polygon.py
++++ b/sage/plot/polygon.py
+@@ -147,6 +147,7 @@
+                 'thickness': 'How thick the border line is.',
+                 'fill':'Whether or not to fill the polygon.',
+                 'legend_label':'The label for this item in the legend.',
++                'legend_color':'The color of the legend text.',
+                 'rgbcolor':'The color as an RGB tuple.',
+                 'hue':'The color given as a hue.',
+                 'zorder':'The layer level in which to draw'}
+@@ -275,7 +276,8 @@
+         return polygon3d(points, **options)
+ 
+ @rename_keyword(color='rgbcolor')
+-@options(alpha=1, rgbcolor=(0,0,1), thickness=None, legend_label=None, aspect_ratio=1.0, fill=True)
++@options(alpha=1, rgbcolor=(0,0,1), thickness=None, legend_label=None, legend_color=None,
++         aspect_ratio=1.0, fill=True)
+ def polygon2d(points, **options):
+     r"""
+     Returns a 2-dimensional polygon defined by ``points``.
+@@ -347,6 +349,10 @@
+         sage: L = [[sin(pi*i/100)+sin(pi*i/50),-(1+cos(pi*i/100)+cos(pi*i/50))] for i in range(-100,100)]
+         sage: polygon2d(L, rgbcolor=(1,1/4,1/2))
+ 
++    One can do the same one with a colored legend label::
++
++        sage: polygon2d(L, color='red', legend_label='For you!', legend_color='red')
++
+     Polygons have a default aspect ratio of 1.0::
+ 
+         sage: polygon2d([[1,2], [5,6], [5,0]]).aspect_ratio()
+@@ -379,4 +385,5 @@
+     g.add_primitive(Polygon(xdata, ydata, options))
+     if options['legend_label']:
+         g.legend(True)
++        g._legend_colors = [options['legend_color']]
+     return g 

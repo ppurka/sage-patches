@@ -1,0 +1,19 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1375547293 -28800
+# Node ID 50035e1af5546e239d99237f429eb1f813511611
+# Parent  6bf6b84d3edb65db1e72bd10e812f7dea6e0cc99
+lame fix for latex
+
+diff --git a/sage/misc/latex.py b/sage/misc/latex.py
+--- a/sage/misc/latex.py
++++ b/sage/misc/latex.py
+@@ -2503,7 +2503,7 @@
+         '\\alpha'
+     """
+     if a in common_varnames:
+-        return "\\" + a
++        return "\\" + a + "{}"
+     elif len(a) == 1:
+         return a
+     elif is_fname is True:

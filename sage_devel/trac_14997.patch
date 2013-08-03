@@ -1,0 +1,21 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1375551813 -28800
+# Node ID aac1b5965d36a0383cbd63317af04f52a8cb4a80
+# Parent  6bf6b84d3edb65db1e72bd10e812f7dea6e0cc99
+remove redundant lines from LinearCode.shortened()
+
+diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
+--- a/sage/coding/linear_code.py
++++ b/sage/coding/linear_code.py
+@@ -2589,9 +2589,7 @@
+         """
+         Cd = self.dual_code()
+         Cdp = Cd.punctured(L)
+-        Cdpd = Cdp.dual_code()
+-        Gs = Cdpd.gen_mat()
+-        return LinearCode(Gs)
++        return Cdp.dual_code()
+ 
+     @rename_keyword(deprecation=11033, method="algorithm")
+     def spectrum(self, algorithm=None):

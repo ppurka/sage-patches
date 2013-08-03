@@ -1,14 +1,31 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
-# Date 1375551813 -28800
-# Node ID aac1b5965d36a0383cbd63317af04f52a8cb4a80
+# Date 1375553099 -28800
+# Node ID 7f74ba451f934b8fab222edd75e1a6e18a8bf90f
 # Parent  6bf6b84d3edb65db1e72bd10e812f7dea6e0cc99
-remove redundant lines from LinearCode.shortened()
+i) remove redundant lines from shortened()
+ii) speed up punctured()
 
 diff --git a/sage/coding/linear_code.py b/sage/coding/linear_code.py
 --- a/sage/coding/linear_code.py
 +++ b/sage/coding/linear_code.py
-@@ -2589,9 +2589,7 @@
+@@ -2313,9 +2313,13 @@
+             sage: C.punctured([1,2])
+             Linear code of length 5, dimension 4 over Finite Field of size 2
+         """
+-        G = self.gen_mat()        
++        G = self.gen_mat()
+         GL = G.matrix_from_columns([i for i in range(G.ncols()) if i not in L])
+-        return LinearCode(GL.row_space().basis_matrix())
++        r = GL.rank()
++        if r < GL.nrows():
++            GL.echelonize()
++            GL = GL[:r]
++        return LinearCode(GL)
+ 
+     def random_element(self, *args, **kwds):
+         """
+@@ -2589,9 +2593,7 @@
          """
          Cd = self.dual_code()
          Cdp = Cd.punctured(L)

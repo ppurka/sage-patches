@@ -1,0 +1,98 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1375713820 -28800
+# Node ID 83671b67f996db99a61c30bb4695f85a440b86a2
+# Parent  6bf6b84d3edb65db1e72bd10e812f7dea6e0cc99
+fix aspect_ratio and frame_aspect_ratio for 3D plots
+
+diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
+--- a/sage/plot/plot3d/base.pyx
++++ b/sage/plot/plot3d/base.pyx
+@@ -145,6 +145,12 @@
+         """
+         Sets or gets the preferred aspect ratio of self.
+ 
++        INPUT:
++
++        - ``v`` -- (default: None) must be a list or tuple of length three,
++          or the integer ``1``. If no arguments are provided then the
++          default aspect ratio is returned.
++
+         EXAMPLES::
+ 
+             sage: D = dodecahedron()
+@@ -161,8 +167,9 @@
+             if v == 1:
+                 v = (1,1,1)
+             if not isinstance(v, (tuple, list)):
+-                raise TypeError, "aspect_ratio must be a list or tuple of length 3 or the integer 1"
+-            self._aspect_ratio = [float(a) for a in v]
++                raise TypeError("aspect_ratio must be a list or tuple of "
++                                "length 3 or the integer 1")
++            self._aspect_ratio = map(float, v)
+         else:
+             if self._aspect_ratio is None:
+                 self._aspect_ratio = [1.0,1.0,1.0]
+@@ -172,6 +179,12 @@
+         """
+         Sets or gets the preferred frame aspect ratio of self.
+ 
++        INPUT:
++
++        - ``v`` -- (default: None) must be a list or tuple of length three,
++          or the integer ``1``. If no arguments are provided then the
++          default frame aspect ratio is returned.
++
+         EXAMPLES::
+ 
+             sage: D = dodecahedron()
+@@ -188,8 +201,9 @@
+             if v == 1:
+                 v = (1,1,1)
+             if not isinstance(v, (tuple, list)):
+-                raise TypeError, "frame_aspect_ratio must be a list or tuple of length 3 or the integer 1"
+-            self._frame_aspect_ratio = [float(a) for a in v]
++                raise TypeError("frame_aspect_ratio must be a list or tuple of "
++                                "length 3 or the integer 1")
++            self._frame_aspect_ratio = map(float, v)
+         else:
+             if self._frame_aspect_ratio is None:
+                 self._frame_aspect_ratio = [1.0,1.0,1.0]
+@@ -845,7 +859,7 @@
+         # box defined by box_min, box_max, it has the right aspect ratio
+         a_min, a_max = self._safe_bounding_box()
+ 
+-        if aspect_ratio == "automatic":
++        if aspect_ratio == "automatic" or aspect_ratio == [1.0]*3:
+             return a_min, a_max
+ 
+         longest_side = 0; longest_length = a_max[0] - a_min[0]
+@@ -944,13 +958,12 @@
+         for key_to_remove in SHOW_DEFAULTS.keys():
+             kwds.pop(key_to_remove, None)
+ 
+-        if opts['aspect_ratio'] == 1:
+-            opts['aspect_ratio'] = (1, 1, 1)
+-        if not isinstance(opts['aspect_ratio'], (str, list, tuple)):
+-            raise TypeError, 'aspect ratio must be a string, list, tuple, or 1'
+         # deal with any aspect_ratio instances passed from the default options to plot
+         if opts['aspect_ratio'] == 'auto':
+             opts['aspect_ratio'] = 'automatic'
++        if opts['aspect_ratio'] != 'automatic':
++            self.aspect_ratio(opts['aspect_ratio'])
++        aspect_ratio = self.aspect_ratio()
+ 
+         if opts['frame_aspect_ratio'] == 'automatic':
+             if opts['aspect_ratio'] != 'automatic':
+@@ -958,9 +971,10 @@
+                 # the object we are rendering given the aspect_ratio we'll use
+                 # for it.
+                 opts['frame_aspect_ratio'] = \
+-                    self._determine_frame_aspect_ratio(opts['aspect_ratio'])
++                    self._determine_frame_aspect_ratio(aspect_ratio)
+             else:
+                 opts['frame_aspect_ratio'] = self.frame_aspect_ratio()
++        opts['aspect_ratio'] = aspect_ratio
+ 
+         if not isinstance(opts['figsize'], (list,tuple)):
+             opts['figsize'] = [opts['figsize'], opts['figsize']]

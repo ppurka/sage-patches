@@ -1,0 +1,103 @@
+# HG changeset patch
+# User Punarbasu Purkayastha <ppurka@gmail.com>
+# Date 1378006145 -28800
+# Node ID b0ea9aedd9fd25624af8a6b0b074424464a749b0
+# Parent  aef7647d16e8e1f311c8ab0ea0838c39224f0892
+remove matrix.copy() - deprecated for four years
+
+diff --git a/sage/matrix/matrix0.pyx b/sage/matrix/matrix0.pyx
+--- a/sage/matrix/matrix0.pyx
++++ b/sage/matrix/matrix0.pyx
+@@ -121,62 +121,6 @@
+         self._nrows = parent.nrows()
+         self._ncols = parent.ncols()
+ 
+-    def copy(self):
+-        """
+-        Make a copy of self. If self is immutable, the copy will be
+-        mutable.
+-        
+-        .. warning::
+-
+-           This method is deprecated and will be removed from a future
+-           version of Sage.  Please use the ``copy()`` function
+-           instead.  In other words, instead of doing ``m.copy()``, do ``copy(m)``.
+-
+-        .. warning::
+-
+-           The individual elements aren't themselves copied (though
+-           the list is copied). This shouldn't matter, since ring
+-           elements are (almost!) always immutable in Sage.
+-        
+-        EXAMPLES:
+-        
+-
+-        The :meth:`.copy` method is deprecated.  Instead, use the
+-        :func:`copy` function::
+-
+-            sage: a = matrix([[1,2],[3,4]])
+-            sage: b = a.copy()
+-            doctest:...: DeprecationWarning: the .copy() method is deprecated; please use the copy() function instead, for example, copy(M)
+-            See http://trac.sagemath.org/6521 for details.
+-            sage: b = copy(a)
+-
+-        ::
+-
+-            sage: R.<x> = QQ['x']
+-            sage: a = matrix(R,2,[x+1,2/3,  x^2/2, 1+x^3]); a
+-            [  x + 1     2/3]
+-            [1/2*x^2 x^3 + 1]
+-            sage: b = copy(a)
+-            sage: b[0,0] = 5
+-            sage: b
+-            [      5     2/3]
+-            [1/2*x^2 x^3 + 1]
+-            sage: a
+-            [  x + 1     2/3]
+-            [1/2*x^2 x^3 + 1]
+-        
+-        ::
+-        
+-            sage: b = copy(a)
+-            sage: f = b[0,0]; f[0] = 10
+-            Traceback (most recent call last):
+-            ...
+-            IndexError: polynomials are immutable
+-        """
+-        from sage.misc.superseded import deprecation
+-        deprecation(6521, "the .copy() method is deprecated; please use the copy() function instead, for example, copy(M)")
+-        return self.__copy__()
+-
+     def list(self):
+         """
+         List of the elements of self ordered by elements in each
+diff --git a/sage/matrix/matrix_generic_dense.pyx b/sage/matrix/matrix_generic_dense.pyx
+--- a/sage/matrix/matrix_generic_dense.pyx
++++ b/sage/matrix/matrix_generic_dense.pyx
+@@ -223,6 +223,26 @@
+             [0|1 2]
+             [-+---]
+             [3|4 5]
++            sage: R.<x> = QQ['x']
++            sage: a = matrix(R,2,[x+1,2/3,  x^2/2, 1+x^3]); a
++            [  x + 1     2/3]
++            [1/2*x^2 x^3 + 1]
++            sage: b = copy(a)
++            sage: b[0,0] = 5
++            sage: b
++            [      5     2/3]
++            [1/2*x^2 x^3 + 1]
++            sage: a
++            [  x + 1     2/3]
++            [1/2*x^2 x^3 + 1]
++
++        ::
++
++            sage: b = copy(a)
++            sage: f = b[0,0]; f[0] = 10
++            Traceback (most recent call last):
++            ...
++            IndexError: polynomials are immutable
+         """
+         A = self.__class__(self._parent, self._entries, copy = True, coerce=False)
+         if self._subdivisions is not None:

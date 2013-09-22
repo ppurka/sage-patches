@@ -1,14 +1,14 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1375713820 -28800
-# Node ID 83671b67f996db99a61c30bb4695f85a440b86a2
-# Parent  6bf6b84d3edb65db1e72bd10e812f7dea6e0cc99
+# Node ID aeae26f608c19a4c855680601bd4ee494eb426f3
+# Parent  f102f013e8cadd7a8ad40bffb8bbdaa3c6609e07
 fix aspect_ratio and frame_aspect_ratio for 3D plots
 
 diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
 --- a/sage/plot/plot3d/base.pyx
 +++ b/sage/plot/plot3d/base.pyx
-@@ -145,6 +145,12 @@
+@@ -164,6 +164,12 @@
          """
          Sets or gets the preferred aspect ratio of self.
  
@@ -21,7 +21,7 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
          EXAMPLES::
  
              sage: D = dodecahedron()
-@@ -161,8 +167,9 @@
+@@ -180,8 +186,9 @@
              if v == 1:
                  v = (1,1,1)
              if not isinstance(v, (tuple, list)):
@@ -33,7 +33,7 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
          else:
              if self._aspect_ratio is None:
                  self._aspect_ratio = [1.0,1.0,1.0]
-@@ -172,6 +179,12 @@
+@@ -191,6 +198,12 @@
          """
          Sets or gets the preferred frame aspect ratio of self.
  
@@ -46,7 +46,7 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
          EXAMPLES::
  
              sage: D = dodecahedron()
-@@ -188,8 +201,9 @@
+@@ -207,8 +220,9 @@
              if v == 1:
                  v = (1,1,1)
              if not isinstance(v, (tuple, list)):
@@ -58,7 +58,7 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
          else:
              if self._frame_aspect_ratio is None:
                  self._frame_aspect_ratio = [1.0,1.0,1.0]
-@@ -845,7 +859,7 @@
+@@ -864,7 +878,7 @@
          # box defined by box_min, box_max, it has the right aspect ratio
          a_min, a_max = self._safe_bounding_box()
  
@@ -67,7 +67,7 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
              return a_min, a_max
  
          longest_side = 0; longest_length = a_max[0] - a_min[0]
-@@ -944,13 +958,12 @@
+@@ -963,23 +977,18 @@
          for key_to_remove in SHOW_DEFAULTS.keys():
              kwds.pop(key_to_remove, None)
  
@@ -78,21 +78,32 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
          # deal with any aspect_ratio instances passed from the default options to plot
          if opts['aspect_ratio'] == 'auto':
              opts['aspect_ratio'] = 'automatic'
-+        if opts['aspect_ratio'] != 'automatic':
-+            self.aspect_ratio(opts['aspect_ratio'])
-+        aspect_ratio = self.aspect_ratio()
++        if opts['aspect_ratio'] == 'automatic':
++            opts['aspect_ratio'] = self.aspect_ratio()
  
          if opts['frame_aspect_ratio'] == 'automatic':
-             if opts['aspect_ratio'] != 'automatic':
-@@ -958,9 +971,10 @@
-                 # the object we are rendering given the aspect_ratio we'll use
-                 # for it.
-                 opts['frame_aspect_ratio'] = \
+-            if opts['aspect_ratio'] != 'automatic':
+-                # Set the aspect_ratio of the frame to be the same as that of
+-                # the object we are rendering given the aspect_ratio we'll use
+-                # for it.
+-                opts['frame_aspect_ratio'] = \
 -                    self._determine_frame_aspect_ratio(opts['aspect_ratio'])
-+                    self._determine_frame_aspect_ratio(aspect_ratio)
-             else:
-                 opts['frame_aspect_ratio'] = self.frame_aspect_ratio()
-+        opts['aspect_ratio'] = aspect_ratio
+-            else:
+-                opts['frame_aspect_ratio'] = self.frame_aspect_ratio()
++            # Set the aspect_ratio of the frame to be the same as that of
++            # the object we are rendering given the aspect_ratio we'll use
++            # for it.
++            opts['frame_aspect_ratio'] = \
++                self._determine_frame_aspect_ratio(opts['aspect_ratio'])
  
          if not isinstance(opts['figsize'], (list,tuple)):
              opts['figsize'] = [opts['figsize'], opts['figsize']]
+@@ -1082,7 +1091,7 @@
+         viewer = opts['viewer']
+         verbosity = opts['verbosity']
+         figsize = opts['figsize']
+-        aspect_ratio = opts['aspect_ratio']
++        aspect_ratio = opts['aspect_ratio'] # this necessarily has a value now
+         frame_aspect_ratio = opts['frame_aspect_ratio']
+         zoom = opts['zoom']
+         frame = opts['frame']

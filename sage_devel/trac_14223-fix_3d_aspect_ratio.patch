@@ -1,7 +1,7 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1375713820 -28800
-# Node ID aeae26f608c19a4c855680601bd4ee494eb426f3
+# Node ID 7954ca1034f2cfb1b3d8bd5c3a5acb77b3ee990e
 # Parent  f102f013e8cadd7a8ad40bffb8bbdaa3c6609e07
 fix aspect_ratio and frame_aspect_ratio for 3D plots
 
@@ -67,7 +67,7 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
              return a_min, a_max
  
          longest_side = 0; longest_length = a_max[0] - a_min[0]
-@@ -963,23 +977,18 @@
+@@ -963,23 +977,27 @@
          for key_to_remove in SHOW_DEFAULTS.keys():
              kwds.pop(key_to_remove, None)
  
@@ -80,6 +80,15 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
              opts['aspect_ratio'] = 'automatic'
 +        if opts['aspect_ratio'] == 'automatic':
 +            opts['aspect_ratio'] = self.aspect_ratio()
++        else:
++            # We need this round about way to make sure that we do not
++            # store the aspect ratio that was passed on to show() by the
++            # user. We let the .aspect_ratio() method take care of the
++            # validity of the arguments that was passed on to show()
++            original_aspect_ratio = self.aspect_ratio()
++            self.aspect_ratio(opts['aspect_ratio'])
++            opts['aspect_ratio'] = self.aspect_ratio()
++            self.aspect_ratio(original_aspect_ratio)
  
          if opts['frame_aspect_ratio'] == 'automatic':
 -            if opts['aspect_ratio'] != 'automatic':
@@ -98,7 +107,7 @@ diff --git a/sage/plot/plot3d/base.pyx b/sage/plot/plot3d/base.pyx
  
          if not isinstance(opts['figsize'], (list,tuple)):
              opts['figsize'] = [opts['figsize'], opts['figsize']]
-@@ -1082,7 +1091,7 @@
+@@ -1082,7 +1100,7 @@
          viewer = opts['viewer']
          verbosity = opts['verbosity']
          figsize = opts['figsize']

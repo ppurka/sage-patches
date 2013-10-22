@@ -1,10 +1,34 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1382407104 -28800
-# Node ID 1f1361814f71b4d788a4c786212d44680cafcdda
+# Node ID 2c12c8429583a3b8827241f5e48eb3c9b9d1073c
 # Parent  69c1cf4a08321aa2b9e47a0a912adf0fdbc251b8
 fix aspect_ratio for density_plot
 
+diff --git a/sage/plot/density_plot.py b/sage/plot/density_plot.py
+--- a/sage/plot/density_plot.py
++++ b/sage/plot/density_plot.py
+@@ -220,6 +220,20 @@
+     ::
+ 
+         sage: density_plot(log(x) + log(y), (x, 1, 10), (y, 1, 10)).show(dpi=20) # These are equivalent
++
++    TESTS:
++
++    Check that :trac:`15315` is fixed, i.e., density_plot respects the
++    ``aspect_ratio`` parameter. Without the fix, it looks like a thin line
++    of width a few mm. With the fix it should look like a nice fat layered
++    image::
++
++        sage: density_plot((x*y)^(1/2), (x,0,3), (y,0,500), aspect_ratio=.01)
++
++    Default ``aspect_ratio`` is ``"automatic"``, and that should work too::
++
++        sage: density_plot((x*y)^(1/2), (x,0,3), (y,0,500))
++
+     """
+     from sage.plot.all import Graphics
+     from sage.plot.misc import setup_for_eval_on_grid
 diff --git a/sage/plot/graphics.py b/sage/plot/graphics.py
 --- a/sage/plot/graphics.py
 +++ b/sage/plot/graphics.py

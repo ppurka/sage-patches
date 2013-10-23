@@ -1,13 +1,22 @@
 # HG changeset patch
 # User Punarbasu Purkayastha <ppurka@gmail.com>
 # Date 1382407104 -28800
-# Node ID 2c12c8429583a3b8827241f5e48eb3c9b9d1073c
+# Node ID 4a2501c8b79c1e5922202eb21dc11c808dab8d85
 # Parent  69c1cf4a08321aa2b9e47a0a912adf0fdbc251b8
 fix aspect_ratio for density_plot
 
 diff --git a/sage/plot/density_plot.py b/sage/plot/density_plot.py
 --- a/sage/plot/density_plot.py
 +++ b/sage/plot/density_plot.py
+@@ -42,7 +42,7 @@
+ 
+     EXAMPLES:
+ 
+-    Note this should normally be used indirectly via `density_plot``::
++    Note this should normally be used indirectly via ``density_plot``::
+ 
+         sage: from sage.plot.density_plot import DensityPlot
+         sage: D = DensityPlot([[1,3],[2,4]],(1,2),(2,3),options={})
 @@ -220,6 +220,20 @@
      ::
  

@@ -1,3 +1,8 @@
+Update: This repository is not updated anymore since Sage has migrated to
+a git based system, from a mercurial based system.
+
+
+---------------------------------------------------------------------------
 This repository contains my patches to Sage that are still pending. Need
 this for tracking the patches across multiple Sage installations, across
 multiple machines.
